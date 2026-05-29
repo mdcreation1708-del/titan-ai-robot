@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TiTaN Ai RoBoT - Control Center</title>
+    <style>
+        :root { --bg: #0b0e14; --card: #141923; --cyan: #00adb5; --text: #c9d1d9; --border: #21262d; }
+        body { background-color: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; padding: 20px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; max-width: 1250px; margin: 0 auto; }
+        .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
+        .full { grid-column: span 2; }
+        .stream { width: 100%; height: auto; background: #000; border-radius: 8px; border: 1px solid var(--border); }
+        .pad-center { text-align: center; padding-top: 40px; }
+        .btn { background: #1f242c; border: 1px solid var(--border); color: #fff; width: 65px; height: 55px; margin: 5px; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; transition: 0.1s; }
+        .btn:active, .btn:hover { background: var(--cyan); color: #000; border-color: var(--cyan); }
+        .btn.stop { background: #ff4a4a; width: 90px; color: white; }
+        .btn.stop:hover { background: #cc3333; }
+        textarea { width: 100%; height: 75px; background: #000; color: #fff; border: 1px solid var(--border); border-radius: 6px; padding: 12px; box-sizing: border-box; font-size: 14px; margin-top: 10px; }
+        #terminal { background: #000; height: 180px; overflow-y: auto; padding: 15px; border-radius: 6px; font-family: monospace; white-space: pre-wrap; border-left: 4px solid var(--cyan); font-size: 14px; line-height: 1.6; }
+        h1, h2 { color: #fff; margin-top: 0; }
+        .version { font-size: 14px; color: var(--cyan); vertical-align: super; font-weight: normal; }
+    </style>
+</head>
+<body>
+    <div class="grid">
+        <div class="card full">
+            <h1 style="margin:0;">TiTaN Ai RoBoT <span class="version">v3.0 Engine Dashboard</span></h1>
+        </div>
+        
+        <!-- Live Camera Vision Block -->
+        <div class="card">
+            <h2>Live Camera Feed</h2>
+            <img class="stream" src="/video_feed" onerror="this.src='https://placehold.co/640x480/1a1a1a/00adb5?text=Awaiting+ESP32-S3+Video+Stream';">
+        </div>
+
+        <!-- Physical Core Drivetrain Manual Pad -->
+        <div class="card pad-center">
+            <h2>Manual Driving Override</h2>
+            <button class="btn" onmousedown="drive('forward')" onmouseup="drive('stop')">W</button><br>
+            <button class="btn" onmousedown="drive('left')" onmouseup="drive('stop')">A</button>
+            <button class="btn stop" onclick="drive('stop')">STOP</button>
+            <button class="btn" onmousedown="drive('right')" onmouseup="drive('stop')">D</button><br>
+            <button class="btn" onmousedown="drive('backward')" onmouseup="drive('stop')">S</button>
+            <p style="font-size: 13px; color:#8b949e; margin-top:15px;">Dashboard Input Active: Press and hold computer keyboard <b>W, A, S, D</b> keys to steer.</p>
+        </div>
+
+        <!-- Embedded Intelligence Dialogue Interface -->
+        <div class="card full">
+            <h2>Physical AI Assistant Terminal (English / हिंदी / मराठी)</h2>
+            <div id="terminal">TiTaN Ai RoBoT Initialized. Ready to handle engineering tasks or historical queries regarding the Maratha Empire (Chhatrapati Shivaji Maharaj / Chhatrapati Sambhaji Maharaj)...</div>
+            <textarea id="query" placeholder="Type your query context or ask engineering verification options here..."></textarea>
+            <button class="btn" style="width:140px; background:var(--cyan); color:#000; font-size:14px; margin-top:10px;" onclick="askAI()">Submit Prompt</button>
+        </div>
+    </div>
+
+    <script>
+        async function drive(cmd) {
+            try { 
+                await fetch('/drive', { 
+                    method: 'POST', 
+                    headers: {'Content-Type': 'application/json'}, 
+                    body: JSON.stringify({command: cmd}) 
+                }); 
+            } catch(e) { console.error("Communication link failure:", e); }
+        }
+
+        // Computer Workstation Keyboard Key Listener Hook Matrix
+        let activeKey = null;
+        window.addEventListener('keydown', (e) => {
+            if(document.activeElement.tagName === 'TEXTAREA') return; 
+            let k = e.key.toLowerCase();
+            if(activeKey === k) return;
+            if(['w','a','s','d'].includes(k)) {
+                activeKey = k;
+                let mapper = {w:'forward', a:'left', s:'backward', d:'right'};
+                drive(mapper[k]);
+            }
+        });
+        window.addEventListener('keyup', (e) => {
+            if(['w','a','s','d'].includes(e.key.toLowerCase())) { 
+                activeKey = null; 
+                drive('stop'); 
+            }
+        });
+
+        async function askAI() {
+            let box = document.getElementById('query');
+            let term = document.getElementById('terminal');
+            let text = box.value.trim();
+            if(!text) return;
+            
+            term.innerHTML += `\n\n<b>You:</b> ${text}`;
+            box.value = "";
+            term.scrollTop = term.scrollHeight;
+            
+            let loadingId = "load-" + Date.now();
+            term.innerHTML += `\n<span id="${loadingId}" style="color:#8b949e"><b>TiTaN Core:</b> Processing neural tokens...</span>`;
+            
+            try {
+                let res = await fetch('/process_text', { 
+                    method: 'POST', 
+                    headers: {'Content-Type': 'application/json'}, 
+                    body: JSON.stringify({query: text}) 
+                });
+                let data = await res.json();
+                document.getElementById(loadingId).remove();
+                
+                term.innerHTML += `\n<b>TiTaN Core:</b> ${data.text_response}`;
+            } catch(e) { 
+                document.getElementById(loadingId).innerText = "Communication Link Interrupted."; 
+            }
+            term.scrollTop = term.scrollHeight;
+        }
+    </script>
+</body>
+</html>
