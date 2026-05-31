@@ -6,14 +6,13 @@ from google.genai import types
 app = Flask(__name__)
 
 # --- SECURE API INITIALIZATION ---
-# Make sure GEMINI_API_KEY is added to your Render Environment Variables
 client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 
 # --- GLOBAL MEMORY STORAGE LAYER ---
 current_command = "idle"
 esp_wifi_list = ["Loading networks... Please trigger scan from robot."]
 esp_connection_status = "Disconnected"
-latest_frame = None  // Holds the active binary JPEG stream buffer
+latest_frame = None  # FIXED: Changed // to # for valid Python syntax
 
 @app.route('/')
 def index():
@@ -113,6 +112,5 @@ def get_wifi_list():
 
 
 if __name__ == '__main__':
-    # Configured to automatically bind to Render's dynamic runtime environment ports
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
