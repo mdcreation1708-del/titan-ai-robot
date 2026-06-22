@@ -2,204 +2,72 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TiTaN Ai RoBoT v3.0 Control Room</title>
+    <title>Titan AI Robot - Command Center</title>
     <style>
-        body { background-color: #0b0f19; color: #f1f5f9; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
-        h1 { color: #3b82f6; margin-bottom: 2px; }
-        .grid-container { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; width: 100%; max-width: 1200px; margin-top: 20px; }
-        .panel { background: #111827; border: 1px solid #1f2937; border-radius: 12px; padding: 20px; min-width: 320px; flex: 1; display: flex; flex-direction: column; justify-content: space-between; }
-        
-        /* Camera Monitor Area */
-        .video-monitor { width: 100%; height: 230px; background: #030712; border-radius: 8px; border: 1px solid #374151; display: flex; align-items: center; justify-content: center; overflow: hidden; }
-        .video-monitor img { width: 100%; height: 100%; object-fit: cover; }
-        
-        /* Chat Display Styling */
-        #chatBox { height: 230px; overflow-y: auto; background: #030712; padding: 10px; border-radius: 8px; border: 1px solid #374151; margin-bottom: 10px; }
-        .search-area { display: flex; gap: 10px; }
-        input[type="text"] { flex: 1; padding: 10px; background: #1f2937; border: 1px solid #4b5563; border-radius: 6px; color: white; }
-        
-        /* Buttons Core */
-        button { background: #2563eb; color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; }
-        button:hover { background: #1d4ed8; }
-        
-        /* Restored Directional Steering Pad Grid */
-        .steering-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; max-width: 260px; margin: 0 auto; }
-        .steering-btn { background: #1f2937; color: white; border: 1px solid #374151; font-size: 18px; padding: 15px; border-radius: 8px; cursor: pointer; user-select: none; font-weight: bold; }
-        .steering-btn:active { background: #2563eb; transform: scale(0.95); }
-        .stop-btn { background: #ef4444; border-color: #dc2626; }
-        .stop-btn:active { background: #b91c1c; }
-        
-        /* WiFi Sync Panel Styling */
-        .status-indicator { display: inline-block; width: 10px; height: 10px; background: #ef4444; border-radius: 50%; margin-right: 5px; }
-        .online { background: #10b981; }
-        .network-item { background: #1f2937; padding: 8px; margin: 5px 0; border-radius: 4px; font-size: 14px; cursor: pointer; border: 1px solid transparent; }
-        .network-item:hover { border-color: #3b82f6; background: #2563eb33; }
-        #wifiListContainer { height: 150px; overflow-y: auto; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #0f0f12; color: #e2e8f0; margin: 0; display: flex; height: 100vh; overflow: hidden; }
+        #left-viewport { width: 60%; padding: 20px; display: flex; flex-direction: column; justify-content: space-between; box-sizing: border-box; }
+        #right-panel { width: 40%; background: #181820; padding: 25px; display: flex; flex-direction: column; border-left: 2px solid #2d2d3d; box-sizing: border-box; }
+        .video-container { background: #000; border-radius: 12px; overflow: hidden; flex-grow: 1; display: flex; align-items: center; justify-content: center; border: 2px solid #3b82f6; min-height: 50vh; }
+        .video-container img { width: 100%; height: auto; max-height: 65vh; object-fit: contain; }
+        .control-grid { display: grid; grid-template-columns: repeat(3, 1fr); width: 240px; margin: 20px auto; gap: 10px; }
+        .btn { padding: 15px; font-weight: bold; font-size: 16px; border: none; border-radius: 8px; background: #3b82f6; color: white; cursor: pointer; transition: 0.2s; }
+        .btn:hover { background: #2563eb; }
+        .btn-stop { background: #ef4444; }
+        .btn-stop:hover { background: #dc2626; }
+        #chat-log { flex-grow: 1; background: #0a0a0f; border-radius: 8px; padding: 15px; overflow-y: auto; border: 1px solid #2d2d3d; margin-bottom: 15px; }
+        #user-entry { display: flex; gap: 10px; }
+        #user-entry input { flex-grow: 1; padding: 12px; border-radius: 6px; border: 1px solid #2d2d3d; background: #0a0a0f; color: white; }
     </style>
 </head>
 <body>
 
-    <h1>TiTaN Ai RoBoT v3.0</h1>
-    <p style="color: #6b7280; margin: 0 0 10px 0;">Engineering & Historical Command Terminal</p>
-
-    <div class="grid-container">
+    <div id="left-viewport">
+        <h2>🛰️ Titan AI Robot - Live Vision Matrix</h2>
+        <div class="video-container">
+            <img id="camera-stream" src="http://192.168.1.50:8080/video" alt="Awaiting live stream feed routing link...">
+        </div>
         
-        <!-- PANEL 1: LIVE VISION MONITOR -->
-        <div class="panel">
-            <h3>📷 Real-time Vision Feed</h3>
-            <div class="video-monitor">
-                <img src="/video_feed" onerror="this.src='https://placehold.co/600x400/030712/3b82f6?text=Waiting+For+Titan+Camera...'" alt="Live Feed">
-            </div>
-            <p style="font-size: 12px; color: #6b7280; margin-top: 8px; text-align: center; margin-bottom: 0;">OV3660 HD Sensor Connection</p>
+        <div class="control-grid">
+            <div></div><button class="btn" onclick="sendDrive('F')">▲ FORWARD</button><div></div>
+            <button class="btn" onclick="sendDrive('L')">◀ LEFT</button>
+            <button class="btn btn-stop" onclick="sendDrive('S')">■ STOP</button>
+            <button class="btn" onclick="sendDrive('R')">RIGHT ▶</button>
+            <div></div><button class="btn" onclick="sendDrive('B')">▼ BACKWARD</button><div></div>
         </div>
-
-        <!-- PANEL 2: RESTORED DIRECTIONAL OVERRIDE PAD -->
-        <div class="panel">
-            <h3>🕹️ Hardware Steering Overrides</h3>
-            <div class="steering-grid">
-                <div></div>
-                <button class="steering-btn" onclick="sendDriveCommand('forward')">▲</button>
-                <div></div>
-                
-                <button class="steering-btn" onclick="sendDriveCommand('left')">◀</button>
-                <button class="steering-btn stop-btn" onclick="sendDriveCommand('idle')">■</button>
-                <button class="steering-btn" onclick="sendDriveCommand('right')">▶</button>
-                
-                <div></div>
-                <button class="steering-btn" onclick="sendDriveCommand('backward')">▼</button>
-                <div></div>
-            </div>
-            <p id="driveStatus" style="font-size: 13px; color: #10b981; text-align: center; margin-top: 15px; margin-bottom: 0;">Current State: IDLE</p>
-        </div>
-
     </div>
 
-    <div class="grid-container">
-
-        <!-- PANEL 3: LIVE CHAT INTERFACE -->
-        <div class="panel">
-            <h3>🤖 System Core Assistant</h3>
-            <div id="chatBox">
-                <p style="color: #6b7280;"><i>System Initialized. Ask an engineering task or inquiry about the Maratha Empire...</i></p>
-            </div>
-            <div class="search-area">
-                <input type="text" id="chatInput" placeholder="Ask TiTaN anything..." onkeypress="if(event.key === 'Enter') executeChatQuery()">
-                <button onclick="executeChatQuery()">Send</button>
-            </div>
+    <div id="right-panel">
+        <h2>🧠 Onboard Titan AI Core</h2>
+        <div id="chat-log">
+            <p style="color: #888;">🤖 Assistant initialized. Type your questions in English, हिंदी, or मराठी...</p>
         </div>
-
-        <!-- PANEL 4: ESP CONNECTION MATRIX -->
-        <div class="panel">
-            <h3>🌐 ESP Connection Matrix</h3>
-            <div>
-                <p>Status: <span class="status-indicator" id="statusDot"></span> <span id="statusLabel">Checking Link...</span></p>
-                <button onclick="fetchNearbyNetworks()" style="background: #059669; width: 100%; margin-bottom: 10px;">🔄 Refresh Available Networks</button>
-            </div>
-            <div id="wifiListContainer">
-                <p style="color: #6b7280; font-size: 14px;">No networks logged yet.</p>
-            </div>
+        <div id="user-entry">
+            <input type="text" id="query" placeholder="Ask technical or structural questions..." onkeypress="if(event.key === 'Enter') submitQuery()">
+            <button class="btn" onclick="submitQuery()">Send</button>
         </div>
-
     </div>
 
-    <!-- ==================== JAVASCRIPT LOGIC BRIDGE ==================== -->
     <script>
-        // --- Manual Driving Logic Channel ---
-        async function sendDriveCommand(direction) {
-            const statusLabel = document.getElementById('driveStatus');
-            statusLabel.innerText = `Sending: ${direction.toUpperCase()}...`;
+        function sendDrive(directionCode) {
+            fetch(`/api/drive?cmd=${directionCode}`);
+        }
+
+        async function submitQuery() {
+            const inputField = document.getElementById('query');
+            const chatLog = document.getElementById('chat-log');
+            const question = inputField.value.trim();
+            if(!question) return;
+
+            chatLog.innerHTML += `<p><strong>You:</strong> ${question}</p>`;
+            inputField.value = "";
+            chatLog.scrollTop = chatLog.scrollHeight;
+
+            const response = await fetch(`/api/ask-ai?prompt=${encodeURIComponent(question)}`);
+            const data = await response.json();
             
-            try {
-                const response = await fetch('/send_command', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: `direction=${direction}`
-                });
-                if (response.ok) {
-                    statusLabel.innerText = `Current State: ${direction.toUpperCase()}`;
-                } else {
-                    statusLabel.innerText = "State Sync Failure!";
-                }
-            } catch (err) {
-                statusLabel.innerText = "Connection to Server Lost!";
-            }
+            chatLog.innerHTML += `<p style="color: #60a5fa;"><strong>Titan AI:</strong> ${data.reply}</p>`;
+            chatLog.scrollTop = chatLog.scrollHeight;
         }
-
-        // --- Chat Query Core Function ---
-        async function executeChatQuery() {
-            const inputElement = document.getElementById('chatInput');
-            const chatWindow = document.getElementById('chatBox');
-            const queryText = inputElement.value.trim();
-
-            if (!queryText) return;
-
-            chatWindow.innerHTML += `<p><b>You:</b> ${queryText}</p>`;
-            inputElement.value = ''; 
-            chatWindow.scrollTop = chatWindow.scrollHeight; 
-
-            try {
-                const response = await fetch('/ask_chat', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: `message=${encodeURIComponent(queryText)}`
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data.status === "success") {
-                        chatWindow.innerHTML += `<p style="color: #3b82f6;"><b>TiTaN Core:</b> ${data.reply}</p>`;
-                    } else {
-                        chatWindow.innerHTML += `<p style="color: #ef4444;"><b>TiTaN Core:</b> Error processing task.</p>`;
-                    }
-                } else {
-                    chatWindow.innerHTML += `<p style="color: #ef4444;"><b>TiTaN Core:</b> Link disconnected.</p>`;
-                }
-            } catch (err) {
-                chatWindow.innerHTML += `<p style="color: #ef4444;"><b>TiTaN Core:</b> Central Gateway Server offline.</p>`;
-            }
-            chatWindow.scrollTop = chatWindow.scrollHeight;
-        }
-
-        // --- Wi-Fi Network Sync Panel Function ---
-        async function fetchNearbyNetworks() {
-            const statusLabel = document.getElementById('statusLabel');
-            const statusDot = document.getElementById('statusDot');
-            const listContainer = document.getElementById('wifiListContainer');
-
-            try {
-                const response = await fetch('/get_wifi_list');
-                if (response.ok) {
-                    const data = await response.json();
-                    
-                    statusLabel.innerText = data.status;
-                    if (data.status.includes("Online")) {
-                        statusDot.className = "status-indicator online";
-                    } else {
-                        statusDot.className = "status-indicator";
-                    }
-
-                    listContainer.innerHTML = ""; 
-                    if (data.networks.length === 0 || data.networks[0].includes("Loading")) {
-                        listContainer.innerHTML = `<p style="color: #6b7280; font-size: 14px;">${data.networks[0] || "No routers found."}</p>`;
-                        return;
-                    }
-
-                    data.networks.forEach(networkName => {
-                        listContainer.innerHTML += `
-                            <div class="network-item" onclick="alert('Sending pairing sequence for: ${networkName}')">
-                                📶 <b>${networkName}</b> <span style="float: right; color: #6b7280; font-size:12px;">Select</span>
-                            </div>`;
-                    });
-                }
-            } catch (err) {
-                statusLabel.innerText = "Cloud Gateway Error";
-                statusDot.className = "status-indicator";
-            }
-        }
-
-        setInterval(fetchNearbyNetworks, 5000);
-        window.onload = fetchNearbyNetworks;
     </script>
 </body>
 </html>
