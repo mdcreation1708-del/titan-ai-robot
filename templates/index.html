@@ -2,72 +2,319 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>TiTaN Ai RoBoT - Command Center</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TiTaN Ai RoBoT - Control Center</title>
+    
+    <link rel="icon" type="image/png" href="favicon.png">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Urbanist:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
     <style>
-        body { font-family: 'Segoe UI', Arial, sans-serif; background: #0f0f12; color: #e2e8f0; margin: 0; display: flex; height: 100vh; overflow: hidden; }
-        #left-viewport { width: 60%; padding: 20px; display: flex; flex-direction: column; justify-content: space-between; box-sizing: border-box; }
-        #right-panel { width: 40%; background: #181820; padding: 25px; display: flex; flex-direction: column; border-left: 2px solid #2d2d3d; box-sizing: border-box; }
-        .video-container { background: #000; border-radius: 12px; overflow: hidden; flex-grow: 1; display: flex; align-items: center; justify-content: center; border: 2px solid #3b82f6; min-height: 50vh; }
-        .video-container img { width: 100%; height: auto; max-height: 65vh; object-fit: contain; }
-        .control-grid { display: grid; grid-template-columns: repeat(3, 1fr); width: 240px; margin: 20px auto; gap: 10px; }
-        .btn { padding: 15px; font-weight: bold; font-size: 16px; border: none; border-radius: 8px; background: #3b82f6; color: white; cursor: pointer; transition: 0.2s; }
-        .btn:hover { background: #2563eb; }
-        .btn-stop { background: #ef4444; }
-        .btn-stop:hover { background: #dc2626; }
-        #chat-log { flex-grow: 1; background: #0a0a0f; border-radius: 8px; padding: 15px; overflow-y: auto; border: 1px solid #2d2d3d; margin-bottom: 15px; }
-        #user-entry { display: flex; gap: 10px; }
-        #user-entry input { flex-grow: 1; padding: 12px; border-radius: 6px; border: 1px solid #2d2d3d; background: #0a0a0f; color: white; }
-        .project-title { font-size: 28px; font-weight: 800; color: #3b82f6; letter-spacing: 2px; margin: 0 0 15px 0; }
+        :root {
+            --bg-color: #060606;
+            --card-bg: #0f0f0f;
+            --accent-color: #deff9a;
+            --text-color: #f5f5f5;
+            --text-muted: #a0a0a0;
+            --border-color: #1a1a1a;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Urbanist', sans-serif;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            align-items: center;
+            padding: 20px;
+        }
+
+        header {
+            width: 100%;
+            max-width: 1200px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 30px;
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 15px; /* Spacing between logo and text */
+        }
+
+        /* 🎯 Styles the logo before the title */
+        .header-logo {
+            width: 42px;
+            height: 42px;
+            object-fit: contain;
+            border-radius: 6px;
+            border: 1px solid rgba(222, 255, 154, 0.2);
+        }
+
+        .logo-section h1 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -1px;
+            text-transform: uppercase;
+        }
+
+        .logo-section h1 span {
+            color: var(--accent-color);
+        }
+
+        .status-badge {
+            background-color: rgba(222, 255, 154, 0.1);
+            color: var(--accent-color);
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            border: 1px solid rgba(222, 255, 154, 0.2);
+        }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1.5fr 1fr;
+            gap: 30px;
+            width: 100%;
+            max-width: 1200px;
+            flex-grow: 1;
+        }
+
+        /* Video Feed Box */
+        .feed-container {
+            background-color: #000;
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 500px;
+            position: relative;
+        }
+
+        .feed-header {
+            background-color: var(--card-bg);
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 2;
+        }
+
+        .feed-header h2 {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            background-color: #ff4a4a;
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.9); opacity: 0.6; }
+            50% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(0.9); opacity: 0.6; }
+        }
+
+        .video-wrapper {
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #050505;
+        }
+
+        .video-wrapper img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Control Panel Box */
+        .control-panel {
+            background-color: var(--card-bg);
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .panel-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 22px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+
+        .joystick-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            width: 100%;
+            max-width: 300px;
+            margin: 0 auto;
+        }
+
+        .drive-btn {
+            background-color: #141414;
+            border: 1px solid #222;
+            color: var(--text-color);
+            border-radius: 12px;
+            height: 80px;
+            font-size: 24px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.2s ease;
+        }
+
+        .drive-btn:hover {
+            border-color: var(--accent-color);
+            color: var(--accent-color);
+            background-color: rgba(222, 255, 154, 0.02);
+        }
+
+        .drive-btn:active {
+            background-color: var(--accent-color);
+            color: #000;
+            transform: scale(0.95);
+        }
+
+        .stop-btn {
+            background-color: #241010;
+            border-color: #3d1414;
+            color: #ff6b6b;
+        }
+
+        .stop-btn:hover {
+            background-color: #3d1414;
+            color: #ff8e8e;
+            border-color: #ff6b6b;
+        }
+
+        .stop-btn:active {
+            background-color: #ff6b6b;
+            color: #000;
+        }
+
+        .empty-slot {
+            visibility: hidden;
+        }
+
+        footer {
+            margin-top: 40px;
+            color: var(--text-muted);
+            font-size: 14px;
+            text-align: center;
+            width: 100%;
+        }
+
+        @media (max-width: 900px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+            }
+            .feed-container {
+                height: 350px;
+            }
+        }
     </style>
 </head>
 <body>
 
-    <div id="left-viewport">
-        <h2 class="project-title">🛰️ TiTaN Ai RoBoT</h2>
-        <div class="video-container">
-            <img id="camera-stream" src="http://192.168.1.50:8080/video" alt="Awaiting live stream feed routing link...">
+    <header>
+        <div class="logo-section">
+            <img src="favicon.png" alt="TiTaN Core Logo" class="header-logo">
+            <h1>TiTaN <span>Ai RoBoT</span></h1>
         </div>
-        
-        <div class="control-grid">
-            <div></div><button class="btn" onclick="sendDrive('F')">▲ FORWARD</button><div></div>
-            <button class="btn" onclick="sendDrive('L')">◀ LEFT</button>
-            <button class="btn btn-stop" onclick="sendDrive('S')">■ STOP</button>
-            <button class="btn" onclick="sendDrive('R')">RIGHT ▶</button>
-            <div></div><button class="btn" onclick="sendDrive('B')">▼ BACKWARD</button><div></div>
+        <div class="status-badge">
+            <i class="fa-solid fa-satellite-dish"></i> Telemetry Cloud Linked
         </div>
-    </div>
+    </header>
 
-    <div id="right-panel">
-        <h2>🧠 Onboard Titan AI Core</h2>
-        <div id="chat-log">
-            <p style="color: #888;">🤖 Assistant initialized. Type your questions in English, हिंदी, or मराठी...</p>
-        </div>
-        <div id="user-entry">
-            <input type="text" id="query" placeholder="Ask technical or structural questions..." onkeypress="if(event.key === 'Enter') submitQuery()">
-            <button class="btn" onclick="submitQuery()">Send</button>
-        </div>
-    </div>
+    <main class="main-layout">
+        <section class="feed-container">
+            <div class="feed-header">
+                <div class="pulse-dot"></div>
+                <h2>Live Recon Feed</h2>
+            </div>
+            <div class="video-wrapper">
+                <img id="camera-stream" src="http://YOUR_ESP32_IP/video" alt="Robot Feed Awaiting Connection Pipeline">
+            </div>
+        </section>
+
+        <section class="control-panel">
+            <div>
+                <h3 class="panel-title">Tactical Navigation</h3>
+                <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 30px;">
+                    Commands route directly via secure tunnels to edge-logic pins.
+                </p>
+                
+                <div class="joystick-grid">
+                    <div class="empty-slot"></div>
+                    <button class="drive-btn" onclick="sendDrive('F')"><i class="fa-solid fa-chevron-up"></i></button>
+                    <div class="empty-slot"></div>
+
+                    <button class="drive-btn" onclick="sendDrive('L')"><i class="fa-solid fa-chevron-left"></i></button>
+                    <button class="drive-btn stop-btn" onclick="sendDrive('S')"><i class="fa-solid fa-hand"></i></button>
+                    <button class="drive-btn" onclick="sendDrive('R')"><i class="fa-solid fa-chevron-right"></i></button>
+
+                    <div class="empty-slot"></div>
+                    <button class="drive-btn" onclick="sendDrive('B')"><i class="fa-solid fa-chevron-down"></i></button>
+                    <div class="empty-slot"></div>
+                </div>
+            </div>
+
+            <div style="margin-top: 30px; font-size: 13px; color: var(--text-muted); text-align: center; border-top: 1px solid var(--border-color); padding-top: 15px;">
+                <i class="fa-solid fa-microchip"></i> System Core: ESP32 WROOM-32
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        &copy; 2026 TiTaN AI Robotics Automation System
+    </footer>
 
     <script>
         function sendDrive(directionCode) {
-            fetch(`/api/drive?cmd=${directionCode}`);
-        }
-
-        async function submitQuery() {
-            const inputField = document.getElementById('query');
-            const chatLog = document.getElementById('chat-log');
-            const question = inputField.value.trim();
-            if(!question) return;
-
-            chatLog.innerHTML += `<p><strong>You:</strong> ${question}</p>`;
-            inputField.value = "";
-            chatLog.scrollTop = chatLog.scrollHeight;
-
-            const response = await fetch(`/api/ask-ai?prompt=${encodeURIComponent(question)}`);
-            const data = await response.json();
+            const directions = { 
+                'F': 'forward', 
+                'B': 'backward', 
+                'L': 'left', 
+                'R': 'right', 
+                'S': 'stop' 
+            };
             
-            chatLog.innerHTML += `<p style="color: #60a5fa;"><strong>Titan AI:</strong> ${data.reply}</p>`;
-            chatLog.scrollTop = chatLog.scrollHeight;
+            console.log(`Sending Actuation Vector: ${directions[directionCode]}`);
+            
+            // NOTE: Replace YOUR_ESP32_IP with the same IP address for direct routing
+            fetch(`http://YOUR_ESP32_IP/${directions[directionCode]}`)
+                .then(response => console.log(`Hardware Response acknowledged.`))
+                .catch(err => console.error(`Signal delivery failure:`, err));
         }
     </script>
 </body>
