@@ -1,72 +1,127 @@
 import os
-from flask import Flask, render_template, request, jsonify
+import time
+import threading
+from flask import Flask, render_template, Response, jsonify
 from flask_cors import CORS
-from google import genai
-from google.genai import types
-import serial
+import requests
+import cv2
+from gtts import gTTS
 
 app = Flask(__name__)
 CORS(app)
 
-# ==========================================
-# 🧠 MULTILINGUAL TITAN AI INITIALIZATION
-# ==========================================
-client = genai.Client()
+# 🎯 Your Mandatroy ESP32 Hardware IP Address Locked In
+ESP32_IP = "192.168.0.125"
 
-SYSTEM_RULES = (
-    "You are the onboard intelligence core for the Titan AI Robot. "
-    "You assist the engineer with hardware theory, code debugging, historical queries, and automation problems. "
-    "You must accept input and respond fluently in English, Hindi (हिंदी), or Marathi (मराठी) "
-    "matching the language the user speaks to you in. Keep technical facts direct and accurate."
-)
+# Global Automation State Flags
+autonomous_mode = True  
+current_status = "Titan System Online"
 
-# ==========================================
-# 🔌 PHYSICAL MOTOR CONTROLLER LINK
-# ==========================================
-try:
-    # Connects to your ESP32 via Bluetooth / USB COM port
-    esp32_serial = serial.Serial(port='COM5', baudrate=115200, timeout=1)
-    print("🚀 Connected to ESP32 Propulsion Core!")
-except Exception as e:
-    esp32_serial = None
-    print(f"⚠️ Serial connection offline: {e}. Running in simulation mode.")
+# 🔊 Asynchronous Voice Processing Engine (Non-blocking)
+def speak(text):
+    def run():
+        try:
+            tts = gTTS(text=text, lang='en', slow=False)
+            tts.save("response.mp3")
+            # Platform-independent media execution switch
+            os.system("mpg123 response.mp3 || afplay response.mp3 || start response.mp3")
+        except Exception as e:
+            print(f"Voice Engine Error: {e}")
+    threading.Thread(target=run).start()
 
-def send_hardware_command(command_char):
-    if esp32_serial and esp32_serial.is_open:
-        esp32_serial.write(command_char.encode())
+# 🚀 Wake-Word Activation Sequence
+speak("Hello MD Sir. Hey Titan core system initialized and operational.")
 
-# ==========================================
-# 🌐 API ROUTING MATRIX
-# ==========================================
+# Signal Routing Middleware to Hardware Edge
+def send_hardware_command(action):
+    global current_status
+    if action == "stop":
+        current_status = "[Hey Titan] Target Point Locked"
+    else:
+        current_status = f"[Hey Titan] Executing Vector: {action}"
+        
+    try:
+        url = f"http://{ESP32_IP}/{action}"
+        requests.get(url, timeout=0.5)
+    except:
+        pass
+
+# 🎥 Computer Vision Analysis Loop (Primary Autonomous Mode)
+def generate_frames():
+    global autonomous_mode, current_status
+    
+    # 0 uses local PC webcam; swap with your phone video link URL for remote testing
+    cap = cv2.VideoCapture(0) 
+    face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+
+    while True:
+        success, frame = cap.read()
+        if not success:
+            break
+        else:
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            faces = face_cascade.detectMultiScale(gray, 1.1, 4)
+            
+            frame_width = frame.shape[1]
+            frame_center = frame_width // 2
+
+            if len(faces) == 0 and autonomous_mode:
+                current_status = "[Hey Titan] Scanning for MD Sir..."
+                send_hardware_command("stop")
+
+            for (x, y, w, h) in faces:
+                # Render tracking lock bounding box layer on dashboard layout
+                cv2.rectangle(frame, (x, y), (x+w, y+h), (154, 255, 222), 2)
+                cv2.putText(frame, "Lock: MD Sir", (x, y-10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (154, 255, 222), 2)
+                
+                box_center = x + (w // 2)
+                
+                if autonomous_mode:
+                    # 1. Depth Mapping Estimation (Tracking your strides)
+                    if w < 110:    # Box small = Target walking away, track forward
+                        send_hardware_command("forward")
+                    elif w > 190:  # Box oversized = Target too close, halt
+                        send_hardware_command("stop")
+                    else:
+                        # 2. Angular Centering Logic (Steering matching)
+                        if box_center < frame_center - 60:
+                            send_hardware_command("left")
+                        elif box_center > frame_center + 60:
+                            send_hardware_command("right")
+                        else:
+                            send_hardware_command("stop")
+                break 
+
+            ret, buffer = cv2.imencode('.jpg', frame)
+            frame = buffer.tobytes()
+            yield (b'--frame\r\n'
+                   b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+
 @app.route('/')
-def home():
+def index():
     return render_template('index.html')
 
-@app.route('/api/ask-ai', methods=['GET'])
-def handle_ai_query():
-    user_prompt = request.args.get('prompt', '')
-    if not user_prompt:
-        return jsonify({"reply": "Input cannot be empty."})
-    
-    try:
-        response = client.models.generate_content(
-            model='gemini-2.5-flash',
-            contents=user_prompt,
-            config=types.GenerateContentConfig(
-                system_instruction=SYSTEM_RULES,
-                temperature=0.3,
-            )
-        )
-        return jsonify({"reply": response.text})
-    except Exception as e:
-        return jsonify({"reply": f"AI Engine Timeout: {str(e)}"})
+@app.route('/video_feed')
+def video_feed():
+    return Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
-@app.route('/api/drive', methods=['GET'])
-def handle_driving_signals():
-    direction = request.args.get('cmd', 'S')
-    send_hardware_command(direction)
-    return jsonify({"status": f"Command {direction} received"})
+# Dashboard Secondary Override Route Handlers
+@app.route('/<action>')
+def action_handler(action):
+    global autonomous_mode
+    if action in ["forward", "backward", "left", "right", "stop"]:
+        autonomous_mode = False # Suspend auto-tracking on direct manual override input
+        speak("Ok Boss I will Do")
+        send_hardware_command(action)
+        return jsonify(status="Manual Mode Engaged", action=action)
+    return jsonify(status="Invalid Direction Vector")
+
+@app.route('/reset_auto')
+def reset_auto():
+    global autonomous_mode
+    autonomous_mode = True
+    speak("Titan autonomous tracking re engaged")
+    return jsonify(status="Auto Tracking Active")
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port)
+    app.run(host='0.0.0.0', port=5000, debug=True)
