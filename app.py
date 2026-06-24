@@ -10,8 +10,10 @@ from gtts import gTTS
 app = Flask(__name__)
 CORS(app)
 
-# 🎯 Your Mandatroy ESP32 Hardware IP Address Locked In
-ESP32_IP = "192.168.0.125"
+# ==================== 🛠️ TITAN CONFIGURATION LAYER ====================
+ESP32_IP = "192.168.0.125"  # Your mandatory hardware node IP address
+PHONE_STREAM_URL = "http://192.168.0.50:8080/video"  # ⚠️ Replace with your IP Webcam app stream link
+# ======================================================================
 
 # Global Automation State Flags
 autonomous_mode = True  
@@ -50,8 +52,8 @@ def send_hardware_command(action):
 def generate_frames():
     global autonomous_mode, current_status
     
-    # 0 uses local PC webcam; swap with your phone video link URL for remote testing
-    cap = cv2.VideoCapture(0) 
+    # Connects directly to your smartphone's wireless network feed link
+    cap = cv2.VideoCapture(PHONE_STREAM_URL) 
     face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
 
     while True:
