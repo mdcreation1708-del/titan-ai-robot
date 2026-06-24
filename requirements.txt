@@ -3,3 +3,6 @@ flask-cors
 google-genai
 pyserial
 gunicorn
+requests
+opencv-python-headless
+gtts
