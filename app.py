@@ -16,12 +16,13 @@ ESP32_IP = "192.168.0.125"  # Your locked hardware IP address
 autonomous_mode = True  
 current_status = "Titan System Online"
 
-# 🔊 Asynchronous Voice Processing Engine
+# 🔊 Asynchronous Voice Processing Engine (Non-blocking)
 def speak(text):
     def run():
         try:
             tts = gTTS(text=text, lang='en', slow=False)
             tts.save("response.mp3")
+            # Platform-independent media execution switch
             os.system("mpg123 response.mp3 || afplay response.mp3 || start response.mp3")
         except Exception as e:
             print(f"Voice Engine Error: {e}")
@@ -53,7 +54,7 @@ def index():
 def action_handler(action):
     global autonomous_mode
     if action in ["forward", "backward", "left", "right", "stop"]:
-        autonomous_mode = False 
+        autonomous_mode = False # Suspend auto-tracking on direct manual override input
         speak("Ok Boss I will Do")
         send_hardware_command(action)
         return jsonify(status="Manual Mode Engaged", action=action)
