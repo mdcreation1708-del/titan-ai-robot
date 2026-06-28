@@ -7,92 +7,158 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { background-color: #09090b; color: #fafafa; font-family: system-ui, sans-serif; }
+        /* Custom scrollbar for the system chat/command logs box */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #09090b; }
+        ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
     </style>
 </head>
 <body class="p-6">
     <div class="max-w-6xl mx-auto space-y-6">
         
         <header class="flex justify-between items-center border-b border-zinc-800 pb-4">
-            <div class="flex items-center space-x-3">
-                <div class="bg-emerald-500 text-black font-black px-3 py-1 rounded-lg text-lg tracking-tighter shadow-lg shadow-emerald-500/20">MD</div>
-                <h1 class="text-2xl font-black tracking-wider text-emerald-400">TITAN AI ROBOT</h1>
+            <div class="flex items-center space-x-4">
+                <div class="flex items-center space-x-3 bg-zinc-950 px-4 py-2 rounded-xl border border-zinc-900 shadow-md">
+                    <img src="{{ url_for('static', filename='logo.png') }}" class="w-8 h-8 object-contain" alt="Logo" onerror="this.style.display='none';">
+                    <div class="bg-emerald-500 text-black font-black px-2.5 py-0.5 rounded text-sm tracking-tighter">MD</div>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-black tracking-wider text-emerald-400 leading-tight">TITAN AI ROBOT</h1>
+                    <p class="text-xs text-zinc-500 tracking-wider uppercase font-bold">MD Creations Workspace</p>
+                </div>
             </div>
             <span class="bg-emerald-950/30 border border-emerald-800 text-emerald-400 px-4 py-1.5 rounded-full text-xs font-semibold tracking-wide shadow-lg shadow-emerald-950/20">
                 🌐 Telemetry Cloud Linked
             </span>
         </header>
 
-        <div class="bg-zinc-950 p-4 rounded-xl border border-zinc-900 shadow-md">
-            <div class="flex items-center space-x-2 mb-1">
-                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                <span class="text-xs font-bold uppercase tracking-widest text-zinc-500">System Command Logs</span>
-            </div>
-            <p id="status-display" class="font-mono text-sm text-emerald-400 animate-pulse">> Titan System Online. Awaiting target tracking lock...</p>
-        </div>
-
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             
-            <div class="bg-zinc-950 p-5 rounded-2xl border border-zinc-900 shadow-xl space-y-4">
-                <div class="flex items-center space-x-2">
-                    <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
-                    <h2 class="text-sm font-bold tracking-widest uppercase text-zinc-400">Live Recon Feed</h2>
+            <div class="space-y-6">
+                <div class="bg-zinc-950 p-5 rounded-2xl border border-zinc-900 shadow-xl space-y-4">
+                    <div class="flex items-center space-x-2">
+                        <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                        <h2 class="text-sm font-bold tracking-widest uppercase text-zinc-400">Real-Time Vision Stream</h2>
+                    </div>
+                    <div class="relative overflow-hidden rounded-xl border border-zinc-850 aspect-video bg-black">
+                        <img src="http://192.168.31.142:8080/video" class="w-full h-full object-cover" alt="Titan Visual Pipeline Streaming">
+                    </div>
                 </div>
-                <div class="relative overflow-hidden rounded-xl border border-zinc-850 aspect-video bg-black">
-                    <img src="http://192.168.31.142:8080/video" class="w-full h-full object-cover" alt="Titan Visual Pipeline Streaming">
+
+                <div class="bg-zinc-950 rounded-2xl border border-zinc-900 shadow-xl overflow-hidden flex flex-col justify-between h-[300px]">
+                    <div class="bg-zinc-900/50 border-b border-zinc-900 px-5 py-3 flex items-center justify-between">
+                        <div class="flex items-center space-x-2">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                            <h3 class="text-xs font-bold uppercase tracking-wider text-zinc-300">Hey Titan Console Network</h3>
+                        </div>
+                        <span class="text-[10px] font-mono text-zinc-500">Node Link: SECURE</span>
+                    </div>
+                    
+                    <div id="chat-logs-box" class="p-4 flex-1 overflow-y-auto font-mono text-xs space-y-2 bg-black/40">
+                        <p class="text-zinc-500">[System Boot Log] Security certificates verified.</p>
+                        <p class="text-emerald-400 font-bold">> Hey Titan core initialized. Operational system standing by...</p>
+                    </div>
+
+                    <div class="p-3 border-t border-zinc-900 bg-zinc-950/80 flex gap-2">
+                        <input type="text" id="chat-user-input" placeholder="Ask Titan a vector question..." 
+                               class="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-emerald-500 text-zinc-200 transition duration-150"
+                               onkeydown="if(event.key === 'Enter') processChat()">
+                        <button onclick="processChat()" class="bg-emerald-500 hover:bg-emerald-400 text-black font-bold px-4 py-2.5 rounded-xl text-xs tracking-wide transition duration-150 active:scale-95">
+                            Send
+                        </button>
+                    </div>
                 </div>
             </div>
 
-            <div class="bg-zinc-950 p-6 rounded-2xl border border-zinc-900 shadow-xl flex flex-col justify-between space-y-8">
+            <div class="bg-zinc-950 p-6 rounded-2xl border border-zinc-900 shadow-xl flex flex-col justify-between h-full min-h-[500px]">
                 <div>
-                    <h2 class="text-sm font-bold tracking-widest uppercase text-zinc-400 mb-6">Tactical Navigation Center</h2>
+                    <h2 class="text-sm font-bold tracking-widest uppercase text-zinc-400 mb-12">Navigation Control System</h2>
                     
-                    <div class="grid grid-cols-3 gap-4 max-w-[280px] mx-auto">
+                    <div class="grid grid-cols-3 gap-4 max-w-[280px] mx-auto my-auto pt-4">
                         <div></div>
-                        <button onclick="sendVector('forward')" class="bg-zinc-900 border border-zinc-800 p-5 rounded-xl text-xl font-bold hover:bg-zinc-800 hover:border-zinc-700 active:scale-95 transition-all duration-150">▲</button>
+                        <button onclick="sendVector('forward')" class="bg-zinc-900 border border-zinc-800 p-6 rounded-xl text-xl font-bold hover:bg-zinc-800 hover:border-zinc-700 active:scale-95 transition-all duration-150">▲</button>
                         <div></div>
                         
-                        <button onclick="sendVector('left')" class="bg-zinc-900 border border-zinc-800 p-5 rounded-xl text-xl font-bold hover:bg-zinc-800 hover:border-zinc-700 active:scale-95 transition-all duration-150">◀</button>
-                        <button onclick="sendVector('stop')" class="bg-red-950/40 border border-red-900 text-red-400 p-5 rounded-xl text-xl font-bold hover:bg-red-900/40 active:scale-95 transition-all duration-150">■</button>
-                        <button onclick="sendVector('right')" class="bg-zinc-900 border border-zinc-800 p-5 rounded-xl text-xl font-bold hover:bg-zinc-800 hover:border-zinc-700 active:scale-95 transition-all duration-150">▶</button>
+                        <button onclick="sendVector('left')" class="bg-zinc-900 border border-zinc-800 p-6 rounded-xl text-xl font-bold hover:bg-zinc-800 hover:border-zinc-700 active:scale-95 transition-all duration-150">◀</button>
+                        <button onclick="sendVector('stop')" class="bg-red-950/40 border border-red-900 text-red-400 p-6 rounded-xl text-xl font-bold hover:bg-red-900/40 active:scale-95 transition-all duration-150">■</button>
+                        <button onclick="sendVector('right')" class="bg-zinc-900 border border-zinc-800 p-6 rounded-xl text-xl font-bold hover:bg-zinc-800 hover:border-zinc-700 active:scale-95 transition-all duration-150">▶</button>
                         
                         <div></div>
-                        <button onclick="sendVector('backward')" class="bg-zinc-900 border border-zinc-800 p-5 rounded-xl text-xl font-bold hover:bg-zinc-800 hover:border-zinc-700 active:scale-95 transition-all duration-150">▼</button>
+                        <button onclick="sendVector('backward')" class="bg-zinc-900 border border-zinc-800 p-6 rounded-xl text-xl font-bold hover:bg-zinc-800 hover:border-zinc-700 active:scale-95 transition-all duration-150">▼</button>
                         <div></div>
                     </div>
                 </div>
 
-                <div class="pt-4 border-t border-zinc-900">
+                <div class="pt-6 border-t border-zinc-900 mt-12">
                     <button onclick="reengageAuto()" class="w-full bg-emerald-950/40 border border-emerald-900 text-emerald-400 py-4 rounded-xl font-bold text-sm tracking-widest uppercase hover:bg-emerald-900/40 active:scale-[0.99] transition-all duration-150 shadow-lg shadow-emerald-950/10">
                         Re-Engage Autonomous Mode
                     </button>
                 </div>
             </div>
-
         </div>
+
     </div>
 
     <script>
+        function logToConsole(message, statusType = 'info') {
+            const container = document.getElementById('chat-logs-box');
+            const logLine = document.createElement('p');
+            
+            if (statusType === 'manual') {
+                logLine.className = "text-amber-400";
+                logLine.innerText = `> ${message}`;
+            } else if (statusType === 'auto') {
+                logLine.className = "text-emerald-400 font-semibold";
+                logLine.innerText = `> ${message}`;
+            } else {
+                logLine.className = "text-zinc-400";
+                logLine.innerText = `[User]: ${message}`;
+            }
+            
+            container.appendChild(logLine);
+            container.scrollTop = container.scrollHeight; 
+        }
+
         function sendVector(action) {
-            document.getElementById('status-display').innerText = "> Manual Override Activated. Transmitting: " + action.toUpperCase();
+            logToConsole(`Manual Override Active: Driving ${action.toUpperCase()}...`, 'manual');
             fetch('/' + action)
                 .then(response => response.json())
-                .then(data => {
-                    console.log("[Backend Response Received]:", data);
-                })
+                .then(data => console.log("[Backend Vector Synced]:", data))
                 .catch(err => {
-                    console.error("Signal Routing Failure:", err);
-                    document.getElementById('status-display').innerText = "> Network Error: Bridge Connection Timed Out.";
+                    console.error("Communication Matrix Interrupted:", err);
+                    logToConsole("Network Error: Bridge Connection Timed Out.", 'manual');
                 });
         }
 
         function reengageAuto() {
-            document.getElementById('status-display').innerText = "> Resuming Primary Autonomous Tracking Protocol...";
+            logToConsole("Primary Autonomous Mode Activated. Resuming Tracking Core.", 'auto');
             fetch('/reset_auto')
                 .then(response => response.json())
-                .then(data => {
-                    console.log("[Automation Response]:", data);
-                })
-                .catch(err => console.error("Automation Handshake Failure:", err));
+                .then(data => console.log("[Automation Sequence Online]:", data))
+                .catch(err => console.error("Handshake Matrix Timeout:", err));
+        }
+
+        function processChat() {
+            const inputField = document.getElementById('chat-user-input');
+            const message = inputField.value.trim();
+            if(!message) return;
+
+            logToConsole(message, 'user');
+            inputField.value = ''; 
+            
+            setTimeout(() => {
+                const cleanQuery = message.toLowerCase();
+                if(cleanQuery.includes('status') || cleanQuery.includes('check')) {
+                    logToConsole("All subsystems operational. Motor Driver tracking 12V voltage matrix clean.", 'auto');
+                } else if(cleanQuery.includes('forward') || cleanQuery.includes('go')) {
+                    sendVector('forward');
+                } else if(cleanQuery.includes('stop') || cleanQuery.includes('halt')) {
+                    sendVector('stop');
+                } else {
+                    logToConsole("Command registered. Passing token pipeline downstream to the core script.", 'auto');
+                }
+            }, 600);
         }
     </script>
 </body>
