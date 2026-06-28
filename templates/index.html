@@ -14,12 +14,21 @@
         
         <header class="flex justify-between items-center border-b border-zinc-800 pb-4">
             <div class="flex items-center space-x-3">
+                <div class="bg-emerald-500 text-black font-black px-3 py-1 rounded-lg text-lg tracking-tighter shadow-lg shadow-emerald-500/20">MD</div>
                 <h1 class="text-2xl font-black tracking-wider text-emerald-400">TITAN AI ROBOT</h1>
             </div>
             <span class="bg-emerald-950/30 border border-emerald-800 text-emerald-400 px-4 py-1.5 rounded-full text-xs font-semibold tracking-wide shadow-lg shadow-emerald-950/20">
                 🌐 Telemetry Cloud Linked
             </span>
         </header>
+
+        <div class="bg-zinc-950 p-4 rounded-xl border border-zinc-900 shadow-md">
+            <div class="flex items-center space-x-2 mb-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                <span class="text-xs font-bold uppercase tracking-widest text-zinc-500">System Command Logs</span>
+            </div>
+            <p id="status-display" class="font-mono text-sm text-emerald-400 animate-pulse">> Titan System Online. Awaiting target tracking lock...</p>
+        </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             
@@ -35,7 +44,7 @@
 
             <div class="bg-zinc-950 p-6 rounded-2xl border border-zinc-900 shadow-xl flex flex-col justify-between space-y-8">
                 <div>
-                    <h2 class="text-sm font-bold tracking-widest uppercase text-zinc-400 mb-6">Tactical Navigation</h2>
+                    <h2 class="text-sm font-bold tracking-widest uppercase text-zinc-400 mb-6">Tactical Navigation Center</h2>
                     
                     <div class="grid grid-cols-3 gap-4 max-w-[280px] mx-auto">
                         <div></div>
@@ -64,18 +73,25 @@
 
     <script>
         function sendVector(action) {
-            console.log("[Manual Trigger] Vector Dispatched: " + action);
+            document.getElementById('status-display').innerText = "> Manual Override Activated. Transmitting: " + action.toUpperCase();
             fetch('/' + action)
                 .then(response => response.json())
-                .then(data => console.log("[Backend Response Received]:", data))
-                .catch(err => console.error("Signal Routing Failure:", err));
+                .then(data => {
+                    console.log("[Backend Response Received]:", data);
+                })
+                .catch(err => {
+                    console.error("Signal Routing Failure:", err);
+                    document.getElementById('status-display').innerText = "> Network Error: Bridge Connection Timed Out.";
+                });
         }
 
         function reengageAuto() {
-            console.log("[Mode Selector] Initializing Automation Loop Handshake...");
+            document.getElementById('status-display').innerText = "> Resuming Primary Autonomous Tracking Protocol...";
             fetch('/reset_auto')
                 .then(response => response.json())
-                .then(data => console.log("[Automation Response]:", data))
+                .then(data => {
+                    console.log("[Automation Response]:", data);
+                })
                 .catch(err => console.error("Automation Handshake Failure:", err));
         }
     </script>
