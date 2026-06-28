@@ -3,443 +3,80 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TiTaN Ai RoBoT - Control Center</title>
-    
-    <link rel="icon" type="image/png" href="/static/favicon.png">
-
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Urbanist:wght@400;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-
+    <title>TITAN AI ROBOT CONTROL CENTER</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        :root {
-            --bg-color: #060606;
-            --card-bg: #0f0f0f;
-            --accent-color: #deff9a;
-            --text-color: #f5f5f5;
-            --text-muted: #a0a0a0;
-            --border-color: #1a1a1a;
-            --input-bg: #141414;
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            font-family: 'Urbanist', sans-serif;
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-            align-items: center;
-            padding: 20px;
-        }
-
-        header {
-            width: 100%;
-            max-width: 1400px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 20px;
-            border-bottom: 1px solid var(--border-color);
-            margin-bottom: 30px;
-        }
-
-        .logo-section {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .header-logo {
-            width: 42px;
-            height: 42px;
-            object-fit: contain;
-            border-radius: 6px;
-            border: 1px solid rgba(222, 255, 154, 0.2);
-        }
-
-        .logo-section h1 {
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: 28px;
-            font-weight: 700;
-            letter-spacing: -1px;
-            text-transform: uppercase;
-        }
-
-        .logo-section h1 span {
-            color: var(--accent-color);
-        }
-
-        .status-badge {
-            background-color: rgba(222, 255, 154, 0.1);
-            color: var(--accent-color);
-            padding: 6px 16px;
-            border-radius: 20px;
-            font-size: 14px;
-            font-weight: 600;
-            border: 1px solid rgba(222, 255, 154, 0.2);
-        }
-
-        .main-layout {
-            display: grid;
-            grid-template-columns: 1.2fr 1fr 1fr;
-            gap: 25px;
-            width: 100%;
-            max-width: 1400px;
-            flex-grow: 1;
-        }
-
-        /* Standardized Panel Container */
-        .panel {
-            background-color: var(--card-bg);
-            border-radius: 16px;
-            border: 1px solid var(--border-color);
-            padding: 25px;
-            display: flex;
-            flex-direction: column;
-        }
-
-        /* Video Feed Box Modification */
-        .feed-container {
-            background-color: #000;
-            overflow: hidden;
-            height: 500px;
-            padding: 0;
-        }
-
-        .feed-header {
-            background-color: var(--card-bg);
-            padding: 15px 20px;
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            z-index: 2;
-        }
-
-        .feed-header h2 {
-            font-size: 18px;
-            font-weight: 600;
-        }
-
-        .pulse-dot {
-            width: 8px;
-            height: 8px;
-            background-color: #ff4a4a;
-            border-radius: 50%;
-            animation: pulse 1.5s infinite;
-        }
-
-        @keyframes pulse {
-            0% { transform: scale(0.9); opacity: 0.6; }
-            50% { transform: scale(1.2); opacity: 1; }
-            100% { transform: scale(0.9); opacity: 0.6; }
-        }
-
-        .video-wrapper {
-            flex-grow: 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background-color: #050505;
-        }
-
-        .video-wrapper img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .panel-title {
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: 22px;
-            margin-bottom: 15px;
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 10px;
-        }
-
-        /* Navigation Grid Controls */
-        .joystick-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 15px;
-            width: 100%;
-            max-width: 260px;
-            margin: auto;
-        }
-
-        .drive-btn {
-            background-color: #141414;
-            border: 1px solid #222;
-            color: var(--text-color);
-            border-radius: 12px;
-            height: 75px;
-            font-size: 22px;
-            cursor: pointer;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            transition: all 0.2s ease;
-        }
-
-        .drive-btn:hover {
-            border-color: var(--accent-color);
-            color: var(--accent-color);
-            background-color: rgba(222, 255, 154, 0.02);
-        }
-
-        .drive-btn:active {
-            background-color: var(--accent-color);
-            color: #000;
-            transform: scale(0.95);
-        }
-
-        .stop-btn {
-            background-color: #241010;
-            border-color: #3d1414;
-            color: #ff6b6b;
-        }
-
-        .stop-btn:hover {
-            background-color: #3d1414;
-            color: #ff8e8e;
-            border-color: #ff6b6b;
-        }
-
-        .stop-btn:active {
-            background-color: #ff6b6b;
-            color: #000;
-        }
-
-        .empty-slot {
-            visibility: hidden;
-        }
-
-        /* 💬 Dedicated Chat Panel Styles */
-        .chat-panel {
-            justify-content: space-between;
-            height: 500px;
-        }
-
-        .chat-history {
-            flex-grow: 1;
-            background-color: var(--input-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 10px;
-            padding: 15px;
-            overflow-y: auto;
-            margin-bottom: 15px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            font-size: 15px;
-        }
-
-        .msg {
-            max-width: 85%;
-            padding: 10px 14px;
-            border-radius: 12px;
-            line-height: 1.4;
-        }
-
-        .msg.system {
-            background-color: #1c1c1c;
-            color: var(--text-muted);
-            align-self: flex-start;
-            border-bottom-left-radius: 2px;
-        }
-
-        .msg.user {
-            background-color: rgba(222, 255, 154, 0.1);
-            color: var(--accent-color);
-            align-self: flex-end;
-            border-bottom-right-radius: 2px;
-            border: 1px solid rgba(222, 255, 154, 0.15);
-        }
-
-        .chat-input-wrapper {
-            display: flex;
-            gap: 10px;
-        }
-
-        .chat-input {
-            flex-grow: 1;
-            background-color: var(--input-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 10px;
-            padding: 12px 15px;
-            color: var(--text-color);
-            font-family: inherit;
-            font-size: 15px;
-            outline: none;
-        }
-
-        .chat-input:focus {
-            border-color: var(--accent-color);
-        }
-
-        .send-btn {
-            background-color: var(--accent-color);
-            color: #000;
-            border: none;
-            border-radius: 10px;
-            width: 45px;
-            cursor: pointer;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 16px;
-            transition: opacity 0.2s;
-        }
-
-        .send-btn:hover {
-            opacity: 0.9;
-        }
-
-        footer {
-            margin-top: 40px;
-            color: var(--text-muted);
-            font-size: 14px;
-            text-align: center;
-            width: 100%;
-        }
-
-        @media (max-width: 1200px) {
-            .main-layout {
-                grid-template-columns: 1fr;
-            }
-            .feed-container, .chat-panel {
-                height: 400px;
-            }
-        }
+        body { background-color: #09090b; color: #fafafa; font-family: system-ui, sans-serif; }
     </style>
 </head>
-<body>
-
-    <header>
-        <div class="logo-section">
-            <img src="/static/favicon.png" alt="TiTaN Core Logo" class="header-logo">
-            <h1>TiTaN <span>Ai RoBoT</span></h1>
-        </div>
-        <div class="status-badge">
-            <i class="fa-solid fa-satellite-dish"></i> Telemetry Cloud Linked
-        </div>
-    </header>
-
-    <main class="main-layout">
-        <section class="panel feed-container">
-            <div class="feed-header">
-                <div class="pulse-dot"></div>
-                <h2>Live Recon Feed</h2>
+<body class="p-6">
+    <div class="max-w-6xl mx-auto space-y-6">
+        
+        <header class="flex justify-between items-center border-b border-zinc-800 pb-4">
+            <div class="flex items-center space-x-3">
+                <h1 class="text-2xl font-black tracking-wider text-emerald-400">TITAN AI ROBOT</h1>
             </div>
-            <div class="video-wrapper">
-                <img id="camera-stream" src="http://YOUR_ESP32_IP/video" alt="Robot Feed Awaiting Connection Pipeline">
-            </div>
-        </section>
+            <span class="bg-emerald-950/30 border border-emerald-800 text-emerald-400 px-4 py-1.5 rounded-full text-xs font-semibold tracking-wide shadow-lg shadow-emerald-950/20">
+                🌐 Telemetry Cloud Linked
+            </span>
+        </header>
 
-        <section class="panel">
-            <div style="display: flex; flex-direction: column; height: 100%; justify-content: space-between;">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            
+            <div class="bg-zinc-950 p-5 rounded-2xl border border-zinc-900 shadow-xl space-y-4">
+                <div class="flex items-center space-x-2">
+                    <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                    <h2 class="text-sm font-bold tracking-widest uppercase text-zinc-400">Live Recon Feed</h2>
+                </div>
+                <div class="relative overflow-hidden rounded-xl border border-zinc-850 aspect-video bg-black">
+                    <img src="http://192.168.31.142:8080/video" class="w-full h-full object-cover" alt="Titan Visual Pipeline Streaming">
+                </div>
+            </div>
+
+            <div class="bg-zinc-950 p-6 rounded-2xl border border-zinc-900 shadow-xl flex flex-col justify-between space-y-8">
                 <div>
-                    <h3 class="panel-title">Tactical Navigation</h3>
-                    <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 25px;">
-                        Commands route directly via secure tunnels to edge-logic pins.
-                    </p>
+                    <h2 class="text-sm font-bold tracking-widest uppercase text-zinc-400 mb-6">Tactical Navigation</h2>
                     
-                    <div class="joystick-grid">
-                        <div class="empty-slot"></div>
-                        <button class="drive-btn" onclick="sendDrive('F')"><i class="fa-solid fa-chevron-up"></i></button>
-                        <div class="empty-slot"></div>
-
-                        <button class="drive-btn" onclick="sendDrive('L')"><i class="fa-solid fa-chevron-left"></i></button>
-                        <button class="drive-btn stop-btn" onclick="sendDrive('S')"><i class="fa-solid fa-hand"></i></button>
-                        <button class="drive-btn" onclick="sendDrive('R')"><i class="fa-solid fa-chevron-right"></i></button>
-
-                        <div class="empty-slot"></div>
-                        <button class="drive-btn" onclick="sendDrive('B')"><i class="fa-solid fa-chevron-down"></i></button>
-                        <div class="empty-slot"></div>
+                    <div class="grid grid-cols-3 gap-4 max-w-[280px] mx-auto">
+                        <div></div>
+                        <button onclick="sendVector('forward')" class="bg-zinc-900 border border-zinc-800 p-5 rounded-xl text-xl font-bold hover:bg-zinc-800 hover:border-zinc-700 active:scale-95 transition-all duration-150">▲</button>
+                        <div></div>
+                        
+                        <button onclick="sendVector('left')" class="bg-zinc-900 border border-zinc-800 p-5 rounded-xl text-xl font-bold hover:bg-zinc-800 hover:border-zinc-700 active:scale-95 transition-all duration-150">◀</button>
+                        <button onclick="sendVector('stop')" class="bg-red-950/40 border border-red-900 text-red-400 p-5 rounded-xl text-xl font-bold hover:bg-red-900/40 active:scale-95 transition-all duration-150">■</button>
+                        <button onclick="sendVector('right')" class="bg-zinc-900 border border-zinc-800 p-5 rounded-xl text-xl font-bold hover:bg-zinc-800 hover:border-zinc-700 active:scale-95 transition-all duration-150">▶</button>
+                        
+                        <div></div>
+                        <button onclick="sendVector('backward')" class="bg-zinc-900 border border-zinc-800 p-5 rounded-xl text-xl font-bold hover:bg-zinc-800 hover:border-zinc-700 active:scale-95 transition-all duration-150">▼</button>
+                        <div></div>
                     </div>
                 </div>
 
-                <div style="font-size: 13px; color: var(--text-muted); text-align: center; border-top: 1px solid var(--border-color); padding-top: 15px;">
-                    <i class="fa-solid fa-microchip"></i> System Core: ESP32 WROOM-32
+                <div class="pt-4 border-t border-zinc-900">
+                    <button onclick="reengageAuto()" class="w-full bg-emerald-950/40 border border-emerald-900 text-emerald-400 py-4 rounded-xl font-bold text-sm tracking-widest uppercase hover:bg-emerald-900/40 active:scale-[0.99] transition-all duration-150 shadow-lg shadow-emerald-950/10">
+                        Re-Engage Autonomous Mode
+                    </button>
                 </div>
             </div>
-        </section>
 
-        <section class="panel chat-panel">
-            <h3 class="panel-title">Query Terminal</h3>
-            
-            <div class="chat-history" id="chatHistory">
-                <div class="msg system">System online. Type a query or log a system note below.</div>
-            </div>
-
-            <div class="chat-input-wrapper">
-                <input type="text" class="chat-input" id="chatInput" placeholder="Ask a question or log a note..." onkeypress="handleKeyPress(event)">
-                <button class="send-btn" onclick="sendQuery()"><i class="fa-solid fa-paper-plane"></i></button>
-            </div>
-        </section>
-    </main>
-
-    <footer>
-        &copy; 2026 TiTaN AI Robotics Automation System
-    </footer>
+        </div>
+    </div>
 
     <script>
-        function sendDrive(directionCode) {
-            const directions = { 
-                'F': 'forward', 
-                'B': 'backward', 
-                'L': 'left', 
-                'R': 'right', 
-                'S': 'stop' 
-            };
-            
-            console.log(`Sending Actuation Vector: ${directions[directionCode]}`);
-            
-            // NOTE: Replace YOUR_ESP32_IP with the same IP address for direct routing
-            fetch(`http://YOUR_ESP32_IP/${directions[directionCode]}`)
-                .then(response => console.log(`Hardware Response acknowledged.`))
-                .catch(err => console.error(`Signal delivery failure:`, err));
+        function sendVector(action) {
+            console.log("[Manual Trigger] Vector Dispatched: " + action);
+            fetch('/' + action)
+                .then(response => response.json())
+                .then(data => console.log("[Backend Response Received]:", data))
+                .catch(err => console.error("Signal Routing Failure:", err));
         }
 
-        // Chat Box Interaction Logic
-        function sendQuery() {
-            const input = document.getElementById('chatInput');
-            const history = document.getElementById('chatHistory');
-            const queryText = input.value.trim();
-            
-            if (queryText === '') return;
-
-            // Append User Question
-            const userMsg = document.createElement('div');
-            userMsg.className = 'msg user';
-            userMsg.innerText = queryText;
-            history.appendChild(userMsg);
-
-            input.value = '';
-            history.scrollTop = history.scrollHeight;
-
-            // Fake System response simulation
-            setTimeout(() => {
-                const systemMsg = document.createElement('div');
-                systemMsg.className = 'msg system';
-                systemMsg.innerText = "Query logged. Command bridge interface running standard routines.";
-                history.appendChild(systemMsg);
-                history.scrollTop = history.scrollHeight;
-            }, 800);
-        }
-
-        function handleKeyPress(event) {
-            if (event.key === 'Enter') {
-                sendQuery();
-            }
+        function reengageAuto() {
+            console.log("[Mode Selector] Initializing Automation Loop Handshake...");
+            fetch('/reset_auto')
+                .then(response => response.json())
+                .then(data => console.log("[Automation Response]:", data))
+                .catch(err => console.error("Automation Handshake Failure:", err));
         }
     </script>
 </body>
