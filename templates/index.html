@@ -14,7 +14,6 @@
             padding: 20px; 
         }
         
-        /* MD CREATIONS / MD EDITZ Logo Space Styling */
         .logo-container {
             margin: 10px auto 20px auto;
             font-weight: bold;
@@ -50,7 +49,6 @@
             max-width: 440px;
         }
 
-        /* Live Recording Camera Feed Container */
         .video-box { 
             width: 100%; 
             height: 320px; 
@@ -62,7 +60,6 @@
         }
         #camera-stream { width: 100%; height: 100%; object-fit: cover; }
         
-        /* Live Recording Status Indicator overlay */
         .rec-indicator {
             position: absolute;
             top: 15px;
@@ -77,7 +74,6 @@
         }
         @keyframes blink { 50% { opacity: 0.3; } }
 
-        /* Custom Interactive Chat Box Styling */
         .chat-box {
             width: 100%;
             height: 320px;
@@ -95,7 +91,7 @@
             font-size: 14px;
             line-height: 1.5;
         }
-        .msg { margin-bottom: 10px; padding: 8px 12px; border-radius: 6px; max-width: 85%; }
+        .msg { margin-bottom: 10px; padding: 8px 12px; border-radius: 6px; max-width: 85%; user-select: none; }
         .msg.user { background: #007bff; color: white; margin-left: auto; }
         .msg.titan { background: #222; color: #00ffcc; border: 1px solid #333; }
 
@@ -160,6 +156,7 @@
     </div>
 
     <script>
+        // ⚙️ Double check your ESP32 router IP address matches this configuration line
         const esp32IP = "http://192.168.0.125"; 
         const statusText = document.getElementById("status-display");
         const videoElement = document.getElementById("camera-stream");
@@ -169,7 +166,6 @@
         let isSpeaking = false;
         let systemBooted = false;
 
-        // Log messages inside your custom text terminal container
         function appendToChatLogs(sender, promptText) {
             const messageDiv = document.createElement("div");
             messageDiv.classList.add("msg", sender);
@@ -178,7 +174,7 @@
             chatScroller.scrollTop = chatScroller.scrollHeight; 
         }
 
-        // 🔊 1. BROWSER VOCAL ENGINE
+        // 🔊 1. BROWSER VOCAL SPEAKING ENGINE
         function speakVocalOutput(phrase) {
             if ('speechSynthesis' in window) {
                 isSpeaking = true;
@@ -199,7 +195,7 @@
             }
         }
 
-        // 📡 2. LOCAL WI-FI COMMAND PACKET TRANSMITTER
+        // 📡 2. LOCAL ROUTER WI-FI TRANSMITTER LINK
         function triggerCommand(routeEndpoint) {
             statusText.innerText = "Executing Path: " + routeEndpoint;
             
@@ -211,86 +207,139 @@
 
             fetch(`${esp32IP}/${routeEndpoint}`)
                 .then(response => response.json())
-                .then(data => { console.log("Hardware Sync:", data.status); })
+                .then(data => { console.log("ESP32 Response Sync:", data.status); })
                 .catch(error => { console.error("Chassis Link Timeout:", error); });
         }
 
-        // 🎙️ 3. AUTONOMOUS WAKE-WORD DETECTOR ("Hey Titan")
+        // 🧠 3. GLOBAL CLOUD AI SEARCH MATRIX (Answers History, Geography, Electrical Engineering questions)
+        function askTitanAI(questionText) {
+            statusText.innerText = "Titan is processing calculations...";
+            const cleanedQuestion = questionText.replace(/titan|hey titan|tighten/g, "").trim();
+
+            fetch(`https://api.duckduckgo.com/?q=${encodeURIComponent(cleanedQuestion)}&format=json&no_html=1`)
+                .then(res => res.json())
+                .then(data => {
+                    let answer = "";
+                    if (data.AbstractText) {
+                        answer = data.AbstractText;
+                    } else if (data.RelatedTopics && data.RelatedTopics.length > 0 && data.RelatedTopics[0].Text) {
+                        answer = data.RelatedTopics[0].Text;
+                    } else {
+                        answer = "I searched my database for that, but I couldn't find a clear answer, Boss.";
+                    }
+                    
+                    if(answer.length > 250) {
+                        answer = answer.substring(0, 247) + "...";
+                    }
+                    speakVocalOutput(answer);
+                })
+                .catch(err => {
+                    console.error("API Cloud Error:", err);
+                    speakVocalOutput("My cognitive cloud link is offline, Boss.");
+                });
+        }
+
+        // 🎙️ 4. AUTONOMOUS MULTI-LANGUAGE WAKE-WORD SYSTEM (English/Hindi/Marathi)
         function startTitanAutonomousListening() {
             if (isSpeaking) return; 
 
             const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
             if (!SpeechRecognition) {
-                statusText.innerText = "Voice infrastructure configuration missing on this device browser.";
+                statusText.innerText = "Voice infrastructure configuration missing.";
                 return;
             }
 
             recognition = new SpeechRecognition();
-            recognition.lang = 'en-US';
+            recognition.lang = 'en-US'; // Best standard language for parsing phonetic code words
             recognition.interimResults = false;
 
-            statusText.innerText = "🤖 Titan Core Active | Continuous Monitoring for 'Hey Titan'...";
+            statusText.innerText = "🤖 Titan Active | Monitoring for 'Hey Titan' (EN/HI/MR)...";
 
             recognition.onresult = function(event) {
                 const speechToText = event.results[0][0].transcript.toLowerCase();
                 appendToChatLogs("user", event.results[0][0].transcript);
                 
-                // Wake word gateway validation check
+                // Wake Word Validation Gateway
                 if (speechToText.includes("titan") || speechToText.includes("hey titan") || speechToText.includes("tighten")) {
                     
-                    if (speechToText.includes("how") || speechToText.includes("status") || speechToText.includes("find") || speechToText.includes("que")) {
-                        speakVocalOutput("Okay Boss, Finding.");
-                    } else if (speechToText.includes("forward") || speechToText.includes("go") || speechToText.includes("move")) {
+                    // Identity Intercepts (English / Hindi / Marathi)
+                    if (speechToText.includes("who am i") || speechToText.includes("mera naam kya hai") || speechToText.includes("माझे नाव काय आहे")) {
+                        speakVocalOutput("You are Malhar Deshmukh, the lead developer of MD Creations.");
+                    } else if (speechToText.includes("who are you") || speechToText.includes("tum kaun ho") || speechToText.includes("तू कोण आहेस")) {
+                        speakVocalOutput("I am Titan, your autonomous mechatronics AI assistant.");
+                    }
+                    
+                    // FORWARD (forward, go, aage, pudhe)
+                    else if (speechToText.includes("forward") || speechToText.includes("go") || speechToText.includes("aage") || speechToText.includes("pudhe")) {
                         triggerCommand("forward");
-                    } else if (speechToText.includes("backward") || speechToText.includes("reverse") || speechToText.includes("back")) {
+                    } 
+                    
+                    // BACKWARD (backward, back, piche, mage)
+                    else if (speechToText.includes("backward") || speechToText.includes("back") || speechToText.includes("piche") || speechToText.includes("mage")) {
                         triggerCommand("backward");
-                    } else if (speechToText.includes("left")) {
+                    } 
+                    
+                    // LEFT (left, baaye, davi, dave)
+                    else if (speechToText.includes("left") || speechToText.includes("baaye") || speechToText.includes("davi") || speechToText.includes("dave")) {
                         triggerCommand("left");
-                    } else if (speechToText.includes("right")) {
+                    } 
+                    
+                    // RIGHT (right, daaye, ujvi, ujva)
+                    else if (speechToText.includes("right") || speechToText.includes("daaye") || speechToText.includes("ujvi") || speechToText.includes("ujva")) {
                         triggerCommand("right");
-                    } else if (speechToText.includes("stop") || speechToText.includes("wait")) {
+                    } 
+                    
+                    // STOP (stop, wait, ruko, thamb, thamba)
+                    else if (speechToText.includes("stop") || speechToText.includes("wait") || speechToText.includes("ruko") || speechToText.includes("thamb") || speechToText.includes("thamba")) {
                         triggerCommand("stop");
-                    } else {
-                        speakVocalOutput("I am listening, Boss.");
+                    } 
+                    
+                    // Global Knowledge Cloud Routing
+                    else {
+                        askTitanAI(speechToText);
                     }
                 }
             };
 
+            // Keep the microphone loop active continuously 24/7
             recognition.onend = function() {
                 if (!isSpeaking) recognition.start();
             };
 
             recognition.onerror = function(event) {
                 if (event.error === 'no-speech') return; 
-                console.log("Mic operational diagnostic dump: ", event.error);
+                console.log("Mic operational loop diagnostic log: ", event.error);
             };
 
             try { recognition.start(); } catch(e) {}
         }
 
-        // ⚡ 4. MASTER HARDWARE SYNC UPON BOOT
+        // ⚡ 5. HARDWARE SYNC UPON BOOT INTERACTION
         function bootSinglePhoneSystem() {
             if (systemBooted) return;
             systemBooted = true;
-            statusText.innerText = "Synchronizing internal mechatronics matrix framework...";
-            chatScroller.innerHTML = ""; // Clear offline log info
+            statusText.innerText = "Synchronizing mechatronics matrix framework...";
+            chatScroller.innerHTML = ""; 
 
+            // Turn on the old phone's native camera stream directly inside your webpage viewport
             navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false })
                 .then(function(cameraStream) {
                     videoElement.srcObject = cameraStream;
                     videoElement.play();
                     
-                    statusText.innerText = "Core Linked Securely.";
-                    speakVocalOutput("Autonomous systems online. Hello M D sir. Titan is ready.");
+                    statusText.innerText = "Core Connected Successfully.";
+                    speakVocalOutput("Autonomous systems online. Hello Malhar sir. Titan is ready.");
                     startTitanAutonomousListening();
                 })
                 .catch(function(error) {
-                    statusText.innerText = "Camera authorization block encountered.";
-                    console.error("Lens runtime failure: ", error);
-                    startTitanAutonomousListening(); // Keep voice active regardless
+                    statusText.innerText = "Camera authorization error.";
+                    console.error("Camera loop drop trace: ", error);
+                    speakVocalOutput("Autonomous voice online. Hello Malhar sir.");
+                    startTitanAutonomousListening(); 
                 });
         }
 
+        // Instantly boots the entire control environment on the very first screen click
         window.onclick = function() {
             bootSinglePhoneSystem();
         };
