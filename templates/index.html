@@ -13,31 +13,96 @@
             margin: 0;
             padding: 20px; 
         }
-        h1 { color: #00ffcc; letter-spacing: 2px; font-size: 26px; margin-bottom: 5px; }
+        
+        /* MD CREATIONS / MD EDITZ Logo Space Styling */
+        .logo-container {
+            margin: 10px auto 20px auto;
+            font-weight: bold;
+            font-size: 28px;
+            letter-spacing: 4px;
+            color: #00ffcc;
+            text-shadow: 0 0 12px rgba(0, 255, 204, 0.6);
+        }
+        .logo-sub {
+            font-size: 12px;
+            color: #888;
+            letter-spacing: 2px;
+            display: block;
+            margin-top: -5px;
+        }
+
         .panel { 
-            max-width: 600px; 
+            max-width: 900px; 
             margin: 0 auto; 
             background: #13131a; 
-            padding: 20px; 
-            border-radius: 12px; 
+            padding: 25px; 
+            border-radius: 16px; 
             border: 1px solid #222;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
         }
+
+        .left-column, .right-column {
+            flex: 1;
+            min-width: 300px;
+            max-width: 440px;
+        }
+
+        /* Live Recording Camera Feed Container */
         .video-box { 
             width: 100%; 
-            max-width: 480px; 
-            height: 360px; 
+            height: 320px; 
             background: #000; 
-            margin: 15px auto; 
             border: 3px solid #00ffcc; 
             border-radius: 8px; 
             overflow: hidden; 
+            position: relative;
         }
-        /* Style for the native camera video element */
         #camera-stream { width: 100%; height: 100%; object-fit: cover; }
+        
+        /* Live Recording Status Indicator overlay */
+        .rec-indicator {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: rgba(220, 53, 69, 0.8);
+            color: white;
+            padding: 5px 10px;
+            font-size: 12px;
+            border-radius: 4px;
+            font-weight: bold;
+            animation: blink 1.5s infinite;
+        }
+        @keyframes blink { 50% { opacity: 0.3; } }
+
+        /* Custom Interactive Chat Box Styling */
+        .chat-box {
+            width: 100%;
+            height: 320px;
+            background: #1a1a26;
+            border: 1px solid #333;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            text-align: left;
+        }
+        .chat-logs {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        .msg { margin-bottom: 10px; padding: 8px 12px; border-radius: 6px; max-width: 85%; }
+        .msg.user { background: #007bff; color: white; margin-left: auto; }
+        .msg.titan { background: #222; color: #00ffcc; border: 1px solid #333; }
+
         .btn { 
-            padding: 14px 28px; 
-            font-size: 16px; 
-            margin: 6px; 
+            padding: 14px 24px; 
+            font-size: 15px; 
+            margin: 5px; 
             cursor: pointer; 
             border: none; 
             border-radius: 6px; 
@@ -45,47 +110,79 @@
             transition: 0.2s;
         }
         .drive-btn { background-color: #007bff; color: white; }
-        .stop-btn { background-color: #dc3545; color: white; width: 100px; }
-        #status-display { margin: 15px 0; color: #00ffcc; font-size: 16px; font-weight: bold; }
-        .boot-prompt { color: #ffcc00; font-size: 14px; margin-bottom: 10px; }
+        .stop-btn { background-color: #dc3545; color: white; width: 120px; }
+        
+        #status-display { 
+            width: 100%;
+            margin: 10px 0; 
+            color: #ffcc00; 
+            font-size: 15px; 
+            font-weight: bold; 
+        }
     </style>
 </head>
 <body>
 
+    <div class="logo-container">
+        MD CREATIONS
+        <span class="logo-sub">TITANIA AI ROBOTICS LAB</span>
+    </div>
+
+    <div id="status-display">TAP ANYWHERE ON THE DASHBOARD TO BOOT TITAN INTERFACE</div>
+
     <div class="panel">
-        <h1>TITANIA AI ROBOT CORE</h1>
-        <div id="status-display" class="boot-prompt">TAP ANYWHERE ON SCREEN TO BOOT TITAN INTERFACE</div>
         
-        <div class="video-box">
-            <video id="camera-stream" autoplay playsinline muted></video>
+        <div class="left-column">
+            <h3 style="color: #00ffcc; margin-top:0;">🎥 LIVE STREAM DATA WINDOW</h3>
+            <div class="video-box">
+                <div class="rec-indicator">⚫ LIVE STREAMING</div>
+                <video id="camera-stream" autoplay playsinline muted></video>
+            </div>
+            
+            <div style="margin-top: 20px;">
+                <button class="btn drive-btn" onclick="triggerCommand('forward')">FORWARD</button><br>
+                <button class="btn drive-btn" onclick="triggerCommand('left')">LEFT</button>
+                <button class="btn stop-btn" onclick="triggerCommand('stop')">STOP</button>
+                <button class="btn drive-btn" onclick="triggerCommand('right')">RIGHT</button><br>
+                <button class="btn drive-btn" onclick="triggerCommand('backward')">BACKWARD</button>
+            </div>
         </div>
 
-        <hr style="border-color: #2a2a3a; margin: 20px 0;">
-
-        <div>
-            <button class="btn drive-btn" onclick="triggerCommand('forward')">FORWARD</button><br>
-            <button class="btn drive-btn" onclick="triggerCommand('left')">LEFT</button>
-            <button class="btn stop-btn" onclick="triggerCommand('stop')">STOP</button>
-            <button class="btn drive-btn" onclick="triggerCommand('right')">RIGHT</button><br>
-            <button class="btn drive-btn" onclick="triggerCommand('backward')">BACKWARD</button>
+        <div class="right-column">
+            <h3 style="color: #00ffcc; margin-top:0;">💬 TITAN COGNITIVE CHAT INTERFACE</h3>
+            <div class="chat-box">
+                <div class="chat-logs" id="chat-scroller">
+                    <div class="msg titan">System offline. Tap dashboard screen to clear security protocols.</div>
+                </div>
+            </div>
         </div>
+
     </div>
 
     <script>
-        // ⚙️ Change this IP to match your current ESP32 address when it connects to ATUL
         const esp32IP = "http://192.168.0.125"; 
         const statusText = document.getElementById("status-display");
         const videoElement = document.getElementById("camera-stream");
+        const chatScroller = document.getElementById("chat-scroller");
         
         let recognition;
         let isSpeaking = false;
         let systemBooted = false;
 
-        // 🔊 1. BROWSER SPEAKER AUDIO OUTPUT ENGINE
+        // Log messages inside your custom text terminal container
+        function appendToChatLogs(sender, promptText) {
+            const messageDiv = document.createElement("div");
+            messageDiv.classList.add("msg", sender);
+            messageDiv.innerText = promptText;
+            chatScroller.appendChild(messageDiv);
+            chatScroller.scrollTop = chatScroller.scrollHeight; 
+        }
+
+        // 🔊 1. BROWSER VOCAL ENGINE
         function speakVocalOutput(phrase) {
             if ('speechSynthesis' in window) {
                 isSpeaking = true;
-                if(recognition) recognition.stop(); // Pause mic loop while talking to avoid self-echo
+                if(recognition) recognition.stop(); 
 
                 const speechPacket = new SpeechSynthesisUtterance(phrase);
                 speechPacket.rate = 1.0;  
@@ -94,14 +191,15 @@
 
                 speechPacket.onend = function() {
                     isSpeaking = false;
-                    startTitanAutonomousListening(); // Resume listening when done talking
+                    startTitanAutonomousListening(); 
                 };
 
                 window.speechSynthesis.speak(speechPacket);
+                appendToChatLogs("titan", phrase);
             }
         }
 
-        // 📡 2. LOCAL NETWORK WI-FI COMMAND TRANSMITTER
+        // 📡 2. LOCAL WI-FI COMMAND PACKET TRANSMITTER
         function triggerCommand(routeEndpoint) {
             statusText.innerText = "Executing Path: " + routeEndpoint;
             
@@ -111,20 +209,19 @@
                 speakVocalOutput("Stopping.");
             }
 
-            // Hits your ESP32 local server endpoints directly
             fetch(`${esp32IP}/${routeEndpoint}`)
                 .then(response => response.json())
-                .then(data => { console.log("ESP32 Feedback:", data.status); })
-                .catch(error => { console.error("Chassis communications link timed out:", error); });
+                .then(data => { console.log("Hardware Sync:", data.status); })
+                .catch(error => { console.error("Chassis Link Timeout:", error); });
         }
 
-        // 🎙️ 3. AUTONOMOUS WAKE-WORD LISTENING ENGINE ("Hey Titan")
+        // 🎙️ 3. AUTONOMOUS WAKE-WORD DETECTOR ("Hey Titan")
         function startTitanAutonomousListening() {
             if (isSpeaking) return; 
 
             const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
             if (!SpeechRecognition) {
-                statusText.innerText = "Voice engine not supported on this browser context.";
+                statusText.innerText = "Voice infrastructure configuration missing on this device browser.";
                 return;
             }
 
@@ -132,13 +229,13 @@
             recognition.lang = 'en-US';
             recognition.interimResults = false;
 
-            statusText.innerText = "🤖 Titan Active | Listening for 'Hey Titan'...";
+            statusText.innerText = "🤖 Titan Core Active | Continuous Monitoring for 'Hey Titan'...";
 
             recognition.onresult = function(event) {
                 const speechToText = event.results[0][0].transcript.toLowerCase();
-                statusText.innerText = `Heard phrase: "${speechToText}"`;
+                appendToChatLogs("user", event.results[0][0].transcript);
                 
-                // Wake word gateway check
+                // Wake word gateway validation check
                 if (speechToText.includes("titan") || speechToText.includes("hey titan") || speechToText.includes("tighten")) {
                     
                     if (speechToText.includes("how") || speechToText.includes("status") || speechToText.includes("find") || speechToText.includes("que")) {
@@ -159,46 +256,41 @@
                 }
             };
 
-            // Keep the microphone loop running infinitely
             recognition.onend = function() {
                 if (!isSpeaking) recognition.start();
             };
 
             recognition.onerror = function(event) {
-                if (event.error === 'no-speech') return; // Ignore room background silence drops
-                console.log("Mic loop trace: ", event.error);
+                if (event.error === 'no-speech') return; 
+                console.log("Mic operational diagnostic dump: ", event.error);
             };
 
             try { recognition.start(); } catch(e) {}
         }
 
-        // ⚡ 4. UNIFIED SINGLE-PHONE SYSTEM ACTIVATOR
+        // ⚡ 4. MASTER HARDWARE SYNC UPON BOOT
         function bootSinglePhoneSystem() {
             if (systemBooted) return;
             systemBooted = true;
-            statusText.innerText = "Booting hardware arrays...";
+            statusText.innerText = "Synchronizing internal mechatronics matrix framework...";
+            chatScroller.innerHTML = ""; // Clear offline log info
 
-            // Access the phone's back camera natively inside the webpage layout
             navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false })
                 .then(function(cameraStream) {
                     videoElement.srcObject = cameraStream;
                     videoElement.play();
                     
-                    statusText.innerText = "Camera synchronized. Initializing vocal matrix...";
-                    
-                    // Fire welcome audio and start background wake-word listening loop
+                    statusText.innerText = "Core Linked Securely.";
                     speakVocalOutput("Autonomous systems online. Hello M D sir. Titan is ready.");
                     startTitanAutonomousListening();
                 })
                 .catch(function(error) {
-                    statusText.innerText = "Camera access denied or blocked.";
-                    console.error("Lens deployment error: ", error);
-                    // Fallback to active microphone loops even if the video system fails
-                    startTitanAutonomousListening();
+                    statusText.innerText = "Camera authorization block encountered.";
+                    console.error("Lens runtime failure: ", error);
+                    startTitanAutonomousListening(); // Keep voice active regardless
                 });
         }
 
-        // Boots the entire ecosystem on your very first screen tap
         window.onclick = function() {
             bootSinglePhoneSystem();
         };
