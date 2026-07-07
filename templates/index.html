@@ -3,168 +3,205 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TITAN AI ROBOT CONTROL CENTER</title>
-    
-    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
-    <link rel="shortcut icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
-    <link rel="apple-touch-icon" href="{{ url_for('static', filename='favicon.png') }}">
-
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Titania AI Robot Master Control</title>
     <style>
-        body { background-color: #09090b; color: #fafafa; font-family: system-ui, sans-serif; }
-        /* Custom scrollbar for the system chat/command logs box */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: #09090b; }
-        ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            text-align: center; 
+            background: #09090e; 
+            color: #ffffff; 
+            margin: 0;
+            padding: 20px; 
+        }
+        h1 { color: #00ffcc; letter-spacing: 2px; font-size: 26px; margin-bottom: 5px; }
+        .panel { 
+            max-width: 600px; 
+            margin: 0 auto; 
+            background: #13131a; 
+            padding: 20px; 
+            border-radius: 12px; 
+            border: 1px solid #222;
+        }
+        .video-box { 
+            width: 100%; 
+            max-width: 480px; 
+            height: 360px; 
+            background: #000; 
+            margin: 15px auto; 
+            border: 3px solid #00ffcc; 
+            border-radius: 8px; 
+            overflow: hidden; 
+        }
+        /* Style for the native camera video element */
+        #camera-stream { width: 100%; height: 100%; object-fit: cover; }
+        .btn { 
+            padding: 14px 28px; 
+            font-size: 16px; 
+            margin: 6px; 
+            cursor: pointer; 
+            border: none; 
+            border-radius: 6px; 
+            font-weight: bold; 
+            transition: 0.2s;
+        }
+        .drive-btn { background-color: #007bff; color: white; }
+        .stop-btn { background-color: #dc3545; color: white; width: 100px; }
+        #status-display { margin: 15px 0; color: #00ffcc; font-size: 16px; font-weight: bold; }
+        .boot-prompt { color: #ffcc00; font-size: 14px; margin-bottom: 10px; }
     </style>
 </head>
-<body class="p-6">
-    <div class="max-w-6xl mx-auto space-y-6">
+<body>
+
+    <div class="panel">
+        <h1>TITANIA AI ROBOT CORE</h1>
+        <div id="status-display" class="boot-prompt">TAP ANYWHERE ON SCREEN TO BOOT TITAN INTERFACE</div>
         
-        <header class="flex justify-between items-center border-b border-zinc-800 pb-4">
-            <div class="flex items-center space-x-4">
-                <div class="flex items-center space-x-3 bg-zinc-950 px-4 py-2 rounded-xl border border-zinc-900 shadow-md">
-                    <img src="{{ url_for('static', filename='favicon.png') }}" class="w-8 h-8 object-contain" alt="Logo" onerror="this.style.display='none';">
-                    <div class="bg-emerald-500 text-black font-black px-2.5 py-0.5 rounded text-sm tracking-tighter">MD</div>
-                </div>
-                <div>
-                    <h1 class="text-2xl font-black tracking-wider text-emerald-400 leading-tight">TITAN AI ROBOT</h1>
-                    <p class="text-xs text-zinc-500 tracking-wider uppercase font-bold">MD Creations Workspace</p>
-                </div>
-            </div>
-            <span class="bg-emerald-950/30 border border-emerald-800 text-emerald-400 px-4 py-1.5 rounded-full text-xs font-semibold tracking-wide shadow-lg shadow-emerald-950/20">
-                🌐 Telemetry Cloud Linked
-            </span>
-        </header>
-
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            
-            <div class="space-y-6">
-                <div class="bg-zinc-950 p-5 rounded-2xl border border-zinc-900 shadow-xl space-y-4">
-                    <div class="flex items-center space-x-2">
-                        <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
-                        <h2 class="text-sm font-bold tracking-widest uppercase text-zinc-400">Real-Time Vision Stream</h2>
-                    </div>
-                    <div class="relative overflow-hidden rounded-xl border border-zinc-850 aspect-video bg-black">
-                        <img src="http://192.168.0.121:8080/video" class="w-full h-full object-cover" alt="Titan Visual Pipeline Streaming">
-                    </div>
-                </div>
-
-                <div class="bg-zinc-950 rounded-2xl border border-zinc-900 shadow-xl overflow-hidden flex flex-col justify-between h-[300px]">
-                    <div class="bg-zinc-900/50 border-b border-zinc-900 px-5 py-3 flex items-center justify-between">
-                        <div class="flex items-center space-x-2">
-                            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                            <h3 class="text-xs font-bold uppercase tracking-wider text-zinc-300">Hey Titan Console Network</h3>
-                        </div>
-                        <span class="text-[10px] font-mono text-zinc-500">Node Link: SECURE</span>
-                    </div>
-                    
-                    <div id="chat-logs-box" class="p-4 flex-1 overflow-y-auto font-mono text-xs space-y-2 bg-black/40">
-                        <p class="text-zinc-500">[System Boot Log] Security certificates verified.</p>
-                        <p class="text-emerald-400 font-bold">> Hey Titan core initialized. Operational system standing by...</p>
-                    </div>
-
-                    <div class="p-3 border-t border-zinc-900 bg-zinc-950/80 flex gap-2">
-                        <input type="text" id="chat-user-input" placeholder="Ask Titan a vector question..." 
-                               class="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-emerald-500 text-zinc-200 transition duration-150"
-                               onkeydown="if(event.key === 'Enter') processChat()">
-                        <button onclick="processChat()" class="bg-emerald-500 hover:bg-emerald-400 text-black font-bold px-4 py-2.5 rounded-xl text-xs tracking-wide transition duration-150 active:scale-95">
-                            Send
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="bg-zinc-950 p-6 rounded-2xl border border-zinc-900 shadow-xl flex flex-col justify-between h-full min-h-[500px]">
-                <div>
-                    <h2 class="text-sm font-bold tracking-widest uppercase text-zinc-400 mb-12">Navigation Control System</h2>
-                    
-                    <div class="grid grid-cols-3 gap-4 max-w-[280px] mx-auto my-auto pt-4">
-                        <div></div>
-                        <button onclick="sendVector('forward')" class="bg-zinc-900 border border-zinc-800 p-6 rounded-xl text-xl font-bold hover:bg-zinc-800 hover:border-zinc-700 active:scale-95 transition-all duration-150">▲</button>
-                        <div></div>
-                        
-                        <button onclick="sendVector('left')" class="bg-zinc-900 border border-zinc-800 p-6 rounded-xl text-xl font-bold hover:bg-zinc-800 hover:border-zinc-700 active:scale-95 transition-all duration-150">◀</button>
-                        <button onclick="sendVector('stop')" class="bg-red-950/40 border border-red-900 text-red-400 p-6 rounded-xl text-xl font-bold hover:bg-red-900/40 active:scale-95 transition-all duration-150">■</button>
-                        <button onclick="sendVector('right')" class="bg-zinc-900 border border-zinc-800 p-6 rounded-xl text-xl font-bold hover:bg-zinc-800 hover:border-zinc-700 active:scale-95 transition-all duration-150">▶</button>
-                        
-                        <div></div>
-                        <button onclick="sendVector('backward')" class="bg-zinc-900 border border-zinc-800 p-6 rounded-xl text-xl font-bold hover:bg-zinc-800 hover:border-zinc-700 active:scale-95 transition-all duration-150">▼</button>
-                        <div></div>
-                    </div>
-                </div>
-
-                <div class="pt-6 border-t border-zinc-900 mt-12">
-                    <button onclick="reengageAuto()" class="w-full bg-emerald-950/40 border border-emerald-900 text-emerald-400 py-4 rounded-xl font-bold text-sm tracking-widest uppercase hover:bg-emerald-900/40 active:scale-[0.99] transition-all duration-150 shadow-lg shadow-emerald-950/10">
-                        Re-Engage Autonomous Mode
-                    </button>
-                </div>
-            </div>
+        <div class="video-box">
+            <video id="camera-stream" autoplay playsinline muted></video>
         </div>
 
+        <hr style="border-color: #2a2a3a; margin: 20px 0;">
+
+        <div>
+            <button class="btn drive-btn" onclick="triggerCommand('forward')">FORWARD</button><br>
+            <button class="btn drive-btn" onclick="triggerCommand('left')">LEFT</button>
+            <button class="btn stop-btn" onclick="triggerCommand('stop')">STOP</button>
+            <button class="btn drive-btn" onclick="triggerCommand('right')">RIGHT</button><br>
+            <button class="btn drive-btn" onclick="triggerCommand('backward')">BACKWARD</button>
+        </div>
     </div>
 
     <script>
-        function logToConsole(message, statusType = 'info') {
-            const container = document.getElementById('chat-logs-box');
-            const logLine = document.createElement('p');
-            
-            if (statusType === 'manual') {
-                logLine.className = "text-amber-400";
-                logLine.innerText = `> ${message}`;
-            } else if (statusType === 'auto') {
-                logLine.className = "text-emerald-400 font-semibold";
-                logLine.innerText = `> ${message}`;
-            } else {
-                logLine.className = "text-zinc-400";
-                logLine.innerText = `[User]: ${message}`;
+        // ⚙️ Change this IP to match your current ESP32 address when it connects to ATUL
+        const esp32IP = "http://192.168.0.125"; 
+        const statusText = document.getElementById("status-display");
+        const videoElement = document.getElementById("camera-stream");
+        
+        let recognition;
+        let isSpeaking = false;
+        let systemBooted = false;
+
+        // 🔊 1. BROWSER SPEAKER AUDIO OUTPUT ENGINE
+        function speakVocalOutput(phrase) {
+            if ('speechSynthesis' in window) {
+                isSpeaking = true;
+                if(recognition) recognition.stop(); // Pause mic loop while talking to avoid self-echo
+
+                const speechPacket = new SpeechSynthesisUtterance(phrase);
+                speechPacket.rate = 1.0;  
+                speechPacket.pitch = 0.9; 
+                speechPacket.lang = 'en-US';
+
+                speechPacket.onend = function() {
+                    isSpeaking = false;
+                    startTitanAutonomousListening(); // Resume listening when done talking
+                };
+
+                window.speechSynthesis.speak(speechPacket);
             }
-            
-            container.appendChild(logLine);
-            container.scrollTop = container.scrollHeight; 
         }
 
-        function sendVector(action) {
-            logToConsole(`Manual Override Active: Driving ${action.toUpperCase()}...`, 'manual');
-            fetch('/' + action)
+        // 📡 2. LOCAL NETWORK WI-FI COMMAND TRANSMITTER
+        function triggerCommand(routeEndpoint) {
+            statusText.innerText = "Executing Path: " + routeEndpoint;
+            
+            if(["forward", "backward", "left", "right"].includes(routeEndpoint)) {
+                speakVocalOutput("Moving Boss!");
+            } else if (routeEndpoint === "stop") {
+                speakVocalOutput("Stopping.");
+            }
+
+            // Hits your ESP32 local server endpoints directly
+            fetch(`${esp32IP}/${routeEndpoint}`)
                 .then(response => response.json())
-                .then(data => console.log("[Backend Vector Synced]:", data))
-                .catch(err => {
-                    console.error("Communication Matrix Interrupted:", err);
-                    logToConsole("Network Error: Bridge Connection Timed Out.", 'manual');
+                .then(data => { console.log("ESP32 Feedback:", data.status); })
+                .catch(error => { console.error("Chassis communications link timed out:", error); });
+        }
+
+        // 🎙️ 3. AUTONOMOUS WAKE-WORD LISTENING ENGINE ("Hey Titan")
+        function startTitanAutonomousListening() {
+            if (isSpeaking) return; 
+
+            const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
+            if (!SpeechRecognition) {
+                statusText.innerText = "Voice engine not supported on this browser context.";
+                return;
+            }
+
+            recognition = new SpeechRecognition();
+            recognition.lang = 'en-US';
+            recognition.interimResults = false;
+
+            statusText.innerText = "🤖 Titan Active | Listening for 'Hey Titan'...";
+
+            recognition.onresult = function(event) {
+                const speechToText = event.results[0][0].transcript.toLowerCase();
+                statusText.innerText = `Heard phrase: "${speechToText}"`;
+                
+                // Wake word gateway check
+                if (speechToText.includes("titan") || speechToText.includes("hey titan") || speechToText.includes("tighten")) {
+                    
+                    if (speechToText.includes("how") || speechToText.includes("status") || speechToText.includes("find") || speechToText.includes("que")) {
+                        speakVocalOutput("Okay Boss, Finding.");
+                    } else if (speechToText.includes("forward") || speechToText.includes("go") || speechToText.includes("move")) {
+                        triggerCommand("forward");
+                    } else if (speechToText.includes("backward") || speechToText.includes("reverse") || speechToText.includes("back")) {
+                        triggerCommand("backward");
+                    } else if (speechToText.includes("left")) {
+                        triggerCommand("left");
+                    } else if (speechToText.includes("right")) {
+                        triggerCommand("right");
+                    } else if (speechToText.includes("stop") || speechToText.includes("wait")) {
+                        triggerCommand("stop");
+                    } else {
+                        speakVocalOutput("I am listening, Boss.");
+                    }
+                }
+            };
+
+            // Keep the microphone loop running infinitely
+            recognition.onend = function() {
+                if (!isSpeaking) recognition.start();
+            };
+
+            recognition.onerror = function(event) {
+                if (event.error === 'no-speech') return; // Ignore room background silence drops
+                console.log("Mic loop trace: ", event.error);
+            };
+
+            try { recognition.start(); } catch(e) {}
+        }
+
+        // ⚡ 4. UNIFIED SINGLE-PHONE SYSTEM ACTIVATOR
+        function bootSinglePhoneSystem() {
+            if (systemBooted) return;
+            systemBooted = true;
+            statusText.innerText = "Booting hardware arrays...";
+
+            // Access the phone's back camera natively inside the webpage layout
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false })
+                .then(function(cameraStream) {
+                    videoElement.srcObject = cameraStream;
+                    videoElement.play();
+                    
+                    statusText.innerText = "Camera synchronized. Initializing vocal matrix...";
+                    
+                    // Fire welcome audio and start background wake-word listening loop
+                    speakVocalOutput("Autonomous systems online. Hello M D sir. Titan is ready.");
+                    startTitanAutonomousListening();
+                })
+                .catch(function(error) {
+                    statusText.innerText = "Camera access denied or blocked.";
+                    console.error("Lens deployment error: ", error);
+                    // Fallback to active microphone loops even if the video system fails
+                    startTitanAutonomousListening();
                 });
         }
 
-        function reengageAuto() {
-            logToConsole("Primary Autonomous Mode Activated. Resuming Tracking Core.", 'auto');
-            fetch('/reset_auto')
-                .then(response => response.json())
-                .then(data => console.log("[Automation Sequence Online]:", data))
-                .catch(err => console.error("Handshake Matrix Timeout:", err));
-        }
-
-        function processChat() {
-            const inputField = document.getElementById('chat-user-input');
-            const message = inputField.value.trim();
-            if(!message) return;
-
-            logToConsole(message, 'user');
-            inputField.value = ''; 
-            
-            setTimeout(() => {
-                const cleanQuery = message.toLowerCase();
-                if(cleanQuery.includes('status') || cleanQuery.includes('check')) {
-                    logToConsole("All subsystems operational. Motor Driver tracking 12V voltage matrix clean.", 'auto');
-                } else if(cleanQuery.includes('forward') || cleanQuery.includes('go')) {
-                    sendVector('forward');
-                } else if(cleanQuery.includes('stop') || cleanQuery.includes('halt')) {
-                    sendVector('stop');
-                } else {
-                    logToConsole("Command registered. Passing token pipeline downstream to the core script.", 'auto');
-                }
-            }, 600);
-        }
+        // Boots the entire ecosystem on your very first screen tap
+        window.onclick = function() {
+            bootSinglePhoneSystem();
+        };
     </script>
 </body>
 </html>
