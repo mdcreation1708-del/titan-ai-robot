@@ -15,30 +15,21 @@
         }
         
         .logo-container {
-            margin: 10px auto 20px auto;
+            margin: 15px auto 25px auto;
             font-weight: bold;
-            font-size: 28px;
+            font-size: 32px;
             letter-spacing: 4px;
             color: #00ffcc;
             text-shadow: 0 0 12px rgba(0, 255, 204, 0.6);
             display: flex;
             align-items: center;
             justify-content: center;
-            flex-direction: column;
-            gap: 5px;
+            gap: 12px;
         }
         .logo-img {
-            height: 60px;
+            height: 45px;
             width: auto;
             filter: drop-shadow(0 0 8px rgba(0, 255, 204, 0.6));
-            margin-bottom: 5px;
-        }
-        .logo-sub {
-            font-size: 12px;
-            color: #888;
-            letter-spacing: 2px;
-            display: block;
-            margin-top: 0px;
         }
 
         .panel { 
@@ -148,7 +139,7 @@
         
         #status-display { 
             width: 100%;
-            margin: 10px 0; 
+            margin: 10px 0 20px 0; 
             color: #ffcc00; 
             font-size: 15px; 
             font-weight: bold; 
@@ -157,18 +148,15 @@
 </head>
 <body>
 
-    <!-- Integrated branding area with static image link -->
     <div class="logo-container">
-        <img src="static/favicon.png" class="logo-img" alt="MD Creations Logo" onerror="this.style.display='none';">
-        <div>MD CREATIONS</div>
-        <span class="logo-sub">TITANIA AI ROBOTICS LAB</span>
+        <img src="static/favicon.png" class="logo-img" alt="Logo" onerror="this.style.display='none';">
+        <span>MD</span>
     </div>
 
-    <div id="status-display">TAP ANYWHERE ON THE DASHBOARD TO BOOT TITAN INTERFACE</div>
+    <div id="status-display">SYSTEM STANDING BY...</div>
 
     <div class="panel">
         
-        <!-- Left Column: Video Tracking Viewport & Navigation Array -->
         <div class="left-column">
             <h3 style="color: #00ffcc; margin-top:0;">🎥 LIVE STREAM DATA WINDOW</h3>
             <div class="video-box">
@@ -185,12 +173,11 @@
             </div>
         </div>
 
-        <!-- Right Column: Dual Voice & Typing Cognitive Engine Console -->
         <div class="right-column">
-            <h3 style="color: #00ffcc; margin-top:0;">💬 TITAN COGNITIVE CHAT INTERFACE</h3>
+            <h3 style="color: #00ffcc; margin-top:0;">💬 TITAN COMMAND BOX</h3>
             <div class="chat-box">
                 <div class="chat-logs" id="chat-scroller">
-                    <div class="msg titan">System offline. Tap dashboard screen to clear security protocols.</div>
+                    <div class="msg titan">Click the layout background anywhere once to launch Titan.</div>
                 </div>
                 
                 <div class="input-bar">
@@ -213,6 +200,9 @@
         let isSpeaking = false;
         let systemBooted = false;
 
+        // 🌟 Exact Uppercase Enterprise Identity Status String to print post-booting
+        const brandString = "MD ROBOTICS & INVENTIONS | 🤖 TITAN VOICE CORE ACTIVE...";
+
         function appendToChatLogs(sender, promptText) {
             const messageDiv = document.createElement("div");
             messageDiv.classList.add("msg", sender);
@@ -221,7 +211,7 @@
             chatScroller.scrollTop = chatScroller.scrollHeight; 
         }
 
-        // 🔊 1. TEXT-TO-SPEECH AUDIO MODULE
+        // 🔊 1. TEXT-TO-SPEECH AUDIO MOTOR OUTPUT
         function speakVocalOutput(phrase) {
             if ('speechSynthesis' in window) {
                 isSpeaking = true;
@@ -244,8 +234,6 @@
 
         // 📡 2. LOCAL ROUTER NETWORK LINK TRANSMITTER
         function triggerCommand(routeEndpoint) {
-            statusText.innerText = "Executing Path: " + routeEndpoint;
-            
             if(["forward", "backward", "left", "right"].includes(routeEndpoint)) {
                 speakVocalOutput("Moving Boss!");
             } else if (routeEndpoint === "stop") {
@@ -258,9 +246,8 @@
                 .catch(error => { console.error("Chassis Link Timeout:", error); });
         }
 
-        // 🧠 3. GLOBAL OPEN-SOURCE COGNITIVE LOOKUP GATEWAY
+        // 🧠 3. GLOBAL COGNITIVE SEARCH CORE
         function askTitanAI(questionText) {
-            statusText.innerText = "Titan is processing calculations...";
             const cleanedQuestion = questionText.replace(/titan|hey titan|tighten|टायटन/g, "").trim();
 
             fetch(`https://api.duckduckgo.com/?q=${encodeURIComponent(cleanedQuestion)}&format=json&no_html=1`)
@@ -283,7 +270,7 @@
         function processTextInput(rawText) {
             const query = rawText.toLowerCase().trim();
             
-            // Core Identity Handling - Modified to say M D Sir
+            // Core Identity Handling
             if (query.includes("who am i") || query.includes("mera naam kya hai") || query.includes("माझे नाव काय आहे") || query.includes("my name")) {
                 speakVocalOutput("You are M D sir, the lead developer of MD Creations.");
             } else if (query.includes("who are you") || query.includes("your name") || query.includes("tum kaun ho") || query.includes("तू कोण आहेस") || query.includes("तुम कौन हो")) {
@@ -319,7 +306,6 @@
             processTextInput(textToSend);
         }
 
-        // Handle enter key press inside text area
         function handleKeyPress(event) {
             if (event.key === "Enter") {
                 submitManualText();
@@ -330,9 +316,8 @@
         function startTitanAutonomousListening() {
             if (isSpeaking) return; 
 
-            const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
+            const SpeechRecognition = window.webkitSpeechRecognition || window.Object || window.SpeechRecognition;
             if (!SpeechRecognition) {
-                statusText.innerText = "Voice infrastructure configuration missing.";
                 return;
             }
 
@@ -340,13 +325,11 @@
             recognition.lang = 'hi-IN'; 
             recognition.interimResults = false;
 
-            statusText.innerText = "🤖 Titan Active | Monitoring for 'Hey Titan' (EN/HI/MR)...";
-
             recognition.onresult = function(event) {
                 const speechToText = event.results[0][0].transcript.toLowerCase().trim();
                 appendToChatLogs("user", event.results[0][0].transcript);
                 
-                if (speechToText.includes("titan") || speechToText.includes("hey titan") || speechToText.includes("tighten") || speechToText.includes("टायटन")) {
+                if (speechToText.includes("titan") || speechToText.includes("hey titan") || speechToText.includes("tighten") || speechToText.includes("titen") || speechToText.includes("टायटन")) {
                     processTextInput(speechToText);
                 }
             };
@@ -367,7 +350,9 @@
         function bootSinglePhoneSystem() {
             if (systemBooted) return;
             systemBooted = true;
-            statusText.innerText = "Synchronizing mechatronics matrix framework...";
+            
+            // Instantly transition status to your capitalised target brand title line post standing-by
+            statusText.innerText = brandString;
             chatScroller.innerHTML = ""; 
 
             navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false })
@@ -375,13 +360,11 @@
                     videoElement.srcObject = cameraStream;
                     videoElement.play();
                     
-                    statusText.innerText = "Core Connected Successfully.";
-                    // 🌟 Welcome text changed here to Hello M D sir
                     speakVocalOutput("Autonomous systems online. Hello M D sir. Titan is ready.");
                     startTitanAutonomousListening();
                 })
                 .catch(function(error) {
-                    statusText.innerText = "Camera loop error. Booting vocal system only.";
+                    console.error("Camera layout bypass log:", error);
                     speakVocalOutput("Autonomous voice online. Hello M D sir.");
                     startTitanAutonomousListening(); 
                 });
