@@ -148,18 +148,15 @@
 </head>
 <body>
 
-    <!-- Integrated Branding Area: Logo Image directly in front of MD text -->
     <div class="logo-container">
         <img src="static/favicon.png" class="logo-img" alt="Logo" onerror="this.style.display='none';">
         <span>MD</span>
     </div>
 
-    <!-- Main System Status Bar Block -->
     <div id="status-display">SYSTEM STANDING BY...</div>
 
     <div class="panel">
         
-        <!-- Left Column: Video Tracking Viewport & Navigation Array -->
         <div class="left-column">
             <h3 style="color: #00ffcc; margin-top:0;">🎥 LIVE STREAM DATA WINDOW</h3>
             <div class="video-box">
@@ -176,7 +173,6 @@
             </div>
         </div>
 
-        <!-- Right Column: Simplified Command Box (Vocal and Manual) -->
         <div class="right-column">
             <h3 style="color: #00ffcc; margin-top:0;">💬 TITAN COMMAND BOX</h3>
             <div class="chat-box">
@@ -230,7 +226,7 @@
                     startTitanAutonomousListening(); 
                 };
 
-                window.webkitSpeechSynthesis ? window.speechSynthesis.speak(speechPacket) : window.speechSynthesis.speak(speechPacket);
+                window.speechSynthesis.speak(speechPacket);
                 appendToChatLogs("titan", phrase);
             }
         }
@@ -248,55 +244,42 @@
                 .catch(error => { console.error("Chassis Link Timeout:", error); });
         }
 
-        // 🧠 3. CONVERSATIONAL LLM AI LLAMA CHAT BRAIN (Corrected repetitive wording rules)
+        // 🧠 3. STABLE CONVERSATIONAL AI CORE (Zero Keys / Restrictions Required)
         function askTitanAI(questionText) {
             statusText.innerText = brandString;
             
-            const cleanedQuery = questionText.replace(/titan|hey titan|tighten|titen|टायटन/gi, "").trim();
+            const cleanedQuestion = questionText.replace(/titan|hey titan|tighten|titen|टायटन/gi, "").trim();
 
-            if (cleanedQuery === "okay" || cleanedQuery === "ok" || cleanedQuery === "अच्छा") {
-                speakVocalOutput("Alright. Let me know what to do next.");
+            if (!cleanedQuestion || ["okay", "ok", "good"].includes(cleanedQuestion)) {
+                speakVocalOutput("Understood. Tell me what to do next.");
                 return;
             }
 
-            fetch("https://api-inference.huggingface.co/models/meta-llama/Meta-Llama-3-8B-Instruct", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    inputs: `<|system|>\nYou are Titan, an advanced conversational mechatronics AI assistant. Speak casually, directly, and confidently like a smart peer. Answer the user's question directly under two sentences. CRITICAL: Do not append formulas, honorifics, or repetitive labels like "Boss", "Sir", or "M D sir" to the end of your sentences. Talk completely naturally.\n<|user|>\n${cleanedQuery}\n<|assistant|>\n`
+            // Calls an open, unauthenticated serverless text completion gateway
+            fetch(`https://text.pollinations.ai/${encodeURIComponent(cleanedQuestion)}?system=You are Titan, a smart mechatronics AI assistant. Speak casually and directly like a peer. Answer under two short sentences. Never use words like Boss or Sir at the end of sentences. Keep it perfectly natural.`)
+                .then(res => res.text())
+                .then(aiResponse => {
+                    let cleanedResponse = aiResponse.trim();
+                    if(cleanedResponse.length > 200) {
+                        cleanedResponse = cleanedResponse.substring(0, 197) + "...";
+                    }
+                    speakVocalOutput(cleanedResponse);
                 })
-            })
-            .then(res => res.json())
-            .then(data => {
-                let aiResponse = "";
-                if (data && data[0] && data[0].generated_text) {
-                    const parts = data[0].generated_text.split("<|assistant|>\n");
-                    aiResponse = parts[parts.length - 1].trim();
-                } else {
-                    aiResponse = "I hear you clearly, let's look into it.";
-                }
-                
-                if(aiResponse.length > 200) aiResponse = aiResponse.substring(0, 197) + "...";
-                speakVocalOutput(aiResponse);
-            })
-            .catch(err => {
-                console.error("HF Link Block:", err);
-                speakVocalOutput("Cloud connection is flickering a bit.");
-            });
+                .catch(err => {
+                    console.error("AI Error:", err);
+                    speakVocalOutput("Network communication is offline.");
+                });
         }
 
         // 📝 4. HYBRID INTERCEPT PARSER FOR TEXT & VOICE
         function processTextInput(rawText) {
             const query = rawText.toLowerCase().trim();
             
-            // Core Identity Handling
             if (query.includes("who am i") || query.includes("mera naam kya hai") || query.includes("माझे नाव काय आहे") || query.includes("my name")) {
                 speakVocalOutput("You are M D sir, the lead developer of MD Creations.");
             } else if (query.includes("who are you") || query.includes("your name") || query.includes("tum kaun ho") || query.includes("तू कोण आहेस") || query.includes("तुम कौन हो")) {
                 speakVocalOutput("I am Titan, your autonomous mechatronics AI assistant.");
             }
-            
-            // Movement Routines
             else if (query.includes("forward") || query.includes("go") || query.includes("aage") || query.includes("pudhe") || query.includes("आगे") || query.includes("पुढे")) {
                 triggerCommand("forward");
             } else if (query.includes("backward") || query.includes("back") || query.includes("piche") || query.includes("mage") || query.includes("पीछे") || query.includes("मागे")) {
@@ -308,8 +291,6 @@
             } else if (query.includes("stop") || query.includes("wait") || query.includes("ruko") || query.includes("thamb") || query.includes("thamba") || query.includes("रुको") || query.includes("थांबा")) {
                 triggerCommand("stop");
             } 
-            
-            // Knowledge Routing Base
             else {
                 askTitanAI(rawText);
             }
@@ -335,7 +316,7 @@
         function startTitanAutonomousListening() {
             if (isSpeaking) return; 
 
-            const SpeechRecognition = window.webkitSpeechRecognition || window.Object || window.SpeechRecognition;
+            const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
             if (!SpeechRecognition) return;
 
             recognition = new SpeechRecognition();
