@@ -148,15 +148,18 @@
 </head>
 <body>
 
+    <!-- Integrated Branding Area: Logo Image directly in front of MD text -->
     <div class="logo-container">
         <img src="static/favicon.png" class="logo-img" alt="Logo" onerror="this.style.display='none';">
         <span>MD</span>
     </div>
 
+    <!-- Main System Status Bar Block -->
     <div id="status-display">SYSTEM STANDING BY...</div>
 
     <div class="panel">
         
+        <!-- Left Column: Video Tracking Viewport & Navigation Array -->
         <div class="left-column">
             <h3 style="color: #00ffcc; margin-top:0;">🎥 LIVE STREAM DATA WINDOW</h3>
             <div class="video-box">
@@ -173,6 +176,7 @@
             </div>
         </div>
 
+        <!-- Right Column: Simplified Command Box (Vocal and Manual) -->
         <div class="right-column">
             <h3 style="color: #00ffcc; margin-top:0;">💬 TITAN COMMAND BOX</h3>
             <div class="chat-box">
@@ -200,7 +204,6 @@
         let isSpeaking = false;
         let systemBooted = false;
 
-        // 🌟 Exact Uppercase Enterprise Identity Status String to print post-booting
         const brandString = "MD ROBOTICS & INVENTIONS | 🤖 TITAN VOICE CORE ACTIVE...";
 
         function appendToChatLogs(sender, promptText) {
@@ -227,7 +230,7 @@
                     startTitanAutonomousListening(); 
                 };
 
-                window.speechSynthesis.speak(speechPacket);
+                window.webkitSpeechSynthesis ? window.speechSynthesis.speak(speechPacket) : window.speechSynthesis.speak(speechPacket);
                 appendToChatLogs("titan", phrase);
             }
         }
@@ -235,35 +238,51 @@
         // 📡 2. LOCAL ROUTER NETWORK LINK TRANSMITTER
         function triggerCommand(routeEndpoint) {
             if(["forward", "backward", "left", "right"].includes(routeEndpoint)) {
-                speakVocalOutput("Moving Boss!");
+                speakVocalOutput("Moving!");
             } else if (routeEndpoint === "stop") {
                 speakVocalOutput("Stopping.");
             }
 
             fetch(`${esp32IP}/${routeEndpoint}`)
                 .then(response => response.json())
-                .then(data => { console.log("ESP32 Response Sync:", data.status); })
                 .catch(error => { console.error("Chassis Link Timeout:", error); });
         }
 
-        // 🧠 3. GLOBAL COGNITIVE SEARCH CORE
+        // 🧠 3. CONVERSATIONAL LLM AI LLAMA CHAT BRAIN (Corrected repetitive wording rules)
         function askTitanAI(questionText) {
-            const cleanedQuestion = questionText.replace(/titan|hey titan|tighten|टायटन/g, "").trim();
+            statusText.innerText = brandString;
+            
+            const cleanedQuery = questionText.replace(/titan|hey titan|tighten|titen|टायटन/gi, "").trim();
 
-            fetch(`https://api.duckduckgo.com/?q=${encodeURIComponent(cleanedQuestion)}&format=json&no_html=1`)
-                .then(res => res.json())
-                .then(data => {
-                    let answer = data.AbstractText || (data.RelatedTopics && data.RelatedTopics[0] && data.RelatedTopics[0].Text) || "I searched my database for that, but I couldn't find a clear answer, Boss.";
-                    
-                    if(answer.length > 250) {
-                        answer = answer.substring(0, 247) + "...";
-                    }
-                    speakVocalOutput(answer);
+            if (cleanedQuery === "okay" || cleanedQuery === "ok" || cleanedQuery === "अच्छा") {
+                speakVocalOutput("Alright. Let me know what to do next.");
+                return;
+            }
+
+            fetch("https://api-inference.huggingface.co/models/meta-llama/Meta-Llama-3-8B-Instruct", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    inputs: `<|system|>\nYou are Titan, an advanced conversational mechatronics AI assistant. Speak casually, directly, and confidently like a smart peer. Answer the user's question directly under two sentences. CRITICAL: Do not append formulas, honorifics, or repetitive labels like "Boss", "Sir", or "M D sir" to the end of your sentences. Talk completely naturally.\n<|user|>\n${cleanedQuery}\n<|assistant|>\n`
                 })
-                .catch(err => {
-                    console.error("API Cloud Error:", err);
-                    speakVocalOutput("My cognitive cloud link is offline, Boss.");
-                });
+            })
+            .then(res => res.json())
+            .then(data => {
+                let aiResponse = "";
+                if (data && data[0] && data[0].generated_text) {
+                    const parts = data[0].generated_text.split("<|assistant|>\n");
+                    aiResponse = parts[parts.length - 1].trim();
+                } else {
+                    aiResponse = "I hear you clearly, let's look into it.";
+                }
+                
+                if(aiResponse.length > 200) aiResponse = aiResponse.substring(0, 197) + "...";
+                speakVocalOutput(aiResponse);
+            })
+            .catch(err => {
+                console.error("HF Link Block:", err);
+                speakVocalOutput("Cloud connection is flickering a bit.");
+            });
         }
 
         // 📝 4. HYBRID INTERCEPT PARSER FOR TEXT & VOICE
@@ -317,19 +336,21 @@
             if (isSpeaking) return; 
 
             const SpeechRecognition = window.webkitSpeechRecognition || window.Object || window.SpeechRecognition;
-            if (!SpeechRecognition) {
-                return;
-            }
+            if (!SpeechRecognition) return;
 
             recognition = new SpeechRecognition();
-            recognition.lang = 'hi-IN'; 
+            recognition.lang = 'en-IN'; 
             recognition.interimResults = false;
+
+            statusText.innerText = brandString;
 
             recognition.onresult = function(event) {
                 const speechToText = event.results[0][0].transcript.toLowerCase().trim();
                 appendToChatLogs("user", event.results[0][0].transcript);
                 
                 if (speechToText.includes("titan") || speechToText.includes("hey titan") || speechToText.includes("tighten") || speechToText.includes("titen") || speechToText.includes("टायटन")) {
+                    processTextInput(speechToText);
+                } else {
                     processTextInput(speechToText);
                 }
             };
@@ -351,7 +372,6 @@
             if (systemBooted) return;
             systemBooted = true;
             
-            // Instantly transition status to your capitalised target brand title line post standing-by
             statusText.innerText = brandString;
             chatScroller.innerHTML = ""; 
 
@@ -364,7 +384,6 @@
                     startTitanAutonomousListening();
                 })
                 .catch(function(error) {
-                    console.error("Camera layout bypass log:", error);
                     speakVocalOutput("Autonomous voice online. Hello M D sir.");
                     startTitanAutonomousListening(); 
                 });
