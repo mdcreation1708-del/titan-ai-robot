@@ -1,245 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Titania AI Robot Master Control</title>
-    <style>
-        body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            text-align: center; 
-            background: #09090e; 
-            color: #ffffff; 
-            margin: 0;
-            padding: 20px; 
-        }
-        
-        .logo-container {
-            margin: 10px auto 20px auto;
-            font-weight: bold;
-            font-size: 28px;
-            letter-spacing: 4px;
-            color: #00ffcc;
-            text-shadow: 0 0 12px rgba(0, 255, 204, 0.6);
-        }
-        .logo-sub {
-            font-size: 12px;
-            color: #888;
-            letter-spacing: 2px;
-            display: block;
-            margin-top: -5px;
-        }
-
-        .panel { 
-            max-width: 900px; 
-            margin: 0 auto; 
-            background: #13131a; 
-            padding: 25px; 
-            border-radius: 16px; 
-            border: 1px solid #222;
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 20px;
-        }
-
-        .left-column, .right-column {
-            flex: 1;
-            min-width: 300px;
-            max-width: 440px;
-        }
-
-        .video-box { 
-            width: 100%; 
-            height: 320px; 
-            background: #000; 
-            border: 3px solid #00ffcc; 
-            border-radius: 8px; 
-            overflow: hidden; 
-            position: relative;
-        }
-        #camera-stream { width: 100%; height: 100%; object-fit: cover; }
-        
-        .rec-indicator {
-            position: absolute;
-            top: 15px;
-            left: 15px;
-            background: rgba(220, 53, 69, 0.8);
-            color: white;
-            padding: 5px 10px;
-            font-size: 12px;
-            border-radius: 4px;
-            font-weight: bold;
-            animation: blink 1.5s infinite;
-        }
-        @keyframes blink { 50% { opacity: 0.3; } }
-
-        .chat-box {
-            width: 100%;
-            height: 320px;
-            background: #1a1a26;
-            border: 1px solid #333;
-            border-radius: 8px;
-            display: flex;
-            flex-direction: column;
-            text-align: left;
-        }
-        .chat-logs {
-            flex: 1;
-            padding: 15px;
-            overflow-y: auto;
-            font-size: 14px;
-            line-height: 1.5;
-        }
-        .msg { margin-bottom: 10px; padding: 8px 12px; border-radius: 6px; max-width: 85%; user-select: none; }
-        .msg.user { background: #007bff; color: white; margin-left: auto; }
-        .msg.titan { background: #222; color: #00ffcc; border: 1px solid #333; }
-
-        .btn { 
-            padding: 14px 24px; 
-            font-size: 15px; 
-            margin: 5px; 
-            cursor: pointer; 
-            border: none; 
-            border-radius: 6px; 
-            font-weight: bold; 
-            transition: 0.2s;
-        }
-        .drive-btn { background-color: #007bff; color: white; }
-        .stop-btn { background-color: #dc3545; color: white; width: 120px; }
-        
-        #status-display { 
-            width: 100%;
-            margin: 10px 0; 
-            color: #ffcc00; 
-            font-size: 15px; 
-            font-weight: bold; 
-        }
-    </style>
-</head>
-<body>
-
-    <div class="logo-container">
-        MD CREATIONS
-        <span class="logo-sub">TITANIA AI ROBOTICS LAB</span>
-    </div>
-
-    <div id="status-display">TAP ANYWHERE ON THE DASHBOARD TO BOOT TITAN INTERFACE</div>
-
-    <div class="panel">
-        
-        <div class="left-column">
-            <h3 style="color: #00ffcc; margin-top:0;">🎥 LIVE STREAM DATA WINDOW</h3>
-            <div class="video-box">
-                <div class="rec-indicator">⚫ LIVE STREAMING</div>
-                <video id="camera-stream" autoplay playsinline muted></video>
-            </div>
-            
-            <div style="margin-top: 20px;">
-                <button class="btn drive-btn" onclick="triggerCommand('forward')">FORWARD</button><br>
-                <button class="btn drive-btn" onclick="triggerCommand('left')">LEFT</button>
-                <button class="btn stop-btn" onclick="triggerCommand('stop')">STOP</button>
-                <button class="btn drive-btn" onclick="triggerCommand('right')">RIGHT</button><br>
-                <button class="btn drive-btn" onclick="triggerCommand('backward')">BACKWARD</button>
-            </div>
-        </div>
-
-        <div class="right-column">
-            <h3 style="color: #00ffcc; margin-top:0;">💬 TITAN COGNITIVE CHAT INTERFACE</h3>
-            <div class="chat-box">
-                <div class="chat-logs" id="chat-scroller">
-                    <div class="msg titan">System offline. Tap dashboard screen to clear security protocols.</div>
-                </div>
-            </div>
-        </div>
-
-    </div>
-
-    <script>
-        // ⚙️ Double check your ESP32 router IP address matches this configuration line
-        const esp32IP = "http://192.168.0.125"; 
-        const statusText = document.getElementById("status-display");
-        const videoElement = document.getElementById("camera-stream");
-        const chatScroller = document.getElementById("chat-scroller");
-        
-        let recognition;
-        let isSpeaking = false;
-        let systemBooted = false;
-
-        function appendToChatLogs(sender, promptText) {
-            const messageDiv = document.createElement("div");
-            messageDiv.classList.add("msg", sender);
-            messageDiv.innerText = promptText;
-            chatScroller.appendChild(messageDiv);
-            chatScroller.scrollTop = chatScroller.scrollHeight; 
-        }
-
-        // 🔊 1. BROWSER VOCAL SPEAKING ENGINE
-        function speakVocalOutput(phrase) {
-            if ('speechSynthesis' in window) {
-                isSpeaking = true;
-                if(recognition) recognition.stop(); 
-
-                const speechPacket = new SpeechSynthesisUtterance(phrase);
-                speechPacket.rate = 1.0;  
-                speechPacket.pitch = 0.9; 
-                speechPacket.lang = 'en-US';
-
-                speechPacket.onend = function() {
-                    isSpeaking = false;
-                    startTitanAutonomousListening(); 
-                };
-
-                window.speechSynthesis.speak(speechPacket);
-                appendToChatLogs("titan", phrase);
-            }
-        }
-
-        // 📡 2. LOCAL ROUTER WI-FI TRANSMITTER LINK
-        function triggerCommand(routeEndpoint) {
-            statusText.innerText = "Executing Path: " + routeEndpoint;
-            
-            if(["forward", "backward", "left", "right"].includes(routeEndpoint)) {
-                speakVocalOutput("Moving Boss!");
-            } else if (routeEndpoint === "stop") {
-                speakVocalOutput("Stopping.");
-            }
-
-            fetch(`${esp32IP}/${routeEndpoint}`)
-                .then(response => response.json())
-                .then(data => { console.log("ESP32 Response Sync:", data.status); })
-                .catch(error => { console.error("Chassis Link Timeout:", error); });
-        }
-
-        // 🧠 3. GLOBAL CLOUD AI SEARCH MATRIX (Answers History, Geography, Electrical Engineering questions)
-        function askTitanAI(questionText) {
-            statusText.innerText = "Titan is processing calculations...";
-            const cleanedQuestion = questionText.replace(/titan|hey titan|tighten/g, "").trim();
-
-            fetch(`https://api.duckduckgo.com/?q=${encodeURIComponent(cleanedQuestion)}&format=json&no_html=1`)
-                .then(res => res.json())
-                .then(data => {
-                    let answer = "";
-                    if (data.AbstractText) {
-                        answer = data.AbstractText;
-                    } else if (data.RelatedTopics && data.RelatedTopics.length > 0 && data.RelatedTopics[0].Text) {
-                        answer = data.RelatedTopics[0].Text;
-                    } else {
-                        answer = "I searched my database for that, but I couldn't find a clear answer, Boss.";
-                    }
-                    
-                    if(answer.length > 250) {
-                        answer = answer.substring(0, 247) + "...";
-                    }
-                    speakVocalOutput(answer);
-                })
-                .catch(err => {
-                    console.error("API Cloud Error:", err);
-                    speakVocalOutput("My cognitive cloud link is offline, Boss.");
-                });
-        }
-
-        // 🎙️ 4. AUTONOMOUS MULTI-LANGUAGE WAKE-WORD SYSTEM (English/Hindi/Marathi)
+// 🎙️ CORRECTED MULTI-LANGUAGE AUTONOMOUS ENGINE (EN + HINDI + MARATHI)
         function startTitanAutonomousListening() {
             if (isSpeaking) return; 
 
@@ -250,99 +9,68 @@
             }
 
             recognition = new SpeechRecognition();
-            recognition.lang = 'en-US'; // Best standard language for parsing phonetic code words
+            
+            // 🌐 SETTING LANGUAGE TO hi-IN CAPTURES HINDI/MARATHI AUDIO AND ENGLISH LOANS PERFECTLY
+            recognition.lang = 'hi-IN'; 
             recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
 
-            statusText.innerText = "🤖 Titan Active | Monitoring for 'Hey Titan' (EN/HI/MR)...";
+            statusText.innerText = "🤖 Titan Active | Monitoring for 'Titan' (English / हिंदी / मराठी)...";
 
             recognition.onresult = function(event) {
-                const speechToText = event.results[0][0].transcript.toLowerCase();
+                const speechToText = event.results[0][0].transcript.toLowerCase().trim();
                 appendToChatLogs("user", event.results[0][0].transcript);
                 
-                // Wake Word Validation Gateway
-                if (speechToText.includes("titan") || speechToText.includes("hey titan") || speechToText.includes("tighten")) {
+                // Wake Word Gateway validation (Catches English spelling & Devanagari script audio)
+                if (speechToText.includes("titan") || speechToText.includes("hey titan") || speechToText.includes("टायटन") || speechToText.includes("टायटन")) {
                     
-                    // Identity Intercepts (English / Hindi / Marathi)
-                    if (speechToText.includes("who am i") || speechToText.includes("mera naam kya hai") || speechToText.includes("माझे नाव काय आहे")) {
+                    // 1. IDENTITY MATRIX
+                    if (speechToText.includes("who am i") || speechToText.includes("mera naam kya hai") || speechToText.includes("माझे नाव काय आहे") || speechToText.includes("मेरा नाम")) {
                         speakVocalOutput("You are Malhar Deshmukh, the lead developer of MD Creations.");
-                    } else if (speechToText.includes("who are you") || speechToText.includes("tum kaun ho") || speechToText.includes("तू कोण आहेस")) {
+                    } else if (speechToText.includes("who are you") || speechToText.includes("tum kaun ho") || speechToText.includes("तू कोण आहेस") || speechToText.includes("तुम कौन हो")) {
                         speakVocalOutput("I am Titan, your autonomous mechatronics AI assistant.");
                     }
                     
-                    // FORWARD (forward, go, aage, pudhe)
-                    else if (speechToText.includes("forward") || speechToText.includes("go") || speechToText.includes("aage") || speechToText.includes("pudhe")) {
+                    // 2. FORWARD COMMANDS (English: forward/go | Hindi: आगे/चल | Marathi: पुढे)
+                    else if (speechToText.includes("forward") || speechToText.includes("go") || speechToText.includes("aage") || speechToText.includes("pudhe") || speechToText.includes("आगे") || speechToText.includes("पुढे")) {
                         triggerCommand("forward");
                     } 
                     
-                    // BACKWARD (backward, back, piche, mage)
-                    else if (speechToText.includes("backward") || speechToText.includes("back") || speechToText.includes("piche") || speechToText.includes("mage")) {
+                    // 3. BACKWARD COMMANDS (English: backward/back | Hindi: पीछे | Marathi: मागे)
+                    else if (speechToText.includes("backward") || speechToText.includes("back") || speechToText.includes("piche") || speechToText.includes("mage") || speechToText.includes("पीछे") || speechToText.includes("मागे")) {
                         triggerCommand("backward");
                     } 
                     
-                    // LEFT (left, baaye, davi, dave)
-                    else if (speechToText.includes("left") || speechToText.includes("baaye") || speechToText.includes("davi") || speechToText.includes("dave")) {
+                    // 4. LEFT COMMANDS (English: left | Hindi: बाएं | Marathi: डावीकडे/डावे)
+                    else if (speechToText.includes("left") || speechToText.includes("baaye") || speechToText.includes("davi") || speechToText.includes("dave") || speechToText.includes("बाएं") || speechToText.includes("डावे") || speechToText.includes("डावीकडे")) {
                         triggerCommand("left");
                     } 
                     
-                    // RIGHT (right, daaye, ujvi, ujva)
-                    else if (speechToText.includes("right") || speechToText.includes("daaye") || speechToText.includes("ujvi") || speechToText.includes("ujva")) {
+                    // 5. RIGHT COMMANDS (English: right | Hindi: दाएं | Marathi: उजवीकडे/उजवे)
+                    else if (speechToText.includes("right") || speechToText.includes("daaye") || speechToText.includes("ujvi") || speechToText.includes("ujva") || speechToText.includes("दाएं") || speechToText.includes("उजवे") || speechToText.includes("उजवीकडे")) {
                         triggerCommand("right");
                     } 
                     
-                    // STOP (stop, wait, ruko, thamb, thamba)
-                    else if (speechToText.includes("stop") || speechToText.includes("wait") || speechToText.includes("ruko") || speechToText.includes("thamb") || speechToText.includes("thamba")) {
+                    // 6. STOP COMMANDS (English: stop/wait | Hindi: रुको/रुक | Marathi: थांबा/थांब)
+                    else if (speechToText.includes("stop") || speechToText.includes("wait") || speechToText.includes("ruko") || speechToText.includes("thamb") || speechToText.includes("thamba") || speechToText.includes("रुको") || speechToText.includes("रुक") || speechToText.includes("थांब") || speechToText.includes("थांबा")) {
                         triggerCommand("stop");
                     } 
                     
-                    // Global Knowledge Cloud Routing
+                    // 7. COGNITIVE GENERAL AI DISPATCH MATRIX
                     else {
-                        askTitanAI(speechToText);
+                        processTextInput(speechToText);
                     }
                 }
             };
 
-            // Keep the microphone loop active continuously 24/7
             recognition.onend = function() {
                 if (!isSpeaking) recognition.start();
             };
 
             recognition.onerror = function(event) {
                 if (event.error === 'no-speech') return; 
-                console.log("Mic operational loop diagnostic log: ", event.error);
+                console.log("Mic operational loop tracing error: ", event.error);
             };
 
             try { recognition.start(); } catch(e) {}
         }
-
-        // ⚡ 5. HARDWARE SYNC UPON BOOT INTERACTION
-        function bootSinglePhoneSystem() {
-            if (systemBooted) return;
-            systemBooted = true;
-            statusText.innerText = "Synchronizing mechatronics matrix framework...";
-            chatScroller.innerHTML = ""; 
-
-            // Turn on the old phone's native camera stream directly inside your webpage viewport
-            navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false })
-                .then(function(cameraStream) {
-                    videoElement.srcObject = cameraStream;
-                    videoElement.play();
-                    
-                    statusText.innerText = "Core Connected Successfully.";
-                    speakVocalOutput("Autonomous systems online. Hello Malhar sir. Titan is ready.");
-                    startTitanAutonomousListening();
-                })
-                .catch(function(error) {
-                    statusText.innerText = "Camera authorization error.";
-                    console.error("Camera loop drop trace: ", error);
-                    speakVocalOutput("Autonomous voice online. Hello Malhar sir.");
-                    startTitanAutonomousListening(); 
-                });
-        }
-
-        // Instantly boots the entire control environment on the very first screen click
-        window.onclick = function() {
-            bootSinglePhoneSystem();
-        };
-    </script>
-</body>
-</html>
