@@ -1,7 +1,0 @@
-{
-  "cleanUrls": true,
-  "routes": [
-    { "src": "/robot.html", "dest": "/robot.html" },
-    { "src": "/(.*)", "dest": "/index.html" }
-  ]
-}
