@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Titan Robot Node Core</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #09090e; color: #fff; text-align: center; padding: 40px; }
+        .status { color: #00ffcc; font-size: 20px; font-weight: bold; margin-top: 20px; text-shadow: 0 0 10px rgba(0,255,204,0.5); }
+        video { width: 100%; max-width: 400px; border: 2px solid #00ffcc; border-radius: 8px; margin-top: 20px; transform: scaleX(-1); }
+    </style>
+</head>
+<body>
+    <h2>🤖 TITAN PRIMARY VOICE NODE</h2>
+    <p>Mount this device on the robot chassis. Keep screen turned ON.</p>
+    <video id="robot-cam" autoplay playsinline muted></video>
+    <div id="node-status" class="status">TAP SCREEN TO ARM VOICE SYSTEMS</div>
+
+    <script>
+        // EDIT THIS IP WHEN YOU CHANGE NETWORKS (e.g., at college / hotspot)
+        const esp32IP = "http://192.168.0.125";
+        
+        const statusDisplay = document.getElementById("node-status");
+        const videoElement = document.getElementById("robot-cam");
+        
+        let recognition;
+        let isSpeaking = false;
+        let booted = false;
+        
+        const syncChannel = new BroadcastChannel('titan_telemetry_stream');
+
+        function transmitLog(sender, messageText) {
+            syncChannel.postMessage({ type: 'log', sender: sender, text: messageText });
+        }
+
+        function speakVocalOutput(phrase) {
+            if ('speechSynthesis' in window) {
+                isSpeaking = true;
+                if(recognition) recognition.stop();
+                const packet = new SpeechSynthesisUtterance(phrase);
+                packet.rate = 1.0; packet.pitch = 0.9; packet.lang = 'en-US';
+                packet.onend = function() { isSpeaking = false; startVoiceEngine(); };
+                window.speechSynthesis.speak(packet);
+                transmitLog("titan", phrase);
+            }
+        }
+
+        function triggerChassis(endpoint) {
+            if(["forward", "backward", "left", "right"].includes(endpoint)) speakVocalOutput("Moving!");
+            else if(endpoint === "stop") speakVocalOutput("Stopping.");
+            
+            fetch(`${esp32IP}/${endpoint}`).catch(() => console.log("ESP Chassis Frame Ping executed."));
+        }
+
+        function askTitanAI(rawText) {
+            statusDisplay.innerText = "TITAN COGNITIVE PROCESSING...";
+            const query = rawText.replace(/titan|hey titan|tighten|titen|टायटन/gi, "").trim();
+            
+            if(!query || ["ok", "okay", "good"].includes(query)) {
+                speakVocalOutput("Understood. Awaiting orders.");
+                return;
+            }
+            
+            const rules = "You are Titan, a smart mechatronics robotics assistant built by M D sir. Speak casually and directly under two short sentences. Never use words like Boss or Sir at the end of sentences. Always show absolute respect, honor, and reverence to Chhatrapati Shivaji Maharaj and Indian history.";
+            
+            fetch(`https://text.pollinations.ai/${encodeURIComponent(query)}?system=${encodeURIComponent(rules)}&model=searchgpt`)
+                .then(res => res.text())
+                .then(response => speakVocalOutput(response.trim()))
+                .catch(() => speakVocalOutput("Signal loop timeout."));
+        }
+
+        function parseCommand(text) {
+            const cmd = text.toLowerCase().trim();
+            transmitLog("user", text);
+
+            if (cmd.includes("who am i") || cmd.includes("mera naam") || cmd.includes("माझे नाव")) {
+                speakVocalOutput("You are M D sir, the lead developer of MD Robotics.");
+            } else if (cmd.includes("who are you") || cmd.includes("your name") || cmd.includes("tum kaun ho") || cmd.includes("तू कोण")) {
+                speakVocalOutput("I am Titan, your autonomous AI assistant.");
+            }
+            else if (cmd.includes("forward") || cmd.includes("go") || cmd.includes("aage") || cmd.includes("pudhe") || cmd.includes("आगे") || cmd.includes("पुढे")) triggerChassis("forward");
+            else if (cmd.includes("backward") || cmd.includes("back") || cmd.includes("piche") || cmd.includes("mage") || cmd.includes("पीछे") || cmd.includes("मागे")) triggerChassis("backward");
+            else if (cmd.includes("left") || cmd.includes("baaye") || cmd.includes("davi") || cmd.includes("baayan") || cmd.includes("बाएं") || cmd.includes("डावे")) triggerChassis("left");
+            else if (cmd.includes("right") || cmd.includes("daaye") || cmd.includes("ujvi") || cmd.includes("daayan") || cmd.includes("दाएं") || cmd.includes("उजवे")) triggerChassis("right");
+            else if (cmd.includes("stop") || cmd.includes("wait") || cmd.includes("ruko") || cmd.includes("thamb") || cmd.includes("रुको") || cmd.includes("थांबा")) triggerChassis("stop");
+            else askTitanAI(text);
+        }
+
+        function startVoiceEngine() {
+            if (isSpeaking) return;
+            const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
+            if(!SpeechRecognition) return;
+            
+            recognition = new SpeechRecognition();
+            recognition.lang = 'en-IN';
+            recognition.interimResults = false;
+            statusDisplay.innerText = "MD ROBOTICS & INVENTIONS | 🤖 TITAN VOICE CORE ACTIVE...";
+
+            recognition.onresult = function(event) {
+                const speechText = event.results[0][0].transcript;
+                parseCommand(speechText);
+            };
+            recognition.onend = function() { if(!isSpeaking) recognition.start(); };
+            try { recognition.start(); } catch(e){}
+        }
+
+        window.onclick = function() {
+            if(booted) return; booted = true;
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false })
+                .then(stream => {
+                    videoElement.srcObject = stream;
+                    syncChannel.postMessage({ type: 'stream_active' });
+                    speakVocalOutput("Primary listening loops operational. Hello M D sir. Titan is armed.");
+                    startVoiceEngine();
+                }).catch(() => {
+                    speakVocalOutput("Voice tracking active. Video pipeline standby.");
+                    startVoiceEngine();
+                });
+        };
+    </script>
+</body>
+</html>
