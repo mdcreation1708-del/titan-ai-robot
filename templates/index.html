@@ -3,147 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Titania AI Robot Master Control</title>
+    <title>Master Command Dashboard</title>
     <style>
-        body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            text-align: center; 
-            background: #09090e; 
-            color: #ffffff; 
-            margin: 0;
-            padding: 20px; 
-        }
-        
-        .logo-container {
-            margin: 15px auto 25px auto;
-            font-weight: bold;
-            font-size: 32px;
-            letter-spacing: 4px;
-            color: #00ffcc;
-            text-shadow: 0 0 12px rgba(0, 255, 204, 0.6);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-        }
-        .logo-img {
-            height: 45px;
-            width: auto;
-            filter: drop-shadow(0 0 8px rgba(0, 255, 204, 0.6));
-        }
-
-        .panel { 
-            max-width: 900px; 
-            margin: 0 auto; 
-            background: #13131a; 
-            padding: 25px; 
-            border-radius: 16px; 
-            border: 1px solid #222;
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 20px;
-        }
-
-        .left-column, .right-column {
-            flex: 1;
-            min-width: 300px;
-            max-width: 440px;
-        }
-
-        .video-box { 
-            width: 100%; 
-            height: 320px; 
-            background: #000; 
-            border: 3px solid #00ffcc; 
-            border-radius: 8px; 
-            overflow: hidden; 
-            position: relative;
-        }
-        #camera-stream { width: 100%; height: 100%; object-fit: cover; }
-        
-        .rec-indicator {
-            position: absolute;
-            top: 15px;
-            left: 15px;
-            background: rgba(220, 53, 69, 0.8);
-            color: white;
-            padding: 5px 10px;
-            font-size: 12px;
-            border-radius: 4px;
-            font-weight: bold;
-            animation: blink 1.5s infinite;
-        }
-        @keyframes blink { 50% { opacity: 0.3; } }
-
-        .chat-box {
-            width: 100%;
-            height: 320px;
-            background: #1a1a26;
-            border: 1px solid #333;
-            border-radius: 8px;
-            display: flex;
-            flex-direction: column;
-            text-align: left;
-        }
-        .chat-logs {
-            flex: 1;
-            padding: 15px;
-            overflow-y: auto;
-            font-size: 14px;
-            line-height: 1.5;
-        }
-        .msg { margin-bottom: 10px; padding: 8px 12px; border-radius: 6px; max-width: 85%; user-select: none; }
+        body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #09090e; color: #fff; margin: 0; padding: 20px; }
+        .logo-container { margin: 15px auto; font-weight: bold; font-size: 32px; letter-spacing: 4px; color: #00ffcc; text-shadow: 0 0 12px rgba(0, 255, 204, 0.6); display: flex; align-items: center; justify-content: center; gap: 12px; }
+        .logo-img { height: 45px; width: auto; filter: drop-shadow(0 0 8px rgba(0, 255, 204, 0.6)); }
+        .panel { max-width: 900px; margin: 0 auto; background: #13131a; padding: 25px; border-radius: 16px; border: 1px solid #222; display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; }
+        .left-column, .right-column { flex: 1; min-width: 300px; max-width: 440px; }
+        .video-box { width: 100%; height: 320px; background: #000; border: 3px solid #00ffcc; border-radius: 8px; position: relative; display: flex; align-items: center; justify-content: center; color: #00ffcc; font-weight: bold; font-size: 14px; }
+        .chat-box { width: 100%; height: 320px; background: #1a1a26; border: 1px solid #333; border-radius: 8px; display: flex; flex-direction: column; text-align: left; }
+        .chat-logs { flex: 1; padding: 15px; overflow-y: auto; font-size: 14px; }
+        .msg { margin-bottom: 10px; padding: 8px 12px; border-radius: 6px; max-width: 85%; }
         .msg.user { background: #007bff; color: white; margin-left: auto; }
         .msg.titan { background: #222; color: #00ffcc; border: 1px solid #333; }
-
-        .input-bar {
-            display: flex;
-            padding: 10px;
-            background: #13131a;
-            border-top: 1px solid #333;
-            gap: 8px;
-        }
-        .text-input {
-            flex: 1;
-            padding: 10px;
-            border-radius: 6px;
-            border: 1px solid #444;
-            background: #09090e;
-            color: #ffffff;
-            font-size: 14px;
-        }
-        .text-input:focus { outline: none; border-color: #00ffcc; }
-        .send-btn {
-            padding: 10px 18px;
-            background: #00ffcc;
-            color: #000;
-            border: none;
-            border-radius: 6px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-
-        .btn { 
-            padding: 14px 24px; 
-            font-size: 15px; 
-            margin: 5px; 
-            cursor: pointer; 
-            border: none; 
-            border-radius: 6px; 
-            font-weight: bold; 
-            transition: 0.2s;
-        }
+        .btn { padding: 14px 24px; font-size: 15px; margin: 5px; cursor: pointer; border: none; border-radius: 6px; font-weight: bold; transition: 0.2s; }
         .drive-btn { background-color: #007bff; color: white; }
         .stop-btn { background-color: #dc3545; color: white; width: 120px; }
-        
-        #status-display { 
-            width: 100%;
-            margin: 10px 0 20px 0; 
-            color: #ffcc00; 
-            font-size: 15px; 
-            font-weight: bold; 
-        }
+        #status-display { width: 100%; margin: 10px 0 20px 0; color: #ffcc00; font-size: 15px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -156,20 +32,18 @@
     <div id="status-display">SYSTEM STANDING BY...</div>
 
     <div class="panel">
-        
         <div class="left-column">
-            <h3 style="color: #00ffcc; margin-top:0;">🎥 LIVE STREAM DATA WINDOW</h3>
-            <div class="video-box">
-                <div class="rec-indicator">⚫ LIVE STREAMING</div>
-                <video id="camera-stream" autoplay playsinline muted></video>
+            <h3 style="color: #00ffcc; margin-top:0;">🎥 REMOTE ROBOT VIEWPORT</h3>
+            <div class="video-box" id="viewport-frame">
+                [ ROBOT NETWORK RECEIVER SYNCED ]
             </div>
             
             <div style="margin-top: 20px;">
-                <button class="btn drive-btn" onclick="triggerCommand('forward')">FORWARD</button><br>
-                <button class="btn drive-btn" onclick="triggerCommand('left')">LEFT</button>
-                <button class="btn stop-btn" onclick="triggerCommand('stop')">STOP</button>
-                <button class="btn drive-btn" onclick="triggerCommand('right')">RIGHT</button><br>
-                <button class="btn drive-btn" onclick="triggerCommand('backward')">BACKWARD</button>
+                <button class="btn drive-btn" onclick="sendOverride('forward')">FORWARD</button><br>
+                <button class="btn drive-btn" onclick="sendOverride('left')">LEFT</button>
+                <button class="btn stop-btn" onclick="sendOverride('stop')">STOP</button>
+                <button class="btn drive-btn" onclick="sendOverride('right')">RIGHT</button><br>
+                <button class="btn drive-btn" onclick="sendOverride('backward')">BACKWARD</button>
             </div>
         </div>
 
@@ -177,204 +51,44 @@
             <h3 style="color: #00ffcc; margin-top:0;">💬 TITAN COMMAND BOX</h3>
             <div class="chat-box">
                 <div class="chat-logs" id="chat-scroller">
-                    <div class="msg titan">Click the layout background anywhere once to launch Titan.</div>
-                </div>
-                
-                <div class="input-bar">
-                    <input type="text" id="manual-message" class="text-input" placeholder="Type a command or ask a question..." onkeypress="handleKeyPress(event)">
-                    <button class="send-btn" onclick="submitManualText()">Send</button>
+                    <div class="msg titan">Awaiting remote network node pairing parameters...</div>
                 </div>
             </div>
         </div>
-
     </div>
 
     <script>
-        const esp32IP = "http://192.168.0.125"; 
-        const statusText = document.getElementById("status-display");
-        const videoElement = document.getElementById("camera-stream");
-        const chatScroller = document.getElementById("chat-scroller");
-        const manualInput = document.getElementById("manual-message");
+        // EDIT THIS IP WHEN YOU CHANGE NETWORKS (e.g., at college / hotspot)
+        const esp32IP = "http://192.168.0.125";
         
-        let recognition;
-        let isSpeaking = false;
-        let systemBooted = false;
+        const chatScroller = document.getElementById("chat-scroller");
+        const statusText = document.getElementById("status-display");
+        const viewportFrame = document.getElementById("viewport-frame");
 
-        const brandString = "MD ROBOTICS & INVENTIONS | 🤖 TITAN VOICE CORE ACTIVE...";
-
-        function appendToChatLogs(sender, promptText) {
-            const messageDiv = document.createElement("div");
-            messageDiv.classList.add("msg", sender);
-            messageDiv.innerText = promptText;
-            chatScroller.appendChild(messageDiv);
-            chatScroller.scrollTop = chatScroller.scrollHeight; 
-        }
-
-        // 🔊 1. TEXT-TO-SPEECH AUDIO MOTOR OUTPUT
-        function speakVocalOutput(phrase) {
-            if ('speechSynthesis' in window) {
-                isSpeaking = true;
-                if(recognition) recognition.stop(); 
-
-                const speechPacket = new SpeechSynthesisUtterance(phrase);
-                speechPacket.rate = 1.0;  
-                speechPacket.pitch = 0.9; 
-                speechPacket.lang = 'en-US';
-
-                speechPacket.onend = function() {
-                    isSpeaking = false;
-                    startTitanAutonomousListening(); 
-                };
-
-                window.speechSynthesis.speak(speechPacket);
-                appendToChatLogs("titan", phrase);
-            }
-        }
-
-        // 📡 2. LOCAL ROUTER NETWORK LINK TRANSMITTER
-        function triggerCommand(routeEndpoint) {
-            if(["forward", "backward", "left", "right"].includes(routeEndpoint)) {
-                speakVocalOutput("Moving!");
-            } else if (routeEndpoint === "stop") {
-                speakVocalOutput("Stopping.");
-            }
-
-            fetch(`${esp32IP}/${routeEndpoint}`)
-                .then(response => response.json())
-                .catch(error => { console.error("Chassis Link Timeout:", error); });
-        }
-
-        // 🧠 3. STABLE CONVERSATIONAL AI CORE (Zero Keys / Restrictions Required)
-        function askTitanAI(questionText) {
-            statusText.innerText = brandString;
-            
-            const cleanedQuestion = questionText.replace(/titan|hey titan|tighten|titen|टायटन/gi, "").trim();
-
-            if (!cleanedQuestion || ["okay", "ok", "good"].includes(cleanedQuestion)) {
-                speakVocalOutput("Understood. Tell me what to do next.");
-                return;
-            }
-
-            // Calls an open, unauthenticated serverless text completion gateway
-            fetch(`https://text.pollinations.ai/${encodeURIComponent(cleanedQuestion)}?system=You are Titan, a smart mechatronics AI assistant. Speak casually and directly like a peer. Answer under two short sentences. Never use words like Boss or Sir at the end of sentences. Keep it perfectly natural.`)
-                .then(res => res.text())
-                .then(aiResponse => {
-                    let cleanedResponse = aiResponse.trim();
-                    if(cleanedResponse.length > 200) {
-                        cleanedResponse = cleanedResponse.substring(0, 197) + "...";
-                    }
-                    speakVocalOutput(cleanedResponse);
-                })
-                .catch(err => {
-                    console.error("AI Error:", err);
-                    speakVocalOutput("Network communication is offline.");
-                });
-        }
-
-        // 📝 4. HYBRID INTERCEPT PARSER FOR TEXT & VOICE
-        function processTextInput(rawText) {
-            const query = rawText.toLowerCase().trim();
-            
-            if (query.includes("who am i") || query.includes("mera naam kya hai") || query.includes("माझे नाव काय आहे") || query.includes("my name")) {
-                speakVocalOutput("You are M D sir, the lead developer of MD Creations.");
-            } else if (query.includes("who are you") || query.includes("your name") || query.includes("tum kaun ho") || query.includes("तू कोण आहेस") || query.includes("तुम कौन हो")) {
-                speakVocalOutput("I am Titan, your autonomous mechatronics AI assistant.");
-            }
-            else if (query.includes("forward") || query.includes("go") || query.includes("aage") || query.includes("pudhe") || query.includes("आगे") || query.includes("पुढे")) {
-                triggerCommand("forward");
-            } else if (query.includes("backward") || query.includes("back") || query.includes("piche") || query.includes("mage") || query.includes("पीछे") || query.includes("मागे")) {
-                triggerCommand("backward");
-            } else if (query.includes("left") || query.includes("baaye") || query.includes("davi") || query.includes("dave") || query.includes("बाएं") || query.includes("डावे")) {
-                triggerCommand("left");
-            } else if (query.includes("right") || query.includes("daaye") || query.includes("ujvi") || query.includes("ujva") || query.includes("दाएं") || query.includes("उजवे")) {
-                triggerCommand("right");
-            } else if (query.includes("stop") || query.includes("wait") || query.includes("ruko") || query.includes("thamb") || query.includes("thamba") || query.includes("रुको") || query.includes("थांबा")) {
-                triggerCommand("stop");
-            } 
-            else {
-                askTitanAI(rawText);
-            }
-        }
-
-        // ⌨️ 5. MANUAL TYPING CONTROLS
-        function submitManualText() {
-            const textToSend = manualInput.value.trim();
-            if (textToSend === "") return;
-
-            appendToChatLogs("user", textToSend);
-            manualInput.value = ""; 
-            processTextInput(textToSend);
-        }
-
-        function handleKeyPress(event) {
-            if (event.key === "Enter") {
-                submitManualText();
-            }
-        }
-
-        // 🎙️ 6. MULTI-LANGUAGE WAKE MONITOR LOOP
-        function startTitanAutonomousListening() {
-            if (isSpeaking) return; 
-
-            const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
-            if (!SpeechRecognition) return;
-
-            recognition = new SpeechRecognition();
-            recognition.lang = 'en-IN'; 
-            recognition.interimResults = false;
-
-            statusText.innerText = brandString;
-
-            recognition.onresult = function(event) {
-                const speechToText = event.results[0][0].transcript.toLowerCase().trim();
-                appendToChatLogs("user", event.results[0][0].transcript);
-                
-                if (speechToText.includes("titan") || speechToText.includes("hey titan") || speechToText.includes("tighten") || speechToText.includes("titen") || speechToText.includes("टायटन")) {
-                    processTextInput(speechToText);
-                } else {
-                    processTextInput(speechToText);
-                }
-            };
-
-            recognition.onend = function() {
-                if (!isSpeaking) recognition.start();
-            };
-
-            recognition.onerror = function(event) {
-                if (event.error === 'no-speech') return; 
-                console.log("Mic loop trace: ", event.error);
-            };
-
-            try { recognition.start(); } catch(e) {}
-        }
-
-        // ⚡ 7. MASTER INITIALIZATION PLATFORM OPERATOR
-        function bootSinglePhoneSystem() {
-            if (systemBooted) return;
-            systemBooted = true;
-            
-            statusText.innerText = brandString;
-            chatScroller.innerHTML = ""; 
-
-            navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false })
-                .then(function(cameraStream) {
-                    videoElement.srcObject = cameraStream;
-                    videoElement.play();
-                    
-                    speakVocalOutput("Autonomous systems online. Hello M D sir. Titan is ready.");
-                    startTitanAutonomousListening();
-                })
-                .catch(function(error) {
-                    speakVocalOutput("Autonomous voice online. Hello M D sir.");
-                    startTitanAutonomousListening(); 
-                });
-        }
-
-        window.onclick = function(e) {
-            if (e.target.tagName !== "INPUT" && e.target.tagName !== "BUTTON") {
-                bootSinglePhoneSystem();
+        const syncChannel = new BroadcastChannel('titan_telemetry_stream');
+        
+        syncChannel.onmessage = function(event) {
+            if (event.data.type === 'log') {
+                appendToChatLogs(event.data.sender, event.data.text);
+                statusText.innerText = "MD ROBOTICS & INVENTIONS | 🤖 TITAN VOICE CORE ACTIVE...";
+            } else if (event.data.type === 'stream_active') {
+                viewportFrame.innerText = "🎥 LIVE TELEMETRY STREAM FEED BALANCED";
+                viewportFrame.style.color = "#00ffcc";
             }
         };
+
+        function appendToChatLogs(sender, text) {
+            const messageDiv = document.createElement("div");
+            messageDiv.classList.add("msg", sender);
+            messageDiv.innerText = text;
+            chatScroller.appendChild(messageDiv);
+            chatScroller.scrollTop = chatScroller.scrollHeight;
+        }
+
+        function sendOverride(endpoint) {
+            statusText.innerText = "MANUAL OVERRIDE ROUTE SIGNALS SENT: " + endpoint.toUpperCase();
+            fetch(`${esp32IP}/${endpoint}`).catch(() => {});
+        }
     </script>
 </body>
 </html>
