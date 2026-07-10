@@ -4,10 +4,33 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TITAN AI - Main Dashboard</title>
-    <link rel="icon" type="image/png" href="static/logo.png">
+    <!-- Favicon path updated to reference static folder relative to template root -->
+    <link rel="icon" type="image/png" href="../static/logo.png">
     <style>
         body { background-color: #0d1117; color: #c9d1d9; font-family: Arial, sans-serif; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
-        .logo-header img { height: 90px; margin-bottom: 10px; }
+        
+        /* Tactical MD Badge Component matching the layout theme */
+        .md-badge-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        .md-logo-img {
+            height: 45px;
+            width: auto;
+            border: 2px solid #00e5ff;
+            border-radius: 6px;
+            box-shadow: 0 0 10px rgba(0, 229, 255, 0.4);
+        }
+        .md-brand-text {
+            color: #00e5ff;
+            font-size: 1.2rem;
+            font-weight: bold;
+            letter-spacing: 3px;
+            text-shadow: 0 0 8px rgba(0, 229, 255, 0.6);
+        }
+
         .grid-container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 90%; max-width: 1000px; margin-top: 10px; }
         .panel { background: #161b22; border: 2px solid #00e5ff; border-radius: 12px; padding: 20px; text-align: center; box-shadow: 0 0 15px rgba(0, 229, 255, 0.1); }
         h2 { color: #00e5ff; margin-top: 0; font-size: 1.3rem; letter-spacing: 1px; }
@@ -23,8 +46,11 @@
 </head>
 <body>
 
-    <div class="logo-header">
-        <img src="static/logo.png" alt="Titan AI / MD Creations Logo" onerror="this.src='../static/logo.png'">
+    <!-- Upper MD Tactical Header Layer -->
+    <div class="md-badge-container">
+        <!-- Main src points up one level to step out of 'template' into 'static' -->
+        <img class="md-logo-img" src="../static/logo.png" alt="MD" onerror="this.src='static/logo.png'">
+        <span class="md-brand-text">MD CREATIONS</span>
     </div>
 
     <div class="panel" style="width: 90%; max-width: 960px; margin-bottom: 20px;">
@@ -33,13 +59,14 @@
     </div>
 
     <div class="grid-container">
+        <!-- Left Side: Live Stream & Robotics Controls -->
         <div class="panel">
             <h2>LIVE VIDEO STREAM</h2>
             <div class="stream-window">
                 <p>[ Camera Stream Offline - Awaiting ESP32 Webserver Node ]</p>
             </div>
             
-            <h2>DRIVE DRIVE SYSTEMS</h2>
+            <h2>DRIVE SYSTEMS</h2>
             <div class="control-pad">
                 <button class="btn-empty"></button>
                 <button class="btn" onclick="sendCommand('FORWARD')">▲</button>
@@ -53,6 +80,7 @@
             </div>
         </div>
 
+        <!-- Right Side: Terminal Console -->
         <div class="panel" style="display:flex; flex-direction:column; justify-content:space-between;">
             <div>
                 <h2>MANUAL AI TERMINAL</h2>
@@ -72,7 +100,6 @@
             const logs = document.getElementById('terminal-logs');
             logs.innerHTML += `<div style="color:#00e5ff;">&gt; Chassis Instruction Sent: ${dir}</div>`;
             logs.scrollTop = logs.scrollHeight;
-            // Place your backend fetch/MQTT calls here to feed coordinates directly to your driver board
         }
 
         function sendManualMessage() {
