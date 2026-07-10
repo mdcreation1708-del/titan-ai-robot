@@ -4,17 +4,36 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TITAN AI - Main Dashboard</title>
-    <!-- Favicon path updated to reference static folder relative to template root -->
-    <link rel="icon" type="image/png" href="../static/logo.png">
+    <link rel="icon" type="image/png" href="static/logo.png">
     <style>
-        body { background-color: #0d1117; color: #c9d1d9; font-family: Arial, sans-serif; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        body { 
+            background-color: #0d1117; 
+            color: #c9d1d9; 
+            font-family: Arial, sans-serif; 
+            margin: 0; 
+            padding: 20px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            position: relative;
+        }
         
-        /* Tactical MD Badge Component matching the layout theme */
+        /* Top Layout Header Layout */
+        .top-header-wrapper {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 90%;
+            max-width: 1000px;
+            margin-bottom: 5px;
+            position: relative;
+        }
+
+        /* Left Side: MD Tactical Badge Component */
         .md-badge-container {
             display: flex;
             align-items: center;
             gap: 12px;
-            margin-bottom: 12px;
         }
         .md-logo-img {
             height: 45px;
@@ -22,6 +41,7 @@
             border: 2px solid #00e5ff;
             border-radius: 6px;
             box-shadow: 0 0 10px rgba(0, 229, 255, 0.4);
+            background-color: #161b22;
         }
         .md-brand-text {
             color: #00e5ff;
@@ -31,8 +51,37 @@
             text-shadow: 0 0 8px rgba(0, 229, 255, 0.6);
         }
 
+        /* Right Side: Titan Labs Notice */
+        .labs-badge {
+            color: #00e5ff;
+            font-size: 0.85rem;
+            font-weight: bold;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            border: 1px solid rgba(0, 229, 255, 0.3);
+            padding: 6px 12px;
+            border-radius: 4px;
+            background: rgba(0, 229, 255, 0.05);
+            text-shadow: 0 0 5px rgba(0, 229, 255, 0.4);
+        }
+
+        .panel { 
+            background: #161b22; 
+            border: 2px solid #00e5ff; 
+            border-radius: 12px; 
+            padding: 20px; 
+            text-align: center; 
+            box-shadow: 0 0 15px rgba(0, 229, 255, 0.1); 
+        }
+        
+        .sub-dev-text {
+            margin: 5px 0 0 0;
+            color: #8b949e;
+            font-size: 0.95rem;
+            letter-spacing: 1px;
+        }
+
         .grid-container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 90%; max-width: 1000px; margin-top: 10px; }
-        .panel { background: #161b22; border: 2px solid #00e5ff; border-radius: 12px; padding: 20px; text-align: center; box-shadow: 0 0 15px rgba(0, 229, 255, 0.1); }
         h2 { color: #00e5ff; margin-top: 0; font-size: 1.3rem; letter-spacing: 1px; }
         .stream-window { width: 100%; height: 240px; background: #000; border-radius: 8px; border: 1px dashed #333; display: flex; align-items: center; justify-content: center; color: #555; }
         .control-pad { display: grid; grid-template-columns: repeat(3, 70px); gap: 10px; justify-content: center; margin: 20px 0; }
@@ -46,16 +95,25 @@
 </head>
 <body>
 
-    <!-- Upper MD Tactical Header Layer -->
-    <div class="md-badge-container">
-        <!-- Main src points up one level to step out of 'template' into 'static' -->
-        <img class="md-logo-img" src="../static/logo.png" alt="MD" onerror="this.src='static/logo.png'">
-        <span class="md-brand-text">MD CREATIONS</span>
+    <!-- Outer Top Layout Layer -->
+    <div class="top-header-wrapper">
+        <!-- Left Side: MD Badge Image + Name -->
+        <div class="md-badge-container">
+            <img class="md-logo-img" id="panel-logo-node" src="static/logo.png" alt="MD" onerror="fixLogoPath(this)">
+            <span class="md-brand-text">MD CREATIONS</span>
+        </div>
+        
+        <!-- Right Side: Tactical Lab Identifier Banner -->
+        <div class="labs-badge">
+            Titan Labs of Innovation BY MD
+        </div>
     </div>
 
+    <!-- Main Title Hub -->
     <div class="panel" style="width: 90%; max-width: 960px; margin-bottom: 20px;">
         <h1 style="color:#00e5ff; margin:0; font-size:1.8rem; letter-spacing:2px;">TITAN CENTRAL COMMAND</h1>
-        <p style="margin:5px 0 0 0; color:#8b949e;"><span style="color:#39ff14;">●</span> System Core: Operational</p>
+        <div class="sub-dev-text">Founder & Lead Developer of TiTaN Ai RoBoT</div>
+        <p style="margin:10px 0 0 0; color:#8b949e; font-size: 0.9rem;"><span style="color:#39ff14;">●</span> System Core: Operational</p>
     </div>
 
     <div class="grid-container">
@@ -96,6 +154,32 @@
     </div>
 
     <script>
+        // Automatic hardware directory fail-safe router loop
+        function fixLogoPath(imgElement) {
+            const alternativePaths = [
+                "../static/logo.png",
+                "/static/logo.png",
+                "./static/logo.png",
+                "logo.png"
+            ];
+            
+            // Loop through potential server entry structures dynamically
+            if (!imgElement.dataset.attemptIndex) {
+                imgElement.dataset.attemptIndex = 0;
+            }
+            
+            let currentAttempt = parseInt(imgElement.dataset.attemptIndex);
+            
+            if (currentAttempt < alternativePaths.length) {
+                imgElement.dataset.attemptIndex = currentAttempt + 1;
+                imgElement.src = alternativePaths[currentAttempt];
+            } else {
+                // Final fallback character styling if storage disk is completely missing image files
+                imgElement.style.display = 'none';
+                console.log("Logo path completely unreachable on server root.");
+            }
+        }
+
         function sendCommand(dir) {
             const logs = document.getElementById('terminal-logs');
             logs.innerHTML += `<div style="color:#00e5ff;">&gt; Chassis Instruction Sent: ${dir}</div>`;
