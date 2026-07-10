@@ -4,108 +4,29 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TITAN AI - Main Dashboard</title>
-    
     <link rel="icon" type="image/png" href="static/logo.png?v=3">
     <link rel="shortcut icon" type="image/png" href="static/logo.png?v=3">
-    
-    <!-- Direct cross-device communication link (No Python Backend Needed!) -->
     <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
-    
     <style>
-        body { 
-            background-color: #0d1117; 
-            color: #c9d1d9; 
-            font-family: Arial, sans-serif; 
-            margin: 0; 
-            padding: 20px; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            position: relative;
-        }
-        
-        /* Top Layout Area */
-        .top-header-wrapper {
-            width: 90%;
-            max-width: 1000px;
-            margin-bottom: 20px;
-            position: relative;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-        }
-
-        /* Left Stack: Logo, Name, and Title shifted to the top-left corner */
-        .md-left-badge {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-            text-align: left;
-            gap: 6px;
-        }
-        .md-logo-row {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        .md-logo-img {
-            height: 45px;
-            width: auto;
-            border: 2px solid #00e5ff;
-            border-radius: 6px;
-            box-shadow: 0 0 10px rgba(0, 229, 255, 0.4);
-            background-color: #161b22;
-        }
-        .md-brand-text {
-            color: #00e5ff;
-            font-size: 1.8rem;
-            font-weight: bold;
-            letter-spacing: 4px;
-            text-shadow: 0 0 8px rgba(0, 229, 255, 0.6);
-        }
-        .md-subtitle-text {
-            color: #8b949e;
-            font-size: 0.95rem;
-            letter-spacing: 1.5px;
-            font-weight: 500;
-        }
-
-        /* Top Right Corner Placement */
-        .labs-badge-container {
-            display: flex;
-            justify-content: flex-end;
-            margin-top: 5px;
-        }
-        .labs-badge {
-            color: #00e5ff;
-            font-size: 0.85rem;
-            font-weight: bold;
-            letter-spacing: 1.5px;
-            text-transform: uppercase;
-            border: 1px solid rgba(0, 229, 255, 0.3);
-            padding: 6px 12px;
-            border-radius: 4px;
-            background: rgba(0, 229, 255, 0.05);
-            text-shadow: 0 0 5px rgba(0, 229, 255, 0.4);
-        }
-
-        .panel { 
-            background: #161b22; 
-            border: 2px solid #00e5ff; 
-            border-radius: 12px; 
-            padding: 20px; 
-            text-align: center; 
-            box-shadow: 0 0 15px rgba(0, 229, 255, 0.1); 
-        }
-
+        body { background-color: #0d1117; color: #c9d1d9; font-family: Arial, sans-serif; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        .top-header-wrapper { width: 90%; max-width: 1000px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-start; }
+        .md-left-badge { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+        .md-logo-row { display: flex; align-items: center; gap: 12px; }
+        .md-logo-img { height: 45px; width: auto; border: 2px solid #00e5ff; border-radius: 6px; box-shadow: 0 0 10px rgba(0, 229, 255, 0.4); }
+        .md-brand-text { color: #00e5ff; font-size: 1.8rem; font-weight: bold; letter-spacing: 4px; }
+        .md-subtitle-text { color: #8b949e; font-size: 0.95rem; letter-spacing: 1.5px; }
+        .panel { background: #161b22; border: 2px solid #00e5ff; border-radius: 12px; padding: 20px; text-align: center; box-shadow: 0 0 15px rgba(0, 229, 255, 0.1); }
         .grid-container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 90%; max-width: 1000px; margin-top: 10px; }
-        h2 { color: #00e5ff; margin-top: 0; font-size: 1.3rem; letter-spacing: 1px; }
-        .stream-window { width: 100%; height: 240px; background: #000; border-radius: 8px; border: 1px dashed #333; display: flex; align-items: center; justify-content: center; color: #555; }
+        h2 { color: #00e5ff; margin-top: 0; font-size: 1.3rem; }
+        
+        /* Fixed Video Box displaying stream from Old Phone */
+        .stream-window { width: 100%; height: 240px; background: #000; border-radius: 8px; border: 1px dashed #00e5ff; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+        video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+        
         .control-pad { display: grid; grid-template-columns: repeat(3, 70px); gap: 10px; justify-content: center; margin: 20px 0; }
-        .btn { background: #21262d; border: 1px solid #00e5ff; color: #00e5ff; padding: 15px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .btn { background: #21262d; border: 1px solid #00e5ff; color: #00e5ff; padding: 15px; border-radius: 8px; font-weight: bold; cursor: pointer; }
         .btn:hover { background: #00e5ff; color: #000; }
-        .btn-empty { border: none; background: transparent; }
-        .chat-area { height: 160px; background: #0d1117; border-radius: 6px; border: 1px solid #30363d; overflow-y: auto; padding: 10px; text-align: left; font-size: 0.9rem; }
+        .chat-area { height: 160px; background: #0d1117; border-radius: 6px; border: 1px solid #30363d; overflow-y: auto; padding: 10px; text-align: left; }
         .chat-input-row { display: flex; gap: 10px; margin-top: 10px; }
         .chat-input { flex: 1; background: #0d1117; border: 1px solid #30363d; color: #fff; padding: 10px; border-radius: 6px; }
     </style>
@@ -120,39 +41,33 @@
             </div>
             <div class="md-subtitle-text">Founder & Lead Developer of TiTaN Ai RoBoT</div>
         </div>
-        
-        <div class="labs-badge-container">
-            <div class="labs-badge">
-                TiTan Labs of Innovation BY MD
-            </div>
-        </div>
+        <div class="labs-badge-container"><div class="labs-badge">TiTan Labs of Innovation BY MD</div></div>
     </div>
 
     <div class="panel" style="width: 90%; max-width: 960px; margin-bottom: 20px;">
         <h1 style="color:#00e5ff; margin:0; font-size:1.8rem; letter-spacing:2px;">TITAN CENTRAL COMMAND</h1>
-        <p style="margin:8px 0 0 0; color:#8b949e; font-size: 0.9rem;" id="net-status">
-            <span style="color:#ffaa00;">●</span> Connecting Static Sync Link...
-        </p>
+        <p style="margin:8px 0 0 0; color:#8b949e; font-size: 0.9rem;" id="net-status"><span style="color:#ffaa00;">●</span> Syncing Link Core...</p>
     </div>
 
     <div class="grid-container">
         <div class="panel">
             <h2>LIVE VIDEO STREAM</h2>
             <div class="stream-window">
-                <p>[ Camera Stream Offline - Awaiting ESP32 Webserver Node ]</p>
+                <!-- Receives and plays live stream directly from Old Phone -->
+                <video id="remoteVideo" autoplay playsinline></video>
             </div>
             
             <h2>DRIVE SYSTEMS</h2>
             <div class="control-pad">
-                <button class="btn-empty"></button>
+                <div></div>
                 <button class="btn" onclick="sendCommand('FORWARD', 'movement')">▲</button>
-                <button class="btn-empty"></button>
+                <div></div>
                 <button class="btn" onclick="sendCommand('LEFT', 'movement')">◀</button>
                 <button class="btn" onclick="sendCommand('STOP', 'movement')" style="border-color:#ff5555; color:#ff5555;">■</button>
                 <button class="btn" onclick="sendCommand('RIGHT', 'movement')">▶</button>
-                <button class="btn-empty"></button>
+                <div></div>
                 <button class="btn" onclick="sendCommand('REVERSE', 'movement')">▼</button>
-                <button class="btn-empty"></button>
+                <div></div>
             </div>
         </div>
 
@@ -172,40 +87,67 @@
 
     <script>
         const logs = document.getElementById('terminal-logs');
+        let peerConnection;
+        const rtcConfig = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
         
-        // Connect directly to the free secure public broker channel
         let client = mqtt.connect('wss://broker.hivemq.com:8000/mqtt');
 
         client.on('connect', () => {
             document.getElementById('net-status').innerHTML = '<span style="color:#39ff14;">●</span> Cross-Site Link Connected';
+            // Request the feed from the phone automatically on connect
+            requestLiveVideoFeed();
         });
 
-        // Relays the action container over the WebSocket data channel
+        client.on('message', async (topic, message) => {
+            const data = JSON.parse(message.toString());
+            if (topic === 'titan/webrtc/signal-deck' && data.to === 'deck') {
+                if (data.sdp && data.sdp.type === 'answer') {
+                    await peerConnection.setRemoteDescription(new RTCSessionDescription(data.sdp));
+                } else if (data.candidate) {
+                    try { await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate)); } catch(e){}
+                }
+            }
+        });
+
+        async function requestLiveVideoFeed() {
+            client.subscribe('titan/webrtc/signal-deck');
+            
+            peerConnection = new RTCPeerConnection(rtcConfig);
+            peerConnection.ontrack = (event) => {
+                document.getElementById('remoteVideo').srcObject = event.streams[0];
+            };
+            
+            peerConnection.onicecandidate = (e) => {
+                if (e.candidate) {
+                    client.publish('titan/webrtc/signal-deck', JSON.stringify({ to: 'robot', candidate: e.candidate }));
+                }
+            };
+
+            // Force dynamic negotiation structure dummy profile to trigger handshake
+            peerConnection.addTransceiver('video', { direction: 'recvonly' });
+            const offer = await peerConnection.createOffer();
+            await peerConnection.setLocalDescription(offer);
+            
+            client.publish('titan/webrtc/signal-deck', JSON.stringify({ to: 'robot', sdp: offer }));
+        }
+
         function transmitData(payloadString, messageType) {
             if (client && client.connected) {
-                const dataPacket = { payload: payloadString, type: messageType };
-                client.publish('titan/robot/comms', JSON.stringify(dataPacket));
+                client.publish('titan/robot/comms', JSON.stringify({ payload: payloadString, type: messageType }));
             }
         }
 
         function sendCommand(dir, type) {
             logs.innerHTML += `<div style="color:#00e5ff;">&gt; Chassis Instruction Sent: ${dir}</div>`;
             logs.scrollTop = logs.scrollHeight;
-            
-            // Broadcasts direction -> Old phone intercepts and says "moving Boss"
             transmitData(dir, 'movement');
         }
 
         function sendManualMessage() {
             const input = document.getElementById('user-msg');
             if(!input.value.trim()) return;
-
             logs.innerHTML += `<div style="color:#fff;">&gt; User: ${input.value}</div>`;
-            logs.innerHTML += `<div style="color:#39ff14;">&gt; Titan: Relaying string to voice core...</div>`;
-            
-            // Broadcasts text query -> Old phone intercepts and says "OKay Boss Finding"
             transmitData(input.value, 'question');
-
             input.value = '';
             logs.scrollTop = logs.scrollHeight;
         }
