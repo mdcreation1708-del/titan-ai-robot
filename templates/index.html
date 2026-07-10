@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TITAN AI - Main Dashboard</title>
-    <!-- FIXED: Added front slash so browser tab finds the icon from absolute root -->
-    <link rel="icon" type="image/png" href="/static/logo.png">
+    <!-- Tab Icon: Tries direct local path to match templates/static folder -->
+    <link rel="icon" type="image/png" href="static/logo.png">
     <style>
         body { 
             background-color: #0d1117; 
@@ -115,6 +115,7 @@
         <!-- Center Block: MD Name + Subheader Line Directly Below It -->
         <div class="md-center-badge">
             <div class="md-logo-row">
+                <!-- Image source points exactly to your nested static folder path -->
                 <img class="md-logo-img" src="static/logo.png" alt="MD">
                 <span class="md-brand-text">MD</span>
             </div>
