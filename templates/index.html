@@ -8,6 +8,9 @@
     <link rel="icon" type="image/png" href="static/logo.png?v=3">
     <link rel="shortcut icon" type="image/png" href="static/logo.png?v=3">
     
+    <!-- Direct cross-device communication link (No Python Backend Needed!) -->
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+    
     <style>
         body { 
             background-color: #0d1117; 
@@ -127,7 +130,9 @@
 
     <div class="panel" style="width: 90%; max-width: 960px; margin-bottom: 20px;">
         <h1 style="color:#00e5ff; margin:0; font-size:1.8rem; letter-spacing:2px;">TITAN CENTRAL COMMAND</h1>
-        <p style="margin:8px 0 0 0; color:#8b949e; font-size: 0.9rem;"><span style="color:#39ff14;">●</span> System Core: Operational</p>
+        <p style="margin:8px 0 0 0; color:#8b949e; font-size: 0.9rem;" id="net-status">
+            <span style="color:#ffaa00;">●</span> Connecting Static Sync Link...
+        </p>
     </div>
 
     <div class="grid-container">
@@ -140,13 +145,13 @@
             <h2>DRIVE SYSTEMS</h2>
             <div class="control-pad">
                 <button class="btn-empty"></button>
-                <button class="btn" onclick="sendCommand('FORWARD')">▲</button>
+                <button class="btn" onclick="sendCommand('FORWARD', 'movement')">▲</button>
                 <button class="btn-empty"></button>
-                <button class="btn" onclick="sendCommand('LEFT')">◀</button>
-                <button class="btn" onclick="sendCommand('STOP')" style="border-color:#ff5555; color:#ff5555;">■</button>
-                <button class="btn" onclick="sendCommand('RIGHT')">▶</button>
+                <button class="btn" onclick="sendCommand('LEFT', 'movement')">◀</button>
+                <button class="btn" onclick="sendCommand('STOP', 'movement')" style="border-color:#ff5555; color:#ff5555;">■</button>
+                <button class="btn" onclick="sendCommand('RIGHT', 'movement')">▶</button>
                 <button class="btn-empty"></button>
-                <button class="btn" onclick="sendCommand('REVERSE')">▼</button>
+                <button class="btn" onclick="sendCommand('REVERSE', 'movement')">▼</button>
                 <button class="btn-empty"></button>
             </div>
         </div>
@@ -166,18 +171,41 @@
     </div>
 
     <script>
-        function sendCommand(dir) {
-            const logs = document.getElementById('terminal-logs');
+        const logs = document.getElementById('terminal-logs');
+        
+        // Connect directly to the free secure public broker channel
+        let client = mqtt.connect('wss://broker.hivemq.com:8000/mqtt');
+
+        client.on('connect', () => {
+            document.getElementById('net-status').innerHTML = '<span style="color:#39ff14;">●</span> Cross-Site Link Connected';
+        });
+
+        // Relays the action container over the WebSocket data channel
+        function transmitData(payloadString, messageType) {
+            if (client && client.connected) {
+                const dataPacket = { payload: payloadString, type: messageType };
+                client.publish('titan/robot/comms', JSON.stringify(dataPacket));
+            }
+        }
+
+        function sendCommand(dir, type) {
             logs.innerHTML += `<div style="color:#00e5ff;">&gt; Chassis Instruction Sent: ${dir}</div>`;
             logs.scrollTop = logs.scrollHeight;
+            
+            // Broadcasts direction -> Old phone intercepts and says "moving Boss"
+            transmitData(dir, 'movement');
         }
 
         function sendManualMessage() {
             const input = document.getElementById('user-msg');
-            const logs = document.getElementById('terminal-logs');
             if(!input.value.trim()) return;
+
             logs.innerHTML += `<div style="color:#fff;">&gt; User: ${input.value}</div>`;
-            logs.innerHTML += `<div style="color:#39ff14;">&gt; Titan: Executing localized string query...</div>`;
+            logs.innerHTML += `<div style="color:#39ff14;">&gt; Titan: Relaying string to voice core...</div>`;
+            
+            // Broadcasts text query -> Old phone intercepts and says "OKay Boss Finding"
+            transmitData(input.value, 'question');
+
             input.value = '';
             logs.scrollTop = logs.scrollHeight;
         }
