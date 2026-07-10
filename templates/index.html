@@ -21,6 +21,7 @@
             position: relative;
         }
         
+        /* Top Layout Area */
         .top-header-wrapper {
             width: 90%;
             max-width: 1000px;
@@ -31,6 +32,7 @@
             align-items: flex-start;
         }
 
+        /* Left Stack: Logo, Name, and Title shifted to the top-left corner */
         .md-left-badge {
             display: flex;
             flex-direction: column;
@@ -65,6 +67,7 @@
             font-weight: 500;
         }
 
+        /* Top Right Corner Placement */
         .labs-badge-container {
             display: flex;
             justify-content: flex-end;
@@ -94,26 +97,12 @@
 
         .grid-container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 90%; max-width: 1000px; margin-top: 10px; }
         h2 { color: #00e5ff; margin-top: 0; font-size: 1.3rem; letter-spacing: 1px; }
-        
-        .voice-box {
-            background: #0d1117;
-            border: 1px dashed #00e5ff;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-        }
-        .voice-status-indicator {
-            font-weight: bold;
-            color: #ffaa00;
-            letter-spacing: 1px;
-        }
-
+        .stream-window { width: 100%; height: 240px; background: #000; border-radius: 8px; border: 1px dashed #333; display: flex; align-items: center; justify-content: center; color: #555; }
         .control-pad { display: grid; grid-template-columns: repeat(3, 70px); gap: 10px; justify-content: center; margin: 20px 0; }
         .btn { background: #21262d; border: 1px solid #00e5ff; color: #00e5ff; padding: 15px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; }
         .btn:hover { background: #00e5ff; color: #000; }
         .btn-empty { border: none; background: transparent; }
-        
-        .chat-area { height: 260px; background: #0d1117; border-radius: 6px; border: 1px solid #30363d; overflow-y: auto; padding: 10px; text-align: left; font-size: 0.9rem; }
+        .chat-area { height: 160px; background: #0d1117; border-radius: 6px; border: 1px solid #30363d; overflow-y: auto; padding: 10px; text-align: left; font-size: 0.9rem; }
         .chat-input-row { display: flex; gap: 10px; margin-top: 10px; }
         .chat-input { flex: 1; background: #0d1117; border: 1px solid #30363d; color: #fff; padding: 10px; border-radius: 6px; }
     </style>
@@ -143,11 +132,9 @@
 
     <div class="grid-container">
         <div class="panel">
-            <h2>TITAN VOICE CORE</h2>
-            <div class="voice-box">
-                <p>Voice Diagnostic Engine status: <span id="voice-status" class="voice-status-indicator">Initializing Mic...</span></p>
-                <!-- FIXED: Using touchstart + click handlers to force Android permissions popup -->
-                <button class="btn" style="padding: 12px 24px; font-size: 0.9rem;" id="voice-btn" onclick="startVoiceCore()">Start Voice Core Listener</button>
+            <h2>LIVE VIDEO STREAM</h2>
+            <div class="stream-window">
+                <p>[ Camera Stream Offline - Awaiting ESP32 Webserver Node ]</p>
             </div>
             
             <h2>DRIVE SYSTEMS</h2>
@@ -179,9 +166,6 @@
     </div>
 
     <script>
-        let recognition;
-        let isListening = false;
-        
         function sendCommand(dir) {
             const logs = document.getElementById('terminal-logs');
             logs.innerHTML += `<div style="color:#00e5ff;">&gt; Chassis Instruction Sent: ${dir}</div>`;
@@ -197,74 +181,6 @@
             input.value = '';
             logs.scrollTop = logs.scrollHeight;
         }
-
-        function startVoiceCore() {
-            const statusLabel = document.getElementById('voice-status');
-            const logs = document.getElementById('terminal-logs');
-            
-            if (isListening) return;
-
-            window.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            
-            if (!window.SpeechRecognition) {
-                statusLabel.innerHTML = "Not Supported by Mobile Browser";
-                statusLabel.style.color = "#ff5555";
-                return;
-            }
-
-            recognition = new window.SpeechRecognition();
-            
-            // Mobile Optimization: continuous=false forces fast processing token return
-            recognition.continuous = false;
-            recognition.interimResults = false;
-            recognition.lang = 'en-US';
-
-            recognition.onstart = () => {
-                isListening = true;
-                statusLabel.innerHTML = "LISTENING FOR 'TITAN'...";
-                statusLabel.style.color = "#39ff14";
-            };
-
-            recognition.onerror = (e) => {
-                console.error("Voice Error: ", e.error);
-                if(e.error === 'not-allowed') {
-                    statusLabel.innerHTML = "Mic Blocked! Check Site Settings.";
-                    statusLabel.style.color = "#ff5555";
-                }
-            };
-
-            // Mobile Auto-Restart Engine Loop
-            recognition.onend = () => {
-                isListening = false;
-                if(document.getElementById('voice-btn').style.display !== 'none') {
-                    recognition.start();
-                }
-            };
-
-            recognition.onresult = (event) => {
-                const speechToText = event.results[0][0].transcript.trim().toLowerCase();
-                logs.innerHTML += `<div style="color:#8b949e;">[Mic Heard]: "${speechToText}"</div>`;
-                logs.scrollTop = logs.scrollHeight;
-
-                if (speechToText.includes("titan") || speechToText.includes("hey titan") || speechToText.includes("tighten")) {
-                    logs.innerHTML += `<div style="color:#39ff14; font-weight:bold;">&gt; TiTaN Voice Core Activated</div>`;
-                    
-                    if(speechToText.includes("forward")) { sendCommand('FORWARD'); }
-                    else if(speechToText.includes("back") || speechToText.includes("reverse")) { sendCommand('REVERSE'); }
-                    else if(speechToText.includes("left")) { sendCommand('LEFT'); }
-                    else if(speechToText.includes("right")) { sendCommand('RIGHT'); }
-                    else if(speechToText.includes("stop")) { sendCommand('STOP'); }
-                    
-                    logs.scrollTop = logs.scrollHeight;
-                }
-            };
-
-            recognition.start();
-        }
-
-        window.onload = () => {
-            document.getElementById('voice-status').innerHTML = "Ready. Tap Button to Allow Mic.";
-        };
     </script>
 </body>
 </html>
