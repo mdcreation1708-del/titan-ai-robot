@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TiTaN - Robot Hardware Node</title>
+    <style>
+        body { background-color: #0b0f19; color: #00e5ff; font-family: monospace; text-align: center; padding: 20px; }
+        .node-box { border: 2px solid #00e5ff; background: #111625; padding: 20px; border-radius: 12px; max-width: 500px; margin: 0 auto; box-shadow: 0 0 20px rgba(0,229,255,0.2); }
+        .live-indicator { color: #39ff14; font-weight: bold; animation: blink 1.5s infinite; }
+        @keyframes blink { 50% { opacity: 0; } }
+        .btn { background: #00e5ff; color: #000; font-weight: bold; border: none; padding: 15px 30px; border-radius: 6px; cursor: pointer; font-size: 1.1rem; width: 100%; }
+        .log-box { text-align: left; background: #000; margin-top: 15px; padding: 12px; height: 120px; overflow-y: auto; color: #c9d1d9; font-size: 0.85rem; border-radius: 6px; border: 1px solid #222; }
+        video { width: 100%; height: auto; border-radius: 8px; border: 1px dashed #00e5ff; margin-top: 15px; background: #000; transform: scaleX(-1); }
+    </style>
+</head>
+<body>
+
+    <div class="node-box">
+        <h2>🤖 TiTaN HARDWARE HEAD NODE</h2>
+        <p>Status: <span id="status-text" style="color:#ffaa00;">Awaiting Activation</span></p>
+        
+        <button class="btn" id="act-btn" onclick="bootRobotHead()">WAKE UP TITAN</button>
+        
+        <video id="localVideo" autoplay playsinline muted></video>
+        
+        <div id="signal-log" class="log-box">
+            [SYS] Systems standing by. Press button to initialize Video + Audio streams...
+        </div>
+    </div>
+
+    <script>
+        let ws;
+        let recognition;
+        let active = false;
+        let localStream;
+        let peerConnection;
+        const logBox = document.getElementById('signal-log');
+        
+        const rtcConfig = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
+
+        function printLog(text, color="#c9d1d9") {
+            logBox.innerHTML += `<div style="color:${color}">&gt; ${text}</div>`;
+            logBox.scrollTop = logBox.scrollHeight;
+        }
+
+        function robotSpeak(textToSay) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const voiceOut = new SpeechSynthesisUtterance(textToSay);
+                voiceOut.lang = 'en-US';
+                voiceOut.rate = 0.95;
+                voiceOut.pitch = 0.85;
+
+                if (recognition && active) { recognition.abort(); }
+                voiceOut.onend = () => {
+                    if (active && recognition) { try { recognition.start(); } catch(e){} }
+                };
+                window.speechSynthesis.speak(voiceOut);
+            }
+        }
+
+        async function bootRobotHead() {
+            active = true;
+            document.getElementById('act-btn').style.display = 'none';
+            document.getElementById('status-text').innerHTML = "ONLINE";
+            document.getElementById('status-text').className = "live-indicator";
+            
+            robotSpeak("Hello MD sir Titan is ready");
+            printLog("Audio engine active.", "#39ff14");
+
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
+                document.getElementById('localVideo').srcObject = localStream;
+                printLog("Camera access granted. Starting capture...", "#39ff14");
+            } catch (err) {
+                printLog("CRITICAL: Camera pipeline access denied.", "#ff5555");
+            }
+
+            initWebSocket();
+            initLocalMic();
+        }
+
+        function initWebSocket() {
+            // Automatically switch between secure and insecure WebSockets based on page hosting environment
+            const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+            ws = new WebSocket(protocol + window.location.host + '/core');
+
+            ws.onopen = () => {
+                ws.send(JSON.stringify({ register: 'robot' }));
+                printLog("Connected to Python Core Routing Hub.", "#39ff14");
+            };
+
+            ws.onmessage = async (event) => {
+                const data = JSON.parse(event.data);
+                
+                if (data.type === "question") {
+                    printLog(`Dashboard Input Received: "${data.payload}"`, "#00e5ff");
+                    robotSpeak("OKay Boss Finding");
+                } else if (data.type === "movement") {
+                    printLog(`Dashboard Movement Command: [${data.payload}]`, "#39ff14");
+                    robotSpeak("moving Boss");
+                } else if (data.type === "sdp" && data.sdp.type === 'offer') {
+                    peerConnection = new RTCPeerConnection(rtcConfig);
+                    localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+                    
+                    peerConnection.onicecandidate = (e) => {
+                        if (e.candidate) {
+                            ws.send(JSON.stringify({ type: 'candidate', candidate: e.candidate }));
+                        }
+                    };
+                    
+                    await peerConnection.setRemoteDescription(new RTCSessionDescription(data.sdp));
+                    const answer = await peerConnection.createAnswer();
+                    await peerConnection.setLocalDescription(answer);
+                    
+                    ws.send(JSON.stringify({ type: 'sdp', sdp: answer }));
+                    printLog("Video stream established with secondary dashboard.", "#39ff14");
+                } else if (data.type === "candidate" && peerConnection) {
+                    try { await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate)); } catch(e){}
+                }
+            };
+
+            ws.onerror = (err) => printLog("WebSocket error encountered.", "#ff5555");
+            ws.onclose = () => {
+                printLog("Socket disconnected. Reconnecting in 3s...", "#ffaa00");
+                setTimeout(initWebSocket, 3000);
+            };
+        }
+
+        function initLocalMic() {
+            window.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if(!window.SpeechRecognition) return;
+
+            recognition = new window.SpeechRecognition();
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.lang = 'en-US';
+            recognition.onend = () => { if(active) { try { recognition.start(); } catch(e){} } };
+
+            recognition.onresult = (event) => {
+                const speech = event.results[0][0].transcript.toLowerCase();
+                if (speech.includes("titan") || speech.includes("hey titan") || speech.includes("tighten")) {
+                    if (speech.includes("forward") || speech.includes("move") || speech.includes("moving") || speech.includes("find")) {
+                        robotSpeak("moving Boss");
+                    } else if (speech.includes("stop")) {
+                        robotSpeak("stopping Boss");
+                    }
+                }
+            };
+            recognition.start();
+        }
+    </script>
+</body>
+</html>
