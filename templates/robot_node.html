@@ -1,4 +1,80 @@
-<script>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TITAN AI - Robot Node</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <style>
+        body { 
+            background-color: #0b0e14; 
+            color: #c9d1d9; 
+            font-family: Arial, sans-serif; 
+            margin: 0; 
+            padding: 20px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+        }
+        .robot-box {
+            border: 2px solid #39ff14;
+            background: #101520;
+            border-radius: 12px;
+            padding: 30px;
+            text-align: center;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 0 20px rgba(57, 255, 20, 0.15);
+        }
+        .live-indicator { color: #39ff14; font-weight: bold; animation: blink 1.5s infinite; }
+        .log-box {
+            background: #070a0f;
+            border: 1px solid #30363d;
+            height: 200px;
+            border-radius: 6px;
+            margin-top: 20px;
+            padding: 10px;
+            overflow-y: auto;
+            text-align: left;
+            font-family: monospace;
+            font-size: 0.85rem;
+        }
+        .action-btn {
+            background: #101520;
+            border: 2px solid #39ff14;
+            color: #39ff14;
+            padding: 12px 30px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 25px;
+            transition: 0.3s;
+        }
+        .action-btn:hover { background: #39ff14; color: #000; }
+        .video-preview { width: 100%; height: 180px; background: #000; border-radius: 6px; margin-top: 15px; overflow: hidden; }
+        video { width: 100%; height: 100%; object-fit: cover; }
+        @keyframes blink { 0% { opacity: 0.4; } 50% { opacity: 1; } 100% { opacity: 0.4; } }
+    </style>
+</head>
+<body>
+
+    <div class="robot-box">
+        <h1 style="color:#39ff14; margin:0 0 10px 0; letter-spacing:2px;">TITAN CORE NODE</h1>
+        <div>SYSTEM ENGINE STATUS: <span id="status-text" style="color:#ffaa00;">OFFLINE</span></div>
+        
+        <div class="video-preview">
+            <video id="localVideo" autoplay muted playsinline></video>
+        </div>
+
+        <button class="action-btn" id="act-btn" onclick="bootRobotHead()">BOOT SYSTEM</button>
+
+        <div class="log-box" id="signal-log">
+            <div style="color:#8b949e;">[System Ready. Awaiting Initialization Broadcast...]</div>
+        </div>
+    </div>
+
+    <script>
         let ws;
         let recognition;
         let active = false;
@@ -59,8 +135,8 @@
                 printLog("Connected to Python Core Routing Hub.", "#39ff14");
             };
 
-            // PASTE THE CORRECTED JS BLOCK HERE
             ws.onmessage = async (event) => {
+                // Fixed: JSON must be capitalized here
                 const data = JSON.parse(event.data); 
                 
                 if (data.type === "question") {
@@ -75,6 +151,7 @@
                     
                     peerConnection.onicecandidate = (e) => {
                         if (e.candidate) {
+                            // Fixed: JSON must be capitalized here
                             ws.send(JSON.stringify({ type: 'candidate', candidate: e.candidate })); 
                         }
                     };
@@ -83,6 +160,7 @@
                     const answer = await peerConnection.createAnswer();
                     await peerConnection.setLocalDescription(answer);
                     
+                    // Fixed: JSON must be capitalized here
                     ws.send(JSON.stringify({ type: 'sdp', sdp: answer })); 
                     printLog("Video stream established with secondary dashboard.", "#39ff14");
                 } else if (data.type === "candidate" && peerConnection) {
@@ -120,3 +198,5 @@
             recognition.start();
         }
     </script>
+</body>
+</html>
