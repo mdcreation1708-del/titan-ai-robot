@@ -1,14 +1,12 @@
 import os
-import json
 from flask import Flask, render_template
-from flask_sock import Sock
-from gevent.pywsgi import WSGIServer
-from geventwebsocket.handler import WebSocketHandler
+from flask_socketio import SocketIO, emit
 
 app = Flask(__name__)
-sock = Sock(app)
+app.config['SECRET_KEY'] = 'titan_secret_key_1708'
 
-connected_devices = {}
+# Initialize SocketIO with eventlet for high-performance production async tasks
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
 
 @app.route('/')
 def index():
@@ -18,42 +16,16 @@ def index():
 def robot():
     return render_template('robot_node.html')
 
-@sock.route('/core')
-def core_routing_hub(ws):
-    device_identity = None
-    try:
-        while True:
-            raw_payload = ws.receive()
-            if not raw_payload:
-                break
-                
-            data_packet = json.loads(raw_payload)
-            
-            if 'register' in data_packet:
-                device_identity = data_packet['register']
-                connected_devices[device_identity] = ws
-                print(f"[SYSTEM CORE] Device linked successfully: {device_identity}")
-                continue
-            
-            target_node = 'deck' if device_identity == 'robot' else 'robot'
-            
-            if target_node in connected_devices:
-                try:
-                    connected_devices[target_node].send(json.dumps(data_packet))
-                except Exception:
-                    del connected_devices[target_node]
-                    
-    except Exception as error_context:
-        print(f"[DISCONNECT] Connection closed for {device_identity}")
-        
-    finally:
-        if device_identity in connected_devices:
-            del connected_devices[device_identity]
+# Listen for direction commands from the dashboard and broadcast them out
+@socketio.on('chassis_command')
+def handle_chassis(data):
+    emit('robot_receive', data, broadcast=True)
+
+# Listen for text/chat input from the dashboard and broadcast them out
+@socketio.on('terminal_message')
+def handle_terminal(data):
+    emit('robot_receive', data, broadcast=True)
 
 if __name__ == '__main__':
-    deployment_port = int(os.environ.get('PORT', 5000))
-    print(f"[BOOT] Initializing Production WebSocket Server on port {deployment_port}...")
-    
-    # Fire up the production WebSocket server
-    http_server = WSGIServer(('0.0.0.0', deployment_port), app, handler_class=WebSocketHandler)
-    http_server.serve_forever()
+    port = int(os.environ.get('PORT', 5000))
+    socketio.run(app, host='0.0.0.0', port=port)
