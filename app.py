@@ -1,14 +1,17 @@
 import os
-from flask import Flask, render_template
-from flask_socketio import SocketIO, emit
-from gevent.pywsgi import WSGIServer
-from geventwebsocket.handler import WebSocketHandler
+import json
+from flask import Flask, render_template, send_from_directory
+from flask_sock import Sock
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'titan_secret_key_1708'
+sock = Sock(app)
 
-# Configure SocketIO to run perfectly on gevent architecture
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode='gevent')
+connected_devices = {}
+
+# Fixes the logo issue by serving favicon.ico straight to Chrome
+@app.route('/favicon.ico')
+def favicon():
+    return send_from_directory(app.root_path, 'favicon.ico', mimetype='image/vnd.microsoft.icon')
 
 @app.route('/')
 def index():
@@ -18,18 +21,38 @@ def index():
 def robot():
     return render_template('robot_node.html')
 
-@socketio.on('chassis_command')
-def handle_chassis(data):
-    emit('robot_receive', data, broadcast=True)
-
-@socketio.on('terminal_message')
-def handle_terminal(data):
-    emit('robot_receive', data, broadcast=True)
+@sock.route('/core')
+def core_routing_hub(ws):
+    device_identity = None
+    try:
+        while True:
+            raw_payload = ws.receive()
+            if not raw_payload:
+                break
+                
+            data_packet = json.loads(raw_payload)
+            
+            if 'register' in data_packet:
+                device_identity = data_packet['register']
+                connected_devices[device_identity] = ws
+                print(f"[SYSTEM CORE] Device linked successfully: {device_identity}")
+                continue
+            
+            target_node = 'deck' if device_identity == 'robot' else 'robot'
+            
+            if target_node in connected_devices:
+                try:
+                    connected_devices[target_node].send(json.dumps(data_packet))
+                except Exception:
+                    del connected_devices[target_node]
+                    
+    except Exception as error_context:
+        print(f"[DISCONNECT] Connection closed for {device_identity}")
+        
+    finally:
+        if device_identity in connected_devices:
+            del connected_devices[device_identity]
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
-    print(f"[BOOT] TiTaN production server spinning up on port {port}...")
-    
-    # Create the specialized gevent server container
-    server = WSGIServer(('0.0.0.0', port), app, handler_class=WebSocketHandler)
-    server.serve_forever()
+    app.run(host='0.0.0.0', port=port)
