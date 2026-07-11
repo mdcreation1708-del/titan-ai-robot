@@ -103,13 +103,27 @@
             if ('speechSynthesis' in window) {
                 window.speechSynthesis.cancel();
                 const voiceOut = new SpeechSynthesisUtterance(textToSay);
-                voiceOut.lang = 'en-US';
-                voiceOut.rate = 0.95;
-                voiceOut.pitch = 0.85;
+                
+                // Inspects text payload script structure to match corresponding voice locale accent rules
+                const DevanagariPattern = /[\u0900-\u097F]/;
+                if (DevanagariPattern.test(textToSay)) {
+                    // Smart detection fallback logic for Marathi vs Hindi indicators
+                    if (textToSay.includes("आहे") || textToSay.includes("आहात") || textToSay.includes("कााय") || textToSay.includes("चालू")) {
+                        voiceOut.lang = 'mr-IN';
+                    } else {
+                        voiceOut.lang = 'hi-IN';
+                    }
+                } else {
+                    voiceOut.lang = 'en-US';
+                }
 
-                if (recognition && active) { recognition.abort(); }
+                voiceOut.rate = 0.95;
+                voiceOut.pitch = 0.90;
+
+                if (recognition && active) { try { recognition.stop(); } catch(e){} }
+                
                 voiceOut.onend = () => {
-                    if (active && recognition) { try { recognition.start(); } catch(e){} }
+                    if (active && recognition) { restartVoiceEngine(); }
                 };
                 window.speechSynthesis.speak(voiceOut);
             }
@@ -121,11 +135,11 @@
             document.getElementById('status-text').innerHTML = "ONLINE";
             document.getElementById('status-text').className = "live-indicator";
             
-            robotSpeak("Hello MD sir Titan is ready");
+            robotSpeak("Hello MD sir, Titan system is initialized and ready.");
             printLog("Audio engine active.", "#39ff14");
 
             try {
-                // FIXED: Using "environment" to turn on the back camera automatically
+                // Configured to "environment" to force turn on your phone's back main lens camera perspective
                 localStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
                 document.getElementById('localVideo').srcObject = localStream;
                 printLog("Camera access granted. Starting capture...", "#39ff14");
@@ -149,12 +163,12 @@
             ws.onmessage = async (event) => {
                 const data = JSON.parse(event.data); 
                 
-                if (data.type === "question") {
-                    printLog(`Dashboard Input Received: "${data.payload}"`, "#00e5ff");
-                    robotSpeak("OKay Boss Finding");
+                if (data.type === "ai_reply") {
+                    printLog(`TiTaN Response: "${data.payload}"`, "#39ff14");
+                    robotSpeak(data.payload);
                 } else if (data.type === "movement") {
                     printLog(`Dashboard Movement Command: [${data.payload}]`, "#39ff14");
-                    robotSpeak("moving Boss");
+                    robotSpeak(data.payload === "FORWARD" ? "Moving forward" : "Stopping");
                 } else if (data.type === "sdp" && data.sdp.type === 'offer') {
                     peerConnection = new RTCPeerConnection(rtcConfig);
                     localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
@@ -185,25 +199,59 @@
 
         function initLocalMic() {
             window.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if(!window.SpeechRecognition) return;
+            if(!window.SpeechRecognition) {
+                printLog("Speech recognition not supported on this browser.", "#ff5555");
+                return;
+            }
 
             recognition = new window.SpeechRecognition();
             recognition.continuous = false;
             recognition.interimResults = false;
-            recognition.lang = 'en-US';
-            recognition.onend = () => { if(active) { try { recognition.start(); } catch(e){} } };
+            
+            // Empty locale config allows modern Android/iOS engines to auto-transcribe regional speech accents seamlessly
+            recognition.lang = ''; 
+
+            recognition.onend = () => { 
+                if(active) { restartVoiceEngine(); } 
+            };
+
+            recognition.onerror = (e) => {
+                if(e.error !== 'no-speech') {
+                    printLog("Mic status: " + e.error, "#8b949e");
+                }
+            };
 
             recognition.onresult = (event) => {
-                const speech = event.results[0][0].transcript.toLowerCase();
-                if (speech.includes("titan") || speech.includes("hey titan") || speech.includes("tighten")) {
-                    if (speech.includes("forward") || speech.includes("move") || speech.includes("moving") || speech.includes("find")) {
-                        robotSpeak("moving Boss");
-                    } else if (speech.includes("stop")) {
-                        robotSpeak("stopping Boss");
+                const speech = event.results[0][0].transcript.toLowerCase().trim();
+                printLog(`Heard: "${speech}"`, "#8b949e");
+
+                // Cross-language trigger matrix matching matching phonetics for "Titan", "टायटन", "टीटान"
+                if (speech.includes("titan") || speech.includes("tighten") || speech.includes("टाय") || speech.includes("टीटा")) {
+                    printLog("Wake word triggered! Processing instruction...", "#00e5ff");
+                    
+                    if (speech.includes("forward") || speech.includes("पुढे") || speech.includes("आगे")) {
+                        if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'movement', payload: 'FORWARD' }));
+                        robotSpeak("Moving Boss");
+                    } else if (speech.includes("stop") || speech.includes("थांब") || speech.includes("रुको")) {
+                        if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'movement', payload: 'STOP' }));
+                        robotSpeak("Stopping Boss");
+                    } else {
+                        // Forwards all open questions up to the Python Gemini module
+                        if (ws && ws.readyState === WebSocket.OPEN) {
+                            ws.send(JSON.stringify({ type: 'question', payload: speech }));
+                        }
                     }
                 }
             };
-            recognition.start();
+
+            try { recognition.start(); } catch(e){}
+        }
+
+        function restartVoiceEngine() {
+            try { recognition.stop(); } catch(e){}
+            setTimeout(() => {
+                try { if (active) recognition.start(); } catch(e){}
+            }, 400);
         }
     </script>
 </body>
