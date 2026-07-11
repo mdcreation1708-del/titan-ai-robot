@@ -1,35 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TiTaN - Robot Hardware Node</title>
-    <style>
-        body { background-color: #0b0f19; color: #00e5ff; font-family: monospace; text-align: center; padding: 20px; }
-        .node-box { border: 2px solid #00e5ff; background: #111625; padding: 20px; border-radius: 12px; max-width: 500px; margin: 0 auto; box-shadow: 0 0 20px rgba(0,229,255,0.2); }
-        .live-indicator { color: #39ff14; font-weight: bold; animation: blink 1.5s infinite; }
-        @keyframes blink { 50% { opacity: 0; } }
-        .btn { background: #00e5ff; color: #000; font-weight: bold; border: none; padding: 15px 30px; border-radius: 6px; cursor: pointer; font-size: 1.1rem; width: 100%; }
-        .log-box { text-align: left; background: #000; margin-top: 15px; padding: 12px; height: 120px; overflow-y: auto; color: #c9d1d9; font-size: 0.85rem; border-radius: 6px; border: 1px solid #222; }
-        video { width: 100%; height: auto; border-radius: 8px; border: 1px dashed #00e5ff; margin-top: 15px; background: #000; transform: scaleX(-1); }
-    </style>
-</head>
-<body>
-
-    <div class="node-box">
-        <h2>🤖 TiTaN HARDWARE HEAD NODE</h2>
-        <p>Status: <span id="status-text" style="color:#ffaa00;">Awaiting Activation</span></p>
-        
-        <button class="btn" id="act-btn" onclick="bootRobotHead()">WAKE UP TITAN</button>
-        
-        <video id="localVideo" autoplay playsinline muted></video>
-        
-        <div id="signal-log" class="log-box">
-            [SYS] Systems standing by. Press button to initialize Video + Audio streams...
-        </div>
-    </div>
-
-    <script>
+<script>
         let ws;
         let recognition;
         let active = false;
@@ -82,7 +51,6 @@
         }
 
         function initWebSocket() {
-            // Automatically switch between secure and insecure WebSockets based on page hosting environment
             const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
             ws = new WebSocket(protocol + window.location.host + '/core');
 
@@ -91,8 +59,9 @@
                 printLog("Connected to Python Core Routing Hub.", "#39ff14");
             };
 
+            // PASTE THE CORRECTED JS BLOCK HERE
             ws.onmessage = async (event) => {
-                const data = JSON.parse(event.data);
+                const data = JSON.parse(event.data); 
                 
                 if (data.type === "question") {
                     printLog(`Dashboard Input Received: "${data.payload}"`, "#00e5ff");
@@ -106,7 +75,7 @@
                     
                     peerConnection.onicecandidate = (e) => {
                         if (e.candidate) {
-                            ws.send(JSON.stringify({ type: 'candidate', candidate: e.candidate }));
+                            ws.send(JSON.stringify({ type: 'candidate', candidate: e.candidate })); 
                         }
                     };
                     
@@ -114,7 +83,7 @@
                     const answer = await peerConnection.createAnswer();
                     await peerConnection.setLocalDescription(answer);
                     
-                    ws.send(JSON.stringify({ type: 'sdp', sdp: answer }));
+                    ws.send(JSON.stringify({ type: 'sdp', sdp: answer })); 
                     printLog("Video stream established with secondary dashboard.", "#39ff14");
                 } else if (data.type === "candidate" && peerConnection) {
                     try { await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate)); } catch(e){}
@@ -151,5 +120,3 @@
             recognition.start();
         }
     </script>
-</body>
-</html>
