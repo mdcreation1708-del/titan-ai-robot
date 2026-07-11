@@ -125,7 +125,8 @@
             printLog("Audio engine active.", "#39ff14");
 
             try {
-                localStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
+                // FIXED: Using "environment" to turn on the back camera automatically
+                localStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
                 document.getElementById('localVideo').srcObject = localStream;
                 printLog("Camera access granted. Starting capture...", "#39ff14");
             } catch (err) {
