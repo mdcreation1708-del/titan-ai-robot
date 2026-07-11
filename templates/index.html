@@ -111,7 +111,12 @@
 
             ws.onmessage = async (event) => {
                 const data = JSON.parse(event.data); 
-                if (data.type === 'sdp' && data.sdp.type === 'answer') {
+                
+                // Displays the smart AI generation on your dashboard screen layout
+                if (data.type === 'ai_reply') {
+                    logs.innerHTML += `<div style="color:#39ff14;"><strong>TiTaN:</strong> ${data.payload}</div>`;
+                    logs.scrollTop = logs.scrollHeight;
+                } else if (data.type === 'sdp' && data.sdp.type === 'answer') {
                     await peerConnection.setRemoteDescription(new RTCSessionDescription(data.sdp));
                 } else if (data.type === 'candidate') {
                     try { await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate)); } catch(e){}
