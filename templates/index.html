@@ -27,6 +27,10 @@
             max-width: 960px;
             margin-bottom: 20px;
         }
+        .header-container { display: flex; align-items: center; justify-content: center; gap: 15px; }
+        .logo-img { width: 45px; height: 45px; border-radius: 50%; border: 2px solid #00e5ff; }
+        .badge { background: transparent; border: 2px solid #00e5ff; color: #00e5ff; padding: 2px 10px; border-radius: 6px; font-size: 1rem; font-weight: bold; font-family: monospace; }
+        .subtext { color: #8b949e; font-size: 0.95rem; letter-spacing: 1px; margin: 5px 0 0 0; font-family: monospace; }
         .grid-container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 90%; max-width: 1000px; }
         h2 { color: #00e5ff; margin-top: 0; font-size: 1.3rem; letter-spacing: 1px; }
         .stream-window { width: 100%; height: 240px; background: #000; border-radius: 8px; border: 1px dashed #00e5ff; overflow: hidden; display: flex; align-items: center; justify-content: center; }
@@ -43,8 +47,13 @@
 <body>
 
     <div class="panel">
-        <h1 style="color:#00e5ff; margin:0; font-size:1.8rem; letter-spacing:2px;">TITAN CENTRAL COMMAND</h1>
-        <p style="margin:8px 0 0 0; color:#8b949e; font-size: 0.9rem;" id="net-status">
+        <div class="header-container">
+            <img src="/favicon.ico" class="logo-img" alt="Logo">
+            <h1 style="color:#00e5ff; margin:0; font-size:1.8rem; letter-spacing:2px;">TITAN CENTRAL COMMAND</h1>
+            <span class="badge">MD</span>
+        </div>
+        <div class="subtext">TiTaN Labs Of iNNvovention</div>
+        <p style="margin:12px 0 0 0; color:#8b949e; font-size: 0.9rem;" id="net-status">
             <span style="color:#ffaa00;">●</span> Connecting Core Hub Pipeline...
         </p>
     </div>
