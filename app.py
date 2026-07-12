@@ -8,8 +8,11 @@ from google.genai import types
 app = Flask(__name__)
 sock = Sock(app)
 
+# Track active client socket pipelines
 connected_devices = {}
-ai_client = genai.Client()
+
+# Initialize GenAI Client with direct fallback authentication injection
+ai_client = genai.Client(api_key="AQ.Ab8RN6KZpYeF4n86cwzgJJffYagaZiZlxlcB9airDlhCIgjikg")
 
 @app.route('/favicon.ico')
 def favicon():
@@ -33,12 +36,14 @@ def core_routing_hub(ws):
                 break
             data_packet = json.loads(raw_payload)
             
+            # Handle handshake node registration
             if 'register' in data_packet:
                 device_identity = data_packet['register']
                 connected_devices[device_identity] = ws
                 print(f"[SYSTEM CORE] Device linked successfully: {device_identity}")
                 continue
             
+            # Intercept and process speech/text question payloads with AI Brain
             if data_packet.get('type') == 'question':
                 user_query = data_packet.get('payload', '')
                 print(f"[AI CORE] Processing conversational query: {user_query}")
@@ -47,15 +52,19 @@ def core_routing_hub(ws):
                         model='gemini-2.5-flash',
                         contents=user_query,
                         config=types.GenerateContentConfig(
-                            system_instruction="You are TiTaN, an advanced robotic AI assistant created by Malhar Deshmukh at TiTaN Labs Of iNNvovention. You are fully conversational. If the user talks in Marathi, answer in Marathi. If in Hindi, reply in Hindi. If in English, reply in English. Keep answers short (1-2 sentences).",
+                            system_instruction="""You are TiTaN, an advanced robotic AI assistant created by Malhar Deshmukh at TiTaN Labs Of iNNvovention. 
+                            You are fully conversational and empathetic, talking to the user just like a human peer would. 
+                            You are fully multilingual. If the user talks to you or asks a question in Marathi, answer cleanly in fluent Marathi. If they speak in Hindi, reply in Hindi. If they speak in English, reply in English. 
+                            Keep your answers smart, crisp, very short (maximum 1-2 sentences), and highly conversational so they sound natural when spoken out loud by the voice module.""",
                             max_output_tokens=150
                         )
                     )
                     ai_answer = response.text
                 except Exception as ai_err:
                     print(f"[AI ERROR] Failed to generate response: {ai_err}")
-                    ai_answer = "System pipeline error."
+                    ai_answer = "System pipeline error. Unable to process text context."
                 
+                # Broadcast AI answer text down to both endpoints simultaneously
                 reply_packet = json.dumps({'type': 'ai_reply', 'payload': ai_answer})
                 if 'deck' in connected_devices:
                     try: connected_devices['deck'].send(reply_packet)
@@ -65,13 +74,16 @@ def core_routing_hub(ws):
                     except: pass
                 continue
             
+            # Standard signaling cross-relay between operator and chassis nodes
             target_node = 'deck' if device_identity == 'robot' else 'robot'
             if target_node in connected_devices:
-                try: connected_devices[target_node].send(json.dumps(data_packet))
-                except Exception: del connected_devices[target_node]
+                try:
+                    connected_devices[target_node].send(json.dumps(data_packet))
+                except Exception:
+                    del connected_devices[target_node]
                     
     except Exception as error_context:
-        print(f"[DISCONNECT] Connection closed closed for: {device_identity}")
+        print(f"[DISCONNECT] Connection closed for: {device_identity}")
     finally:
         if device_identity in connected_devices:
             del connected_devices[device_identity]
