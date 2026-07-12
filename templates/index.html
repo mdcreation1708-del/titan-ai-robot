@@ -15,7 +15,7 @@
         .grid-container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 90%; max-width: 1000px; }
         h2 { color: #00e5ff; margin-top: 0; font-size: 1.3rem; letter-spacing: 1px; }
         .stream-window { width: 100%; height: 240px; background: #000; border-radius: 8px; border: 1px dashed #00e5ff; overflow: hidden; display: flex; align-items: center; justify-content: center; }
-        video { width: 100%; height: 100%; object-fit: cover; }
+        video { width: 100%; height: 100%; object-fit: cover; background: #000; }
         .control-pad { display: grid; grid-template-columns: repeat(3, 70px); gap: 10px; justify-content: center; margin: 20px 0; }
         .btn { background: #21262d; border: 1px solid #00e5ff; color: #00e5ff; padding: 15px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; }
         .btn:hover { background: #00e5ff; color: #000; }
@@ -42,7 +42,7 @@
         <div class="panel" style="width: auto; margin-bottom: 0;">
             <h2>LIVE VIDEO STREAM</h2>
             <div class="stream-window">
-                <video id="remoteVideo" autoplay playsinline></video>
+                <video id="remoteVideo" autoplay playsinline controls></video>
             </div>
             
             <h2>DRIVE SYSTEMS</h2>
@@ -108,7 +108,11 @@
 
         async function startVideoCall() {
             peerConnection = new RTCPeerConnection(rtcConfig);
-            peerConnection.ontrack = (event) => { document.getElementById('remoteVideo').srcObject = event.streams[0]; };
+            peerConnection.ontrack = (event) => { 
+                const remoteVid = document.getElementById('remoteVideo');
+                remoteVid.srcObject = event.streams[0];
+                remoteVid.play().catch(err => console.log("Auto-play blocked by browser layout constraints:", err));
+            };
             peerConnection.onicecandidate = (e) => {
                 if (e.candidate && ws.readyState === WebSocket.OPEN) {
                     ws.send(JSON.stringify({ type: 'candidate', candidate: e.candidate }));
