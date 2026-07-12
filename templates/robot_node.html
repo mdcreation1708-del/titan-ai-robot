@@ -6,55 +6,15 @@
     <title>TITAN AI - Robot Node</title>
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <style>
-        body { 
-            background-color: #0b0e14; 
-            color: #c9d1d9; 
-            font-family: Arial, sans-serif; 
-            margin: 0; 
-            padding: 20px; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-        }
-        .robot-box {
-            border: 2px solid #39ff14;
-            background: #101520;
-            border-radius: 12px;
-            padding: 30px;
-            text-align: center;
-            width: 90%;
-            max-width: 500px;
-            box-shadow: 0 0 20px rgba(57, 255, 20, 0.15);
-        }
+        body { background-color: #0b0e14; color: #c9d1d9; font-family: Arial, sans-serif; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        .robot-box { border: 2px solid #39ff14; background: #101520; border-radius: 12px; padding: 30px; text-align: center; width: 90%; max-width: 500px; box-shadow: 0 0 20px rgba(57, 255, 20, 0.15); }
         .header-container { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 5px; }
         .logo-img { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #39ff14; }
         .badge { background: transparent; border: 2px solid #39ff14; color: #39ff14; padding: 1px 8px; border-radius: 5px; font-size: 0.95rem; font-weight: bold; font-family: monospace; }
         .subtext { color: #8b949e; font-size: 0.9rem; letter-spacing: 1px; margin: 0 0 20px 0; font-family: monospace; }
         .live-indicator { color: #39ff14; font-weight: bold; animation: blink 1.5s infinite; }
-        .log-box {
-            background: #070a0f;
-            border: 1px solid #30363d;
-            height: 200px;
-            border-radius: 6px;
-            margin-top: 20px;
-            padding: 10px;
-            overflow-y: auto;
-            text-align: left;
-            font-family: monospace;
-            font-size: 0.85rem;
-        }
-        .action-btn {
-            background: #101520;
-            border: 2px solid #39ff14;
-            color: #39ff14;
-            padding: 12px 30px;
-            font-size: 1.1rem;
-            font-weight: bold;
-            border-radius: 8px;
-            cursor: pointer;
-            margin-top: 25px;
-            transition: 0.3s;
-        }
+        .log-box { background: #070a0f; border: 1px solid #30363d; height: 200px; border-radius: 6px; margin-top: 20px; padding: 10px; overflow-y: auto; text-align: left; font-family: monospace; font-size: 0.85rem; }
+        .action-btn { background: #101520; border: 2px solid #39ff14; color: #39ff14; padding: 12px 30px; font-size: 1.1rem; font-weight: bold; border-radius: 8px; cursor: pointer; margin-top: 25px; transition: 0.3s; }
         .action-btn:hover { background: #39ff14; color: #000; }
         .video-preview { width: 100%; height: 180px; background: #000; border-radius: 6px; margin-top: 15px; overflow: hidden; }
         video { width: 100%; height: 100%; object-fit: cover; }
@@ -62,7 +22,6 @@
     </style>
 </head>
 <body>
-
     <div class="robot-box">
         <div class="header-container">
             <img src="/favicon.ico" class="logo-img" alt="Logo">
@@ -70,28 +29,19 @@
             <span class="badge">MD</span>
         </div>
         <div class="subtext">TiTaN Labs Of iNNvovention</div>
-        
         <div>SYSTEM ENGINE STATUS: <span id="status-text" style="color:#ffaa00;">OFFLINE</span></div>
-        
         <div class="video-preview">
             <video id="localVideo" autoplay muted playsinline></video>
         </div>
-
         <button class="action-btn" id="act-btn" onclick="bootRobotHead()">BOOT SYSTEM</button>
-
         <div class="log-box" id="signal-log">
             <div style="color:#8b949e;">[System Ready. Awaiting Initialization Broadcast...]</div>
         </div>
     </div>
 
     <script>
-        let ws;
-        let recognition;
-        let active = false;
-        let localStream;
-        let peerConnection;
+        let ws; let recognition; let active = false; let localStream; let peerConnection;
         const logBox = document.getElementById('signal-log');
-        
         const rtcConfig = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
 
         function printLog(text, color="#c9d1d9") {
@@ -102,30 +52,47 @@
         function robotSpeak(textToSay) {
             if ('speechSynthesis' in window) {
                 window.speechSynthesis.cancel();
-                const voiceOut = new SpeechSynthesisUtterance(textToSay);
                 
-                // Inspects text payload script structure to match corresponding voice locale accent rules
-                const DevanagariPattern = /[\u0900-\u097F]/;
-                if (DevanagariPattern.test(textToSay)) {
-                    // Smart detection fallback logic for Marathi vs Hindi indicators
-                    if (textToSay.includes("आहे") || textToSay.includes("आहात") || textToSay.includes("कााय") || textToSay.includes("चालू")) {
-                        voiceOut.lang = 'mr-IN';
-                    } else {
-                        voiceOut.lang = 'hi-IN';
+                // Segments long text outputs cleanly to prevent underlying browser buffer drops
+                const sentences = textToSay.match(/[^.!?\n\।]+[.!?\n\।]*/g) || [textToSay];
+                let index = 0;
+                
+                function speakSentence() {
+                    if (index >= sentences.length) {
+                        if (active && recognition) { restartVoiceEngine(); }
+                        return;
                     }
-                } else {
-                    voiceOut.lang = 'en-US';
+                    const currentSentence = sentences[index].trim();
+                    if (currentSentence.length === 0) { index++; speakSentence(); return; }
+                    
+                    const voiceOut = new SpeechSynthesisUtterance(currentSentence);
+                    const DevanagariPattern = /[\u0900-\u097F]/;
+                    
+                    // Maps hardware speech profiles accurately targeting dialects
+                    if (DevanagariPattern.test(currentSentence)) {
+                        if (currentSentence.includes("आहे") || currentSentence.includes("आहात") || currentSentence.includes("नाही") || currentSentence.includes("चालू") || currentSentence.includes("म्हणजे")) {
+                            voiceOut.lang = 'mr-IN'; // Marathi Engine Accent Lock
+                        } else {
+                            voiceOut.lang = 'hi-IN'; // Hindi Engine Accent Lock
+                        }
+                    } else {
+                        voiceOut.lang = 'en-IN'; // Clear localized English profile
+                    }
+
+                    voiceOut.rate = 0.88;  // Safe pronunciation speed
+                    voiceOut.pitch = 1.00; // Natural mechanical pitch alignment
+                    
+                    const systemVoices = window.speechSynthesis.getVoices();
+                    const matchedVoice = systemVoices.find(v => v.lang === voiceOut.lang);
+                    if (matchedVoice) voiceOut.voice = matchedVoice;
+
+                    voiceOut.onend = () => { index++; speakSentence(); };
+                    voiceOut.onerror = () => { index++; speakSentence(); };
+
+                    if (recognition && active) { try { recognition.stop(); } catch(e){} }
+                    window.speechSynthesis.speak(voiceOut);
                 }
-
-                voiceOut.rate = 0.95;
-                voiceOut.pitch = 0.90;
-
-                if (recognition && active) { try { recognition.stop(); } catch(e){} }
-                
-                voiceOut.onend = () => {
-                    if (active && recognition) { restartVoiceEngine(); }
-                };
-                window.speechSynthesis.speak(voiceOut);
+                speakSentence();
             }
         }
 
@@ -134,19 +101,12 @@
             document.getElementById('act-btn').style.display = 'none';
             document.getElementById('status-text').innerHTML = "ONLINE";
             document.getElementById('status-text').className = "live-indicator";
-            
-            robotSpeak("Hello MD sir, Titan system is initialized and ready.");
-            printLog("Audio engine active.", "#39ff14");
-
+            robotSpeak("Titan intelligence system has successfully initialized deployment execution loops.");
             try {
-                // Configured to "environment" to force turn on your phone's back main lens camera perspective
                 localStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
                 document.getElementById('localVideo').srcObject = localStream;
-                printLog("Camera access granted. Starting capture...", "#39ff14");
-            } catch (err) {
-                printLog("CRITICAL: Camera pipeline access denied.", "#ff5555");
-            }
-
+                printLog("Camera access active.", "#39ff14");
+            } catch (err) { printLog("Camera pipeline access denied.", "#ff5555"); }
             initWebSocket();
             initLocalMic();
         }
@@ -154,104 +114,82 @@
         function initWebSocket() {
             const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
             ws = new WebSocket(protocol + window.location.host + '/core');
-
-            ws.onopen = () => {
-                ws.send(JSON.stringify({ register: 'robot' }));
-                printLog("Connected to Python Core Routing Hub.", "#39ff14");
-            };
-
+            ws.onopen = () => { ws.send(JSON.stringify({ register: 'robot' })); printLog("Connected to Python Core Hub.", "#39ff14"); };
             ws.onmessage = async (event) => {
                 const data = JSON.parse(event.data); 
-                
                 if (data.type === "ai_reply") {
-                    printLog(`TiTaN Response: "${data.payload}"`, "#39ff14");
+                    printLog(`TiTaN Output Stream Active...`, "#39ff14");
                     robotSpeak(data.payload);
-                } else if (data.type === "movement") {
-                    printLog(`Dashboard Movement Command: [${data.payload}]`, "#39ff14");
-                    robotSpeak(data.payload === "FORWARD" ? "Moving forward" : "Stopping");
-                } else if (data.type === "sdp" && data.sdp.type === 'offer') {
+                } 
+                else if (data.type === "movement") {
+                    printLog(`Movement Received: [${data.payload}]`, "#39ff14");
+                    
+                    // FIXED: Replaced old else statement with clear, dedicated direction mapping conditions
+                    if (data.payload === "FORWARD") {
+                        robotSpeak("Executing forward drive configuration.");
+                    } else if (data.payload === "REVERSE") {
+                        robotSpeak("Executing reverse drive configuration.");
+                    } else if (data.payload === "LEFT") {
+                        robotSpeak("Shifting kinematics left.");
+                    } else if (data.payload === "RIGHT") {
+                        robotSpeak("Shifting kinematics right.");
+                    } else if (data.payload === "STOP") {
+                        robotSpeak("Braking execution units.");
+                    }
+                } 
+                else if (data.type === "sdp" && data.sdp.type === 'offer') {
                     peerConnection = new RTCPeerConnection(rtcConfig);
                     localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
-                    
-                    peerConnection.onicecandidate = (e) => {
-                        if (e.candidate) {
-                            ws.send(JSON.stringify({ type: 'candidate', candidate: e.candidate })); 
-                        }
-                    };
-                    
+                    peerConnection.onicecandidate = (e) => { if (e.candidate) ws.send(JSON.stringify({ type: 'candidate', candidate: e.candidate })); };
                     await peerConnection.setRemoteDescription(new RTCSessionDescription(data.sdp));
                     const answer = await peerConnection.createAnswer();
                     await peerConnection.setLocalDescription(answer);
-                    
                     ws.send(JSON.stringify({ type: 'sdp', sdp: answer })); 
-                    printLog("Video stream established with secondary dashboard.", "#39ff14");
                 } else if (data.type === "candidate" && peerConnection) {
                     try { await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate)); } catch(e){}
                 }
             };
-
-            ws.onerror = (err) => printLog("WebSocket error encountered.", "#ff5555");
-            ws.onclose = () => {
-                printLog("Socket disconnected. Reconnecting in 3s...", "#ffaa00");
-                setTimeout(initWebSocket, 3000);
-            };
+            ws.onclose = () => { setTimeout(initWebSocket, 3000); };
         }
 
         function initLocalMic() {
             window.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if(!window.SpeechRecognition) {
-                printLog("Speech recognition not supported on this browser.", "#ff5555");
-                return;
-            }
-
+            if(!window.SpeechRecognition) return;
             recognition = new window.SpeechRecognition();
-            recognition.continuous = false;
-            recognition.interimResults = false;
-            
-            // Empty locale config allows modern Android/iOS engines to auto-transcribe regional speech accents seamlessly
-            recognition.lang = ''; 
-
-            recognition.onend = () => { 
-                if(active) { restartVoiceEngine(); } 
-            };
-
-            recognition.onerror = (e) => {
-                if(e.error !== 'no-speech') {
-                    printLog("Mic status: " + e.error, "#8b949e");
-                }
-            };
-
+            recognition.continuous = false; recognition.interimResults = false; recognition.lang = '';
+            recognition.onend = () => { if(active) restartVoiceEngine(); };
             recognition.onresult = (event) => {
                 const speech = event.results[0][0].transcript.toLowerCase().trim();
                 printLog(`Heard: "${speech}"`, "#8b949e");
-
-                // Cross-language trigger matrix matching matching phonetics for "Titan", "टायटन", "टीटान"
                 if (speech.includes("titan") || speech.includes("tighten") || speech.includes("टाय") || speech.includes("टीटा")) {
-                    printLog("Wake word triggered! Processing instruction...", "#00e5ff");
-                    
                     if (speech.includes("forward") || speech.includes("पुढे") || speech.includes("आगे")) {
                         if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'movement', payload: 'FORWARD' }));
-                        robotSpeak("Moving Boss");
+                        robotSpeak("Forward instructions acknowledged.");
+                    } else if (speech.includes("reverse") || speech.includes("मागे") || speech.includes("पीछे")) {
+                        if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'movement', payload: 'REVERSE' }));
+                        robotSpeak("Reverse instructions acknowledged.");
+                    } else if (speech.includes("left") || speech.includes("डावीकडे") || speech.includes("बाये")) {
+                        if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'movement', payload: 'LEFT' }));
+                        robotSpeak("Turning left.");
+                    } else if (speech.includes("right") || speech.includes("उजवीकडे") || speech.includes("दाये")) {
+                        if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'movement', payload: 'RIGHT' }));
+                        robotSpeak("Turning right.");
                     } else if (speech.includes("stop") || speech.includes("थांब") || speech.includes("रुको")) {
                         if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'movement', payload: 'STOP' }));
-                        robotSpeak("Stopping Boss");
+                        robotSpeak("Halting chassis motors.");
                     } else {
-                        // Forwards all open questions up to the Python Gemini module
                         if (ws && ws.readyState === WebSocket.OPEN) {
                             ws.send(JSON.stringify({ type: 'question', payload: speech }));
                         }
                     }
                 }
             };
-
             try { recognition.start(); } catch(e){}
         }
 
         function restartVoiceEngine() {
             try { recognition.stop(); } catch(e){}
-            setTimeout(() => {
-                try { if (active) recognition.start(); } catch(e){}
-            }, 400);
+            setTimeout(() => { try { if (active) recognition.start(); } catch(e){} }, 400);
         }
     </script>
 </body>
