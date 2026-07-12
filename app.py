@@ -8,6 +8,7 @@ from google.genai import types
 app = Flask(__name__)
 sock = Sock(app)
 
+# Active WebSocket device mapping array
 connected_devices = {}
 ai_client = genai.Client(api_key="AQ.Ab8RN6KZpYeF4n86cwzgJJffYagaZiZlxlcB9airDlhCIgjikg")
 
@@ -33,12 +34,14 @@ def core_routing_hub(ws):
                 break
             data_packet = json.loads(raw_payload)
             
+            # Handshake device identifier registration mapping
             if 'register' in data_packet:
                 device_identity = data_packet['register']
                 connected_devices[device_identity] = ws
                 print(f"[SYSTEM CORE] Device linked successfully: {device_identity}")
                 continue
             
+            # Conversational AI Query Interface Path
             if data_packet.get('type') == 'question':
                 user_query = data_packet.get('payload', '')
                 print(f"[AI CORE] Processing conversational query: {user_query}")
@@ -61,6 +64,7 @@ def core_routing_hub(ws):
                     ai_answer = "System variance caught in core processing pipeline execution loop."
                 
                 reply_packet = json.dumps({'type': 'ai_reply', 'payload': ai_answer})
+                # Broadcast back to control display layers instantly
                 if 'deck' in connected_devices:
                     try: connected_devices['deck'].send(reply_packet)
                     except: pass
@@ -69,7 +73,10 @@ def core_routing_hub(ws):
                     except: pass
                 continue
             
-            target_node = 'deck' if device_identity == 'robot' else 'robot'
+            # FIXED INTERNAL ROUTING PIPELINE
+            # If data comes from deck -> send to robot. If data comes from robot -> send to deck.
+            target_node = 'robot' if device_identity == 'deck' else 'deck'
+            
             if target_node in connected_devices:
                 try:
                     connected_devices[target_node].send(json.dumps(data_packet))
