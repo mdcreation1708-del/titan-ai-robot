@@ -8,10 +8,10 @@ from google.genai import types
 app = Flask(__name__)
 sock = Sock(app)
 
-# Track active client socket pipelines
+# Active WebSocket device mapping
 connected_devices = {}
 
-# Initialize GenAI Client with direct fallback authentication injection
+# Standard Hardcoded Authentication Initialization Block
 ai_client = genai.Client(api_key="AQ.Ab8RN6KZpYeF4n86cwzgJJffYagaZiZlxlcB9airDlhCIgjikg")
 
 @app.route('/favicon.ico')
@@ -36,35 +36,37 @@ def core_routing_hub(ws):
                 break
             data_packet = json.loads(raw_payload)
             
-            # Handle handshake node registration
+            # Handshake device identifier registration
             if 'register' in data_packet:
                 device_identity = data_packet['register']
                 connected_devices[device_identity] = ws
                 print(f"[SYSTEM CORE] Device linked successfully: {device_identity}")
                 continue
             
-            # Intercept and process speech/text question payloads with AI Brain
+            # Asynchronous conversational query intercept loop
             if data_packet.get('type') == 'question':
                 user_query = data_packet.get('payload', '')
                 print(f"[AI CORE] Processing conversational query: {user_query}")
                 try:
+                    # Comprehensive prompt bounds with massive token ceiling to stop cutoff errors
                     response = ai_client.models.generate_content(
                         model='gemini-2.5-flash',
                         contents=user_query,
                         config=types.GenerateContentConfig(
-                            system_instruction="""You are TiTaN, an advanced robotic AI assistant created by Malhar Deshmukh at TiTaN Labs Of iNNvovention. 
-                            You are fully conversational and empathetic, talking to the user just like a human peer would. 
-                            You are fully multilingual. If the user talks to you or asks a question in Marathi, answer cleanly in fluent Marathi. If they speak in Hindi, reply in Hindi. If they speak in English, reply in English. 
-                            Keep your answers smart, crisp, very short (maximum 1-2 sentences), and highly conversational so they sound natural when spoken out loud by the voice module.""",
-                            max_output_tokens=150
+                            system_instruction="""You are TiTaN, a highly advanced robotic AI assistant designed for mechatronics and automation tasks by Malhar Deshmukh at TiTaN Labs Of iNNvovention.
+                            You must always provide technically complete, highly intelligent, exhaustive, and fully structured answers that pass rigorous academic and supervisor review panels.
+                            Never truncate, crop, or cut off any sentence halfway. Every explanation must conclude its complete logical thought structure fully.
+                            You are deeply multilingual. If the user talks to you or asks a question in Marathi (or requests 'tell marathi'), lock your processing entirely into fluent, grammatically perfect Marathi text. If they speak in Hindi, respond professionally in Hindi. If they speak in English, respond in English.
+                            When answering queries regarding historical icons, structural histories, or kings—especially the legendary Chhatrapati Shivaji Maharaj—you must write with absolute reverence, profound dignity, and deep, thorough detail.""",
+                            max_output_tokens=3072  # High output volume bounds to avoid memory block truncation
                         )
                     )
                     ai_answer = response.text
                 except Exception as ai_err:
                     print(f"[AI ERROR] Failed to generate response: {ai_err}")
-                    ai_answer = "System pipeline error. Unable to process text context."
+                    ai_answer = "System variance caught in core processing pipeline execution loop."
                 
-                # Broadcast AI answer text down to both endpoints simultaneously
+                # Double broadcast out to console display layouts simultaneously
                 reply_packet = json.dumps({'type': 'ai_reply', 'payload': ai_answer})
                 if 'deck' in connected_devices:
                     try: connected_devices['deck'].send(reply_packet)
@@ -74,7 +76,7 @@ def core_routing_hub(ws):
                     except: pass
                 continue
             
-            # Standard signaling cross-relay between operator and chassis nodes
+            # Bidirectional cross-relay logic between control interfaces
             target_node = 'deck' if device_identity == 'robot' else 'robot'
             if target_node in connected_devices:
                 try:
