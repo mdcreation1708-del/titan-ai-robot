@@ -6,27 +6,8 @@
     <title>TITAN AI - Main Dashboard</title>
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <style>
-        body { 
-            background-color: #0d1117; 
-            color: #c9d1d9; 
-            font-family: Arial, sans-serif; 
-            margin: 0; 
-            padding: 20px; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-        }
-        .panel { 
-            background: #161b22; 
-            border: 2px solid #00e5ff; 
-            border-radius: 12px; 
-            padding: 20px; 
-            text-align: center; 
-            box-shadow: 0 0 15px rgba(0, 229, 255, 0.1); 
-            width: 90%;
-            max-width: 960px;
-            margin-bottom: 20px;
-        }
+        body { background-color: #0d1117; color: #c9d1d9; font-family: Arial, sans-serif; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        .panel { background: #161b22; border: 2px solid #00e5ff; border-radius: 12px; padding: 20px; text-align: center; box-shadow: 0 0 15px rgba(0, 229, 255, 0.1); width: 90%; max-width: 960px; margin-bottom: 20px; }
         .header-container { display: flex; align-items: center; justify-content: center; gap: 15px; }
         .logo-img { width: 45px; height: 45px; border-radius: 50%; border: 2px solid #00e5ff; }
         .badge { background: transparent; border: 2px solid #00e5ff; color: #00e5ff; padding: 2px 10px; border-radius: 6px; font-size: 1rem; font-weight: bold; font-family: monospace; }
@@ -45,7 +26,6 @@
     </style>
 </head>
 <body>
-
     <div class="panel">
         <div class="header-container">
             <img src="/favicon.ico" class="logo-img" alt="Logo">
@@ -95,8 +75,7 @@
 
     <script>
         const logs = document.getElementById('terminal-logs');
-        let ws;
-        let peerConnection;
+        let ws; let peerConnection;
         const rtcConfig = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
 
         function initWebSocket() {
@@ -111,10 +90,8 @@
 
             ws.onmessage = async (event) => {
                 const data = JSON.parse(event.data); 
-                
-                // Displays the smart AI generation on your dashboard screen layout
                 if (data.type === 'ai_reply') {
-                    logs.innerHTML += `<div style="color:#39ff14;"><strong>TiTaN:</strong> ${data.payload}</div>`;
+                    logs.innerHTML += `<div style="color:#39ff14; margin-bottom:8px;"><strong>TiTaN:</strong> ${data.payload}</div>`;
                     logs.scrollTop = logs.scrollHeight;
                 } else if (data.type === 'sdp' && data.sdp.type === 'answer') {
                     await peerConnection.setRemoteDescription(new RTCSessionDescription(data.sdp));
@@ -131,15 +108,12 @@
 
         async function startVideoCall() {
             peerConnection = new RTCPeerConnection(rtcConfig);
-            peerConnection.ontrack = (event) => { 
-                document.getElementById('remoteVideo').srcObject = event.streams[0]; 
-            };
+            peerConnection.ontrack = (event) => { document.getElementById('remoteVideo').srcObject = event.streams[0]; };
             peerConnection.onicecandidate = (e) => {
                 if (e.candidate && ws.readyState === WebSocket.OPEN) {
                     ws.send(JSON.stringify({ type: 'candidate', candidate: e.candidate }));
                 }
             };
-
             peerConnection.addTransceiver('video', { direction: 'recvonly' });
             const offer = await peerConnection.createOffer();
             await peerConnection.setLocalDescription(offer);
@@ -157,10 +131,8 @@
         function sendManualMessage() {
             const input = document.getElementById('user-msg');
             if(!input.value.trim()) return;
-
             logs.innerHTML += `<div style="color:#fff;">&gt; User: ${input.value}</div>`;
             logs.scrollTop = logs.scrollHeight;
-
             if (ws && ws.readyState === WebSocket.OPEN) {
                 ws.send(JSON.stringify({ type: 'question', payload: input.value }));
             }
