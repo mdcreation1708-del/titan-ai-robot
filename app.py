@@ -1,94 +1,155 @@
-import os
-import json
-from flask import Flask, render_template, send_from_directory
-from flask_sock import Sock
-from google import genai
-from google.genai import types
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TITAN AI - Main Dashboard</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <style>
+        body { background-color: #0d1117; color: #c9d1d9; font-family: Arial, sans-serif; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        .panel { background: #161b22; border: 2px solid #00e5ff; border-radius: 12px; padding: 20px; text-align: center; box-shadow: 0 0 15px rgba(0, 229, 255, 0.1); width: 90%; max-width: 960px; margin-bottom: 20px; }
+        .header-container { display: flex; align-items: center; justify-content: center; gap: 15px; }
+        .logo-img { width: 45px; height: 45px; border-radius: 50%; border: 2px solid #00e5ff; }
+        .badge { background: transparent; border: 2px solid #00e5ff; color: #00e5ff; padding: 2px 10px; border-radius: 6px; font-size: 1rem; font-weight: bold; font-family: monospace; }
+        .subtext { color: #8b949e; font-size: 0.95rem; letter-spacing: 1px; margin: 5px 0 0 0; font-family: monospace; }
+        .grid-container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 90%; max-width: 1000px; }
+        h2 { color: #00e5ff; margin-top: 0; font-size: 1.3rem; letter-spacing: 1px; }
+        .stream-window { width: 100%; height: 240px; background: #000; border-radius: 8px; border: 1px dashed #00e5ff; overflow: hidden; display: flex; align-items: center; justify-content: center; scroll-margin-top: 20px; }
+        video { width: 100%; height: 100%; object-fit: cover; background: #000; }
+        .control-pad { display: grid; grid-template-columns: repeat(3, 70px); gap: 10px; justify-content: center; margin: 20px 0; }
+        .btn { background: #21262d; border: 1px solid #00e5ff; color: #00e5ff; padding: 15px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .btn:hover { background: #00e5ff; color: #000; }
+        .btn-empty { border: none; background: transparent; }
+        .chat-area { height: 160px; background: #0d1117; border-radius: 6px; border: 1px solid #30363d; overflow-y: auto; padding: 10px; text-align: left; font-size: 0.9rem; }
+        .chat-input-row { display: flex; gap: 10px; margin-top: 10px; }
+        .chat-input { flex: 1; background: #0d1117; border: 1px solid #30363d; color: #fff; padding: 10px; border-radius: 6px; }
+        .nav-link { color: #00e5ff; text-decoration: none; font-family: monospace; font-weight: bold; font-size: 0.95rem; transition: 0.2s; }
+        .nav-link:hover { text-decoration: underline; opacity: 0.8; }
+    </style>
+</head>
+<body>
+    <div class="panel">
+        <div class="header-container">
+            <img src="/favicon.ico" class="logo-img" alt="Logo">
+            <h1 style="color:#00e5ff; margin:0; font-size:1.8rem; letter-spacing:2px;">TITAN CENTRAL COMMAND</h1>
+            <span class="badge">MD</span>
+        </div>
+        <div class="subtext">TiTaN Labs Of iNNvovention</div>
+        <p style="margin:12px 0 0 0; color:#8b949e; font-size: 0.9rem;" id="net-status">
+            <span style="color:#ffaa00;">●</span> Connecting Core Hub Pipeline...
+        </p>
+        <div style="margin-top: 15px; border-top: 1px solid #30363d; padding-top: 12px; display: flex; justify-content: center; gap: 30px;">
+            <a href="/robot" class="nav-link">🔗 LAUNCH SMART PHONE NODE →</a>
+            <a href="#remoteVideo" class="nav-link" style="color: #ff007f;">📺 FOCUS CAMERA VIEWPORT ↓</a>
+        </div>
+    </div>
 
-app = Flask(__name__)
-sock = Sock(app)
-
-# Active WebSocket device mapping array
-connected_devices = {}
-ai_client = genai.Client(api_key="AQ.Ab8RN6KZpYeF4n86cwzgJJffYagaZiZlxlcB9airDlhCIgjikg")
-
-@app.route('/favicon.ico')
-def favicon():
-    return send_from_directory(app.root_path, 'favicon.ico', mimetype='image/vnd.microsoft.icon')
-
-@app.route('/')
-def index():
-    return render_template('index.html')
-
-@app.route('/robot')
-def robot():
-    return render_template('robot_node.html')
-
-@sock.route('/core')
-def core_routing_hub(ws):
-    device_identity = None
-    try:
-        while True:
-            raw_payload = ws.receive()
-            if not raw_payload:
-                break
-            data_packet = json.loads(raw_payload)
+    <div class="grid-container">
+        <div class="panel" style="width: auto; margin-bottom: 0;">
+            <h2>LIVE VIDEO STREAM</h2>
+            <div class="stream-window">
+                <video id="remoteVideo" autoplay playsinline controls></video>
+            </div>
             
-            # Handshake device identifier registration mapping
-            if 'register' in data_packet:
-                device_identity = data_packet['register']
-                connected_devices[device_identity] = ws
-                print(f"[SYSTEM CORE] Device linked successfully: {device_identity}")
-                continue
-            
-            # Conversational AI Query Interface Path
-            if data_packet.get('type') == 'question':
-                user_query = data_packet.get('payload', '')
-                print(f"[AI CORE] Processing conversational query: {user_query}")
-                try:
-                    response = ai_client.models.generate_content(
-                        model='gemini-2.5-flash',
-                        contents=user_query,
-                        config=types.GenerateContentConfig(
-                            system_instruction="""You are TiTaN, a highly advanced robotic AI assistant designed for mechatronics and automation tasks by Malhar Deshmukh at TiTaN Labs Of iNNvovention.
-                            You must always provide technically complete, highly intelligent, exhaustive, and fully structured answers that pass rigorous academic and supervisor review panels.
-                            Never truncate, crop, or cut off any sentence halfway. Every explanation must conclude its complete logical thought structure fully.
-                            You are deeply multilingual. If the user talks to you or asks a question in Marathi (or requests 'tell marathi'), lock your processing entirely into fluent, grammatically perfect Marathi text. If they speak in Hindi, respond professionally in Hindi. If they speak in English, respond in English.
-                            When answering queries regarding historical icons, structural histories, or kings—especially the legendary Chhatrapati Shivaji Maharaj—you must write with absolute reverence, profound dignity, and deep, thorough detail.""",
-                            max_output_tokens=3072
-                        )
-                    )
-                    ai_answer = response.text
-                except Exception as ai_err:
-                    print(f"[AI ERROR] Failed to generate response: {ai_err}")
-                    ai_answer = "System variance caught in core processing pipeline execution loop."
-                
-                reply_packet = json.dumps({'type': 'ai_reply', 'payload': ai_answer})
-                # Broadcast back to control display layers instantly
-                if 'deck' in connected_devices:
-                    try: connected_devices['deck'].send(reply_packet)
-                    except: pass
-                if 'robot' in connected_devices:
-                    try: connected_devices['robot'].send(reply_packet)
-                    except: pass
-                continue
-            
-            # FIXED INTERNAL ROUTING PIPELINE
-            # If data comes from deck -> send to robot. If data comes from robot -> send to deck.
-            target_node = 'robot' if device_identity == 'deck' else 'deck'
-            
-            if target_node in connected_devices:
-                try:
-                    connected_devices[target_node].send(json.dumps(data_packet))
-                except Exception:
-                    del connected_devices[target_node]
-                    
-    except Exception as error_context:
-        print(f"[DISCONNECT] Connection closed for: {device_identity}")
-    finally:
-        if device_identity in connected_devices:
-            del connected_devices[device_identity]
+            <h2>DRIVE SYSTEMS</h2>
+            <div class="control-pad">
+                <button class="btn-empty"></button>
+                <button class="btn" onclick="sendCommand('FORWARD')">▲</button>
+                <button class="btn-empty"></button>
+                <button class="btn" onclick="sendCommand('LEFT')">◀</button>
+                <button class="btn" onclick="sendCommand('STOP')" style="border-color:#ff5555; color:#ff5555;">■</button>
+                <button class="btn" onclick="sendCommand('RIGHT')">▶</button>
+                <button class="btn-empty"></button>
+                <button class="btn" onclick="sendCommand('REVERSE')">▼</button>
+                <button class="btn-empty"></button>
+            </div>
+        </div>
 
-if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port)
+        <div class="panel" style="width: auto; margin-bottom: 0; display:flex; flex-direction:column; justify-content:space-between;">
+            <div>
+                <h2>MANUAL AI TERMINAL</h2>
+                <div class="chat-area" id="terminal-logs">
+                    <div style="color:#8b949e;">[System Initialization Complete] Console Ready...</div>
+                </div>
+            </div>
+            <div class="chat-input-row">
+                <input type="text" class="chat-input" id="user-msg" placeholder="Type manual instructions here..." onkeydown="if(event.key==='Enter') sendManualMessage()">
+                <button class="btn" style="padding:10px 20px;" onclick="sendManualMessage()">SEND</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const logs = document.getElementById('terminal-logs');
+        let ws; let peerConnection;
+        const rtcConfig = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
+
+        function initWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+            ws = new WebSocket(protocol + window.location.host + '/core');
+
+            ws.onopen = () => {
+                ws.send(JSON.stringify({ register: 'deck' }));
+                document.getElementById('net-status').innerHTML = '<span style="color:#39ff14;">●</span> Central Deck Link Active';
+                startVideoCall();
+            };
+
+            ws.onmessage = async (event) => {
+                const data = JSON.parse(event.data); 
+                if (data.type === 'ai_reply') {
+                    logs.innerHTML += `<div style="color:#39ff14; margin-bottom:8px;"><strong>TiTaN:</strong> ${data.payload}</div>`;
+                    logs.scrollTop = logs.scrollHeight;
+                } else if (data.type === 'sdp' && data.sdp.type === 'answer') {
+                    await peerConnection.setRemoteDescription(new RTCSessionDescription(data.sdp));
+                } else if (data.type === 'candidate') {
+                    try { await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate)); } catch(e){}
+                }
+            };
+
+            ws.onclose = () => {
+                document.getElementById('net-status').innerHTML = '<span style="color:#ffaa00;">●</span> Reconnecting pipeline...';
+                setTimeout(initWebSocket, 3000);
+            };
+        }
+
+        async function startVideoCall() {
+            peerConnection = new RTCPeerConnection(rtcConfig);
+            peerConnection.ontrack = (event) => { 
+                const remoteVid = document.getElementById('remoteVideo');
+                remoteVid.srcObject = event.streams[0];
+                remoteVid.play().catch(err => console.log("Auto-play blocked by browser layout constraints:", err));
+            };
+            peerConnection.onicecandidate = (e) => {
+                if (e.candidate && ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({ type: 'candidate', candidate: e.candidate }));
+                }
+            };
+            peerConnection.addTransceiver('video', { direction: 'recvonly' });
+            const offer = await peerConnection.createOffer();
+            await peerConnection.setLocalDescription(offer);
+            ws.send(JSON.stringify({ type: 'sdp', sdp: offer }));
+        }
+
+        function sendCommand(dir) {
+            logs.innerHTML += `<div style="color:#00e5ff;">&gt; Chassis Instruction Sent: ${dir}</div>`;
+            logs.scrollTop = logs.scrollHeight;
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: 'movement', payload: dir }));
+            }
+        }
+
+        function sendManualMessage() {
+            const input = document.getElementById('user-msg');
+            if(!input.value.trim()) return;
+            logs.innerHTML += `<div style="color:#fff;">&gt; User: ${input.value}</div>`;
+            logs.scrollTop = logs.scrollHeight;
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: 'question', payload: input.value }));
+            }
+            input.value = '';
+        }
+
+        window.onload = initWebSocket;
+    </script>
+</body>
+</html>
