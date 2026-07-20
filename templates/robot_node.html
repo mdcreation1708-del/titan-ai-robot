@@ -18,6 +18,8 @@
         .action-btn:hover { background: #39ff14; color: #000; }
         .video-preview { width: 100%; height: 180px; background: #000; border-radius: 6px; margin-top: 15px; overflow: hidden; }
         video { width: 100%; height: 100%; object-fit: cover; }
+        .nav-link { margin-top: 20px; border-top: 1px solid #30363d; padding-top: 15px; display: block; color: #39ff14; text-decoration: none; font-family: monospace; font-weight: bold; font-size: 0.95rem; }
+        .nav-link:hover { text-decoration: underline; }
         @keyframes blink { 0% { opacity: 0.4; } 50% { opacity: 1; } 100% { opacity: 0.4; } }
     </style>
 </head>
@@ -37,6 +39,7 @@
         <div class="log-box" id="signal-log">
             <div style="color:#8b949e;">[System Ready. Awaiting User Activation Loop...]</div>
         </div>
+        <a href="/" class="nav-link">← RETURN TO MAIN CONTROL DESK</a>
     </div>
 
     <script>
@@ -109,7 +112,6 @@
             robotSpeak("Hello MD sir, Titan system is initialized and ready.");
             
             try {
-                // FIXED: Requesting environment camera access explicitly inside the user click bounds
                 localStream = await navigator.mediaDevices.getUserMedia({ 
                     video: { facingMode: "environment", width: 640, height: 480 }, 
                     audio: false 
@@ -143,7 +145,6 @@
                     }
                 } 
                 else if (data.type === "sdp" && data.sdp.type === 'offer') {
-                    // FIXED: Re-initializing connection setup to pass media track profiles down
                     peerConnection = new RTCPeerConnection(rtcConfig);
                     if (localStream) {
                         localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
@@ -176,7 +177,6 @@
                 
                 if (speech.includes("titan") || speech.includes("tighten") || speech.includes("टाय") || speech.includes("टीटा")) {
                     
-                    // FIXED: Added absolute code return isolation paths to block crossover bugs
                     if (speech.includes("forward") || speech.includes("पुढे") || speech.includes("आगे")) {
                         if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'movement', payload: 'FORWARD' }));
                         robotSpeak("Moving Boss.");
