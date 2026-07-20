@@ -14,7 +14,7 @@
         .subtext { color: #8b949e; font-size: 0.95rem; letter-spacing: 1px; margin: 5px 0 0 0; font-family: monospace; }
         .grid-container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 90%; max-width: 1000px; }
         h2 { color: #00e5ff; margin-top: 0; font-size: 1.3rem; letter-spacing: 1px; }
-        .stream-window { width: 100%; height: 240px; background: #000; border-radius: 8px; border: 1px dashed #00e5ff; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+        .stream-window { width: 100%; height: 240px; background: #000; border-radius: 8px; border: 1px dashed #00e5ff; overflow: hidden; display: flex; align-items: center; justify-content: center; scroll-margin-top: 20px; }
         video { width: 100%; height: 100%; object-fit: cover; background: #000; }
         .control-pad { display: grid; grid-template-columns: repeat(3, 70px); gap: 10px; justify-content: center; margin: 20px 0; }
         .btn { background: #21262d; border: 1px solid #00e5ff; color: #00e5ff; padding: 15px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; }
@@ -23,8 +23,12 @@
         .chat-area { height: 160px; background: #0d1117; border-radius: 6px; border: 1px solid #30363d; overflow-y: auto; padding: 10px; text-align: left; font-size: 0.9rem; }
         .chat-input-row { display: flex; gap: 10px; margin-top: 10px; }
         .chat-input { flex: 1; background: #0d1117; border: 1px solid #30363d; color: #fff; padding: 10px; border-radius: 6px; }
-        .nav-link { margin-top: 15px; border-top: 1px solid #30363d; padding-top: 12px; display: block; color: #00e5ff; text-decoration: none; font-family: monospace; font-weight: bold; font-size: 0.95rem; }
-        .nav-link:hover { text-decoration: underline; }
+        .nav-link { color: #00e5ff; text-decoration: none; font-family: monospace; font-weight: bold; font-size: 0.95rem; transition: 0.2s; }
+        .nav-link:hover { text-decoration: underline; opacity: 0.8; }
+        
+        /* New Tracking Status Layout Styles */
+        .status-bar-container { display: flex; justify-content: center; gap: 40px; margin: 12px 0; font-family: monospace; font-size: 0.95rem; }
+        .stat-indicator { font-weight: bold; }
     </style>
 </head>
 <body>
@@ -35,10 +39,17 @@
             <span class="badge">MD</span>
         </div>
         <div class="subtext">TiTaN Labs Of iNNvovention</div>
-        <p style="margin:12px 0 0 0; color:#8b949e; font-size: 0.9rem;" id="net-status">
-            <span style="color:#ffaa00;">●</span> Connecting Core Hub Pipeline...
-        </p>
-        <a href="/robot" class="nav-link">🔗 SWITCH TO PHONE NODE LAUNCHPAD →</a>
+        
+        <!-- Dual Realtime Telemetry Tracking Bar -->
+        <div class="status-bar-container">
+            <div id="net-status"><span style="color:#ffaa00;">●</span> PIPELINE: CONNECTING...</div>
+            <div id="esp-status"><span style="color:#ff5555;">●</span> ESP32 CHASSIS: OFFLINE</div>
+        </div>
+
+        <div style="margin-top: 15px; border-top: 1px solid #30363d; padding-top: 12px; display: flex; justify-content: center; gap: 30px;">
+            <a href="/robot" class="nav-link">🔗 LAUNCH SMART PHONE NODE →</a>
+            <a href="#remoteVideo" class="nav-link" style="color: #ff007f;">📺 FOCUS CAMERA VIEWPORT ↓</a>
+        </div>
     </div>
 
     <div class="grid-container">
@@ -87,13 +98,23 @@
 
             ws.onopen = () => {
                 ws.send(JSON.stringify({ register: 'deck' }));
-                document.getElementById('net-status').innerHTML = '<span style="color:#39ff14;">●</span> Central Deck Link Active';
+                document.getElementById('net-status').innerHTML = '<span style="color:#39ff14;">●</span> PIPELINE: ACTIVE';
                 startVideoCall();
             };
 
             ws.onmessage = async (event) => {
                 const data = JSON.parse(event.data); 
-                if (data.type === 'ai_reply') {
+                
+                // Track Dynamic ESP32 Network Telemetry Messages
+                if (data.type === 'esp_status') {
+                    const espBar = document.getElementById('esp-status');
+                    if (data.payload === 'ONLINE') {
+                        espBar.innerHTML = '<span style="color:#39ff14;">●</span> ESP32 CHASSIS: ONLINE';
+                    } else {
+                        espBar.innerHTML = '<span style="color:#ff5555;">●</span> ESP32 CHASSIS: OFFLINE';
+                    }
+                } 
+                else if (data.type === 'ai_reply') {
                     logs.innerHTML += `<div style="color:#39ff14; margin-bottom:8px;"><strong>TiTaN:</strong> ${data.payload}</div>`;
                     logs.scrollTop = logs.scrollHeight;
                 } else if (data.type === 'sdp' && data.sdp.type === 'answer') {
@@ -104,7 +125,8 @@
             };
 
             ws.onclose = () => {
-                document.getElementById('net-status').innerHTML = '<span style="color:#ffaa00;">●</span> Reconnecting pipeline...';
+                document.getElementById('net-status').innerHTML = '<span style="color:#ffaa00;">●</span> PIPELINE: RECONNECTING...';
+                document.getElementById('esp-status').innerHTML = '<span style="color:#ff5555;">●</span> ESP32 CHASSIS: OFFLINE';
                 setTimeout(initWebSocket, 3000);
             };
         }
