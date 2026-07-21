@@ -7,7 +7,7 @@
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <style>
         body { background-color: #0d1117; color: #c9d1d9; font-family: Arial, sans-serif; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
-        .panel { background: #161b22; border: 2px solid #00e5ff; border-radius: 12px; padding: 20px; text-align: center; box-shadow: 0 0 15px rgba(0, 229, 255, 0.1); width: 90%; max-width: 960px; margin-bottom: 20px; }
+        .panel { background: #161b22; border: 2px solid #00e5ff; border-radius: 12px; padding: 20px; text-align: center; box-shadow: 0 0 15px rgba(0, 229, 255, 0.1); width: 90%; max-width: 960px; margin-bottom: 20px; position: relative; }
         .header-container { display: flex; align-items: center; justify-content: center; gap: 15px; }
         .logo-img { width: 45px; height: 45px; border-radius: 50%; border: 2px solid #00e5ff; }
         .badge { background: transparent; border: 2px solid #00e5ff; color: #00e5ff; padding: 2px 10px; border-radius: 6px; font-size: 1rem; font-weight: bold; font-family: monospace; }
@@ -26,26 +26,61 @@
         .nav-link { color: #00e5ff; text-decoration: none; font-family: monospace; font-weight: bold; font-size: 0.95rem; transition: 0.2s; }
         .nav-link:hover { text-decoration: underline; opacity: 0.8; }
         
-        /* New Tracking Status Layout Styles */
-        .status-bar-container { display: flex; justify-content: center; gap: 40px; margin: 12px 0; font-family: monospace; font-size: 0.95rem; }
-        .stat-indicator { font-weight: bold; }
+        /* Pure Settings Icon Button with Dynamic Glow Ring */
+        .settings-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: #0d1117;
+            border: 2px solid #ff5555; /* Default Offline state (Red border) */
+            color: #ff5555;
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 8px rgba(255, 85, 85, 0.3);
+        }
+
+        .settings-btn:hover {
+            transform: rotate(45deg);
+        }
+
+        .settings-btn.online {
+            border-color: #39ff14; /* Online state (Green border) */
+            color: #39ff14;
+            box-shadow: 0 0 12px rgba(57, 255, 20, 0.6);
+        }
+
+        .settings-btn svg {
+            width: 22px;
+            height: 22px;
+            fill: currentColor;
+        }
     </style>
 </head>
 <body>
     <div class="panel">
+        <!-- Settings Gear Icon Button (Zero Text) -->
+        <button class="settings-btn" id="esp-settings-btn" onclick="checkEspConnection()" title="Ping ESP32 Status">
+            <svg viewBox="0 0 24 24">
+                <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
+            </svg>
+        </button>
+
         <div class="header-container">
             <img src="/favicon.ico" class="logo-img" alt="Logo">
             <h1 style="color:#00e5ff; margin:0; font-size:1.8rem; letter-spacing:2px;">TITAN CENTRAL COMMAND</h1>
             <span class="badge">MD</span>
         </div>
         <div class="subtext">TiTaN Labs Of iNNvovention</div>
+        <p style="margin:12px 0 0 0; color:#8b949e; font-size: 0.9rem;" id="net-status">
+            <span style="color:#ffaa00;">●</span> Connecting Core Hub Pipeline...
+        </p>
         
-        <!-- Dual Realtime Telemetry Tracking Bar -->
-        <div class="status-bar-container">
-            <div id="net-status"><span style="color:#ffaa00;">●</span> PIPELINE: CONNECTING...</div>
-            <div id="esp-status"><span style="color:#ff5555;">●</span> ESP32 CHASSIS: OFFLINE</div>
-        </div>
-
         <div style="margin-top: 15px; border-top: 1px solid #30363d; padding-top: 12px; display: flex; justify-content: center; gap: 30px;">
             <a href="/robot" class="nav-link">🔗 LAUNCH SMART PHONE NODE →</a>
             <a href="#remoteVideo" class="nav-link" style="color: #ff007f;">📺 FOCUS CAMERA VIEWPORT ↓</a>
@@ -92,27 +127,42 @@
         let ws; let peerConnection;
         const rtcConfig = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
 
+        function updateEspUI(isOnline) {
+            const btn = document.getElementById('esp-settings-btn');
+            if (isOnline) {
+                btn.classList.add('online');
+            } else {
+                btn.classList.remove('online');
+            }
+        }
+
+        function checkEspConnection() {
+            // Sends ping request over WebSocket to trigger an instant ESP status check
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: 'ping_esp' }));
+                logs.innerHTML += `<div style="color:#8b949e;">&gt; Pinging ESP32 Hardware Status...</div>`;
+                logs.scrollTop = logs.scrollHeight;
+            }
+        }
+
         function initWebSocket() {
             const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
             ws = new WebSocket(protocol + window.location.host + '/core');
 
             ws.onopen = () => {
                 ws.send(JSON.stringify({ register: 'deck' }));
-                document.getElementById('net-status').innerHTML = '<span style="color:#39ff14;">●</span> PIPELINE: ACTIVE';
+                document.getElementById('net-status').innerHTML = '<span style="color:#39ff14;">●</span> Central Deck Link Active';
                 startVideoCall();
             };
 
             ws.onmessage = async (event) => {
                 const data = JSON.parse(event.data); 
                 
-                // Track Dynamic ESP32 Network Telemetry Messages
                 if (data.type === 'esp_status') {
-                    const espBar = document.getElementById('esp-status');
-                    if (data.payload === 'ONLINE') {
-                        espBar.innerHTML = '<span style="color:#39ff14;">●</span> ESP32 CHASSIS: ONLINE';
-                    } else {
-                        espBar.innerHTML = '<span style="color:#ff5555;">●</span> ESP32 CHASSIS: OFFLINE';
-                    }
+                    const isOnline = (data.payload === 'ONLINE');
+                    updateEspUI(isOnline);
+                    logs.innerHTML += `<div style="color:${isOnline ? '#39ff14' : '#ff5555'};">&gt; ESP32 Hardware ${data.payload}</div>`;
+                    logs.scrollTop = logs.scrollHeight;
                 } 
                 else if (data.type === 'ai_reply') {
                     logs.innerHTML += `<div style="color:#39ff14; margin-bottom:8px;"><strong>TiTaN:</strong> ${data.payload}</div>`;
@@ -125,8 +175,8 @@
             };
 
             ws.onclose = () => {
-                document.getElementById('net-status').innerHTML = '<span style="color:#ffaa00;">●</span> PIPELINE: RECONNECTING...';
-                document.getElementById('esp-status').innerHTML = '<span style="color:#ff5555;">●</span> ESP32 CHASSIS: OFFLINE';
+                document.getElementById('net-status').innerHTML = '<span style="color:#ffaa00;">●</span> Reconnecting pipeline...';
+                updateEspUI(false);
                 setTimeout(initWebSocket, 3000);
             };
         }
