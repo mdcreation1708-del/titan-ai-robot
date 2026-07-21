@@ -1,53 +1,14 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TITAN AI - Robot Node</title>
-    <link rel="icon" type="image/x-icon" href="/favicon.ico">
-    <style>
-        body { background-color: #0b0e14; color: #c9d1d9; font-family: Arial, sans-serif; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
-        .robot-box { border: 2px solid #39ff14; background: #101520; border-radius: 12px; padding: 30px; text-align: center; width: 90%; max-width: 500px; box-shadow: 0 0 20px rgba(57, 255, 20, 0.15); }
-        .header-container { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 5px; }
-        .logo-img { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #39ff14; }
-        .badge { background: transparent; border: 2px solid #39ff14; color: #39ff14; padding: 1px 8px; border-radius: 5px; font-size: 0.95rem; font-weight: bold; font-family: monospace; }
-        .subtext { color: #8b949e; font-size: 0.9rem; letter-spacing: 1px; margin: 0 0 20px 0; font-family: monospace; }
-        .live-indicator { color: #39ff14; font-weight: bold; animation: blink 1.5s infinite; }
-        .log-box { background: #070a0f; border: 1px solid #30363d; height: 200px; border-radius: 6px; margin-top: 20px; padding: 10px; overflow-y: auto; text-align: left; font-family: monospace; font-size: 0.85rem; }
-        .action-btn { background: #101520; border: 2px solid #39ff14; color: #39ff14; padding: 12px 30px; font-size: 1.1rem; font-weight: bold; border-radius: 8px; cursor: pointer; margin-top: 25px; transition: 0.3s; }
-        .action-btn:hover { background: #39ff14; color: #000; }
-        .video-preview { width: 100%; height: 180px; background: #000; border-radius: 6px; margin-top: 15px; overflow: hidden; scroll-margin-top: 20px; }
-        video { width: 100%; height: 100%; object-fit: cover; }
-        .nav-link { color: #39ff14; text-decoration: none; font-family: monospace; font-weight: bold; font-size: 0.95rem; transition: 0.2s; }
-        .nav-link:hover { text-decoration: underline; opacity: 0.8; }
-        @keyframes blink { 0% { opacity: 0.4; } 50% { opacity: 1; } 100% { opacity: 0.4; } }
-    </style>
-</head>
-<body>
-    <div class="robot-box">
-        <div class="header-container">
-            <img src="/favicon.ico" class="logo-img" alt="Logo">
-            <h1 style="color:#39ff14; margin:0; font-size:1.6rem; letter-spacing:2px;">TITAN CORE NODE</h1>
-            <span class="badge">MD</span>
-        </div>
-        <div class="subtext">TiTaN Labs Of iNNvovention</div>
-        <div>SYSTEM ENGINE STATUS: <span id="status-text" style="color:#ffaa00;">OFFLINE</span></div>
-        <div class="video-preview">
-            <video id="localVideo" autoplay muted playsinline></video>
-        </div>
-        <button class="action-btn" id="act-btn" onclick="bootRobotHead()">BOOT SYSTEM</button>
-        <div class="log-box" id="signal-log">
-            <div style="color:#8b949e;">[System Ready. Awaiting User Activation Loop...]</div>
-        </div>
-        <div style="margin-top: 20px; border-top: 1px solid #30363d; padding-top: 15px; display: flex; flex-direction: column; gap: 10px;">
-            <a href="/" class="nav-link">← RETURN TO MAIN CONTROL DESK</a>
-            <a href="#localVideo" class="nav-link" style="color: #ff007f;">📸 VIEW LOCAL PHONE CAMERA FEED ↓</a>
-        </div>
-    </div>
+<script>
+        let ws; 
+        let recognition; 
+        let active = false; 
+        let localStream; 
+        let peerConnection;
+        let speechQueue = []; 
+        let isSpeaking = false; 
+        let isProcessing = false;
+        let micRestartTimer = null;
 
-    <script>
-        let ws; let recognition; let active = false; let localStream; let peerConnection;
-        let speechQueue = []; let isSpeaking = false; let isProcessing = false;
         const logBox = document.getElementById('signal-log');
         const rtcConfig = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
 
@@ -59,19 +20,23 @@
         function robotSpeak(textToSay) {
             if (!textToSay) return;
             
+            // Clear previous speech queue & cancel active speech
             speechQueue = [];
             if ('speechSynthesis' in window) {
                 window.speechSynthesis.cancel();
             }
 
+            // Stop mic completely before speaking to prevent feedback
+            stopMicSafely();
+
             const cleanText = textToSay.replace(/\*/g, '').replace(/#/g, '').trim();
-            const fragments = cleanText.match(/[^.!?\n\।]+[.!?\n\裝]*/g) || [cleanText];
+            const fragments = cleanText.match(/[^.!?\n\।]+[.!?\n\।]*/g) || [cleanText];
             
             fragments.forEach(frag => {
                 if (frag.trim().length > 0) speechQueue.push(frag.trim());
             });
 
-            isSpeaking = false;
+            isSpeaking = true;
             processNextQueueItem();
         }
 
@@ -80,9 +45,10 @@
                 if (speechQueue.length === 0) {
                     isSpeaking = false;
                     isProcessing = false;
+                    // Wait for speaker audio tail to clear completely before re-enabling mic
                     setTimeout(() => {
                         if (active) startListeningLoop();
-                    }, 800);
+                    }, 600);
                     return;
                 }
                 
@@ -102,7 +68,7 @@
                 }
 
                 voiceOut.rate = 0.92;
-                voiceOut.pitch = 0.90; // Creates an authoritative baritone profile
+                voiceOut.pitch = 0.90; // Deep male tone modulation
 
                 const systemVoices = window.speechSynthesis.getVoices();
                 let maleVoice = systemVoices.find(v => 
@@ -122,10 +88,6 @@
                 voiceOut.onend = () => { setTimeout(processNextQueueItem, 50); };
                 voiceOut.onerror = () => { isSpeaking = false; setTimeout(processNextQueueItem, 50); };
 
-                if (recognition) { 
-                    try { recognition.abort(); } catch(err){} 
-                }
-                
                 window.speechSynthesis.speak(voiceOut);
             }
         }
@@ -145,7 +107,7 @@
                     audio: false 
                 });
                 document.getElementById('localVideo').srcObject = localStream;
-                printLog("Camera stream pipeline unblocked.", "#39ff14");
+                printLog("Camera stream pipeline active.", "#39ff14");
             } catch (err) { 
                 printLog("Camera access blocked by browser.", "#ff5555"); 
             }
@@ -162,7 +124,7 @@
             ws.onmessage = async (event) => {
                 const data = JSON.parse(event.data); 
                 if (data.type === "ai_reply") {
-                    printLog(`Processing AI instruction stream...`, "#39ff14");
+                    printLog(`AI response received...`, "#39ff14");
                     robotSpeak(data.payload);
                 } 
                 else if (data.type === "movement") {
@@ -192,35 +154,45 @@
 
         function initVoiceRecognitionEngine() {
             window.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if(!window.SpeechRecognition) {
-                printLog("Speech Recognition unsupported on this engine tool.", "#ff5555");
+            if (!window.SpeechRecognition) {
+                printLog("Speech Recognition unsupported on this device browser.", "#ff5555");
                 return;
             }
             
             recognition = new window.SpeechRecognition();
             recognition.continuous = false; 
             recognition.interimResults = false; 
-            recognition.lang = ''; 
+            recognition.lang = 'en-IN'; // Set explicit default locale for faster lock-on
 
             recognition.onstart = () => {
                 isProcessing = false;
-                printLog("Mic listening...", "#00e5ff");
+                printLog("Mic active & listening...", "#00e5ff");
             };
 
             recognition.onend = () => {
+                // If system is online, not speaking, and not processing, resume mic after brief gap
                 if (active && !isSpeaking && !isProcessing) {
-                    setTimeout(startListeningLoop, 300);
+                    clearTimeout(micRestartTimer);
+                    micRestartTimer = setTimeout(() => {
+                        startListeningLoop();
+                    }, 400);
                 }
             };
 
             recognition.onerror = (event) => {
-                if (event.error !== 'no-speech') {
-                    printLog("Mic state variance catch: " + event.error, "#ff5555");
+                if (event.error === 'no-speech') {
+                    // Normal behavior on silence — let onend handle clean restart
+                    return;
                 }
+                if (event.error === 'aborted') return;
+                
+                printLog("Mic status notice: " + event.error, "#ffaa00");
             };
 
             recognition.onresult = (event) => {
                 isProcessing = true; 
+                stopMicSafely(); // Instantly stop listening to avoid hearing self
+
                 const speech = event.results[0][0].transcript.toLowerCase().trim();
                 printLog(`Captured: "${speech}"`, "#fff");
                 
@@ -257,21 +229,31 @@
                         ws.send(JSON.stringify({ type: 'question', payload: speech }));
                     }
                 } else {
+                    // Not addressed to Titan — resume listening after short delay
                     isProcessing = false;
+                    setTimeout(() => { if (active && !isSpeaking) startListeningLoop(); }, 500);
                 }
             };
+        }
+
+        function stopMicSafely() {
+            if (recognition) {
+                try {
+                    recognition.abort();
+                } catch(e) {}
+            }
         }
 
         function startListeningLoop() {
             if (!active || isSpeaking || isProcessing) return;
             try {
                 recognition.start();
-            } catch(e) {}
+            } catch(e) {
+                // If recognition is already running or busy, handle gracefully
+            }
         }
 
         if ('speechSynthesis' in window) {
             window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); };
         }
     </script>
-</body>
-</html>
