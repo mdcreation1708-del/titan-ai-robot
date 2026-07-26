@@ -39,22 +39,33 @@ def core_routing_hub(ws):
                 connected_devices[device_identity] = ws
                 print(f"[SYSTEM CORE] Device linked successfully: {device_identity}")
                 
-                # If the ESP32 just registered, immediately inform the Dashboard deck
                 if device_identity == 'esp32' and 'deck' in connected_devices:
                     try:
                         connected_devices['deck'].send(json.dumps({'type': 'esp_status', 'payload': 'ONLINE'}))
                     except: pass
                 
-                # If the deck just connected, tell it whether the ESP32 is already alive
                 if device_identity == 'deck':
                     status = 'ONLINE' if 'esp32' in connected_devices else 'OFFLINE'
                     ws.send(json.dumps({'type': 'esp_status', 'payload': status}))
                 continue
             
+            # ESP Ping Handler
+            if data_packet.get('type') == 'ping_esp':
+                status = 'ONLINE' if 'esp32' in connected_devices else 'OFFLINE'
+                ws.send(json.dumps({'type': 'esp_status', 'payload': status}))
+                continue
+
+            # Stop Audio Speech Signal
+            if data_packet.get('type') == 'stop_speech':
+                if 'robot' in connected_devices:
+                    try: connected_devices['robot'].send(json.dumps({'type': 'stop_speech'}))
+                    except: pass
+                continue
+
             # AI Query Processing Loop
             if data_packet.get('type') == 'question':
                 user_query = data_packet.get('payload', '')
-                print(f"[AI CORE] Processing conversational query: {user_query}")
+                print(f"[AI CORE] Processing query: {user_query}")
                 try:
                     response = ai_client.models.generate_content(
                         model='gemini-2.5-flash',
@@ -63,8 +74,8 @@ def core_routing_hub(ws):
                             system_instruction="""You are TiTaN, a highly advanced robotic AI assistant designed for mechatronics and automation tasks by Malhar Deshmukh at TiTaN Labs Of iNNvovention.
                             You must always provide technically complete, highly intelligent, exhaustive, and fully structured answers that pass rigorous academic and supervisor review panels.
                             Never truncate, crop, or cut off any sentence halfway. Every explanation must conclude its complete logical thought structure fully.
-                            You are deeply multilingual. If the user talks to you or asks a question in Marathi (or requests 'tell marathi'), lock your processing entirely into fluent, grammatically perfect Marathi text. If they speak in Hindi, respond professionally in Hindi. If they speak in English, respond in English.
-                            When answering queries regarding historical icons, structural histories, or kings—especially the legendary Chhatrapati Shivaji Maharaj—you must write with absolute reverence, profound dignity, and deep, thorough detail.""",
+                            You are deeply multilingual. If the user talks to you or asks a question in Marathi (or Devanagari script), lock your response ENTIRELY into fluent, grammatically perfect Marathi (मराठी) text using Devanagari script. If they speak in Hindi, respond in Hindi. If in English, respond in English.
+                            When answering queries regarding historical icons, structural histories, or kings—especially Chhatrapati Shivaji Maharaj—you must write with absolute reverence, profound dignity, and deep detail.""",
                             max_output_tokens=3072
                         )
                     )
@@ -82,7 +93,7 @@ def core_routing_hub(ws):
                     except: pass
                 continue
             
-            # Standard Message Cross-Routing Logic
+            # Standard Message Cross-Routing
             target_node = 'robot' if device_identity == 'deck' else 'deck'
             if target_node in connected_devices:
                 try:
@@ -95,7 +106,6 @@ def core_routing_hub(ws):
     finally:
         if device_identity in connected_devices:
             del connected_devices[device_identity]
-        # Broadcaster event: If ESP32 connection breaks, tell the dashboard layout instantly
         if device_identity == 'esp32' and 'deck' in connected_devices:
             try:
                 connected_devices['deck'].send(json.dumps({'type': 'esp_status', 'payload': 'OFFLINE'}))
