@@ -128,7 +128,7 @@
             stopMicSafely();
 
             const cleanText = textToSay.replace(/\*/g, '').replace(/#/g, '').trim();
-            const fragments = cleanText.match(/[^.!?\n\।]+[.!?\n\।]*/g) || [cleanText];
+            const fragments = cleanText.match(/[^.!?\n\।]+[.!?\n\閥]*/g) || [cleanText];
             
             fragments.forEach(frag => {
                 if (frag.trim().length > 0) speechQueue.push(frag.trim());
@@ -220,7 +220,18 @@
         function initWebSocket() {
             const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
             ws = new WebSocket(protocol + window.location.host + '/core');
-            ws.onopen = () => { ws.send(JSON.stringify({ register: 'robot' })); printLog("Connected to Python Core Hub.", "#39ff14"); };
+            ws.onopen = () => { 
+                ws.send(JSON.stringify({ register: 'robot' })); 
+                printLog("Connected to Python Core Hub.", "#39ff14"); 
+
+                // Prevent Render WebSocket disconnects
+                setInterval(() => {
+                    if(ws.readyState === WebSocket.OPEN) {
+                        ws.send(JSON.stringify({ type: 'ping_esp' }));
+                    }
+                }, 10000);
+            };
+
             ws.onmessage = async (event) => {
                 const data = JSON.parse(event.data); 
                 
@@ -306,36 +317,47 @@
                 const speech = event.results[0][0].transcript.toLowerCase().trim();
                 printLog(`Captured: "${speech}"`, "#fff");
                 
-                // --- FAST DIRECT MOTOR COMMANDS ---
+                // --- FAST DIRECT MOTOR COMMAND DISPATCH ---
+                const dispatchVoiceDrive = async (dir) => {
+                    try {
+                        await fetch('/api/cmd', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ command: dir })
+                        });
+                    } catch(e){}
+                    if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'movement', payload: dir }));
+                };
+
                 if (speech.includes("forward") || speech.includes("पुढे") || speech.includes("आगे")) {
-                    if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'movement', payload: 'FORWARD' }));
+                    dispatchVoiceDrive('FORWARD');
                     robotSpeak("Moving forward.");
                     return;
                 } 
                 if (speech.includes("reverse") || speech.includes("मागे") || speech.includes("पीछे")) {
-                    if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'movement', payload: 'REVERSE' }));
+                    dispatchVoiceDrive('REVERSE');
                     robotSpeak("Backing up.");
                     return;
                 } 
                 if (speech.includes("left") || speech.includes("डावीकडे") || speech.includes("बाये")) {
-                    if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'movement', payload: 'LEFT' }));
+                    dispatchVoiceDrive('LEFT');
                     robotSpeak("Turning left.");
                     return;
                 } 
                 if (speech.includes("right") || speech.includes("उजवीकडे") || speech.includes("दाये")) {
-                    if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'movement', payload: 'RIGHT' }));
+                    dispatchVoiceDrive('RIGHT');
                     robotSpeak("Turning right.");
                     return;
                 } 
                 if (speech.includes("stop") || speech.includes("थांब") || speech.includes("रुको")) {
-                    if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'movement', payload: 'STOP' }));
+                    dispatchVoiceDrive('STOP');
                     robotSpeak("Stopping all engines.");
                     return;
                 } 
 
                 // --- AI QUERY PROCESSING WITH INSTANT FEEDBACK ---
                 if (speech.length > 2) {
-                    robotSpeak("Checking..."); // Instant feedback removes delay lag feeling!
+                    robotSpeak("Checking..."); // Instant audio confirmation
                     if (ws && ws.readyState === WebSocket.OPEN) {
                         ws.send(JSON.stringify({ type: 'question', payload: speech }));
                     }
