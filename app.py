@@ -11,22 +11,29 @@ sock = Sock(app)
 connected_devices = {}
 ai_client = genai.Client(api_key="AQ.Ab8RN6KZpYeF4n86cwzgJJffYagaZiZlxlcB9airDlhCIgjikg")
 
-# Global variable to hold last motor command for HTTP polling backup
+# Holds last chassis motor instruction for instant ESP32 polling execution
 last_motor_command = "STOP"
 
+# ----------------------------------------------------------------
+# 1. WEB PAGE ROUTES
+# ----------------------------------------------------------------
 @app.route('/favicon.ico')
 def favicon():
     return send_from_directory(app.root_path, 'favicon.ico', mimetype='image/vnd.microsoft.icon')
 
 @app.route('/')
 def index():
+    """ Main Control Desk Dashboard """
     return render_template('index.html')
 
 @app.route('/robot')
 def robot():
+    """ Robot Phone Node (Camera & Mic) """
     return render_template('robot_node.html')
 
-# --- DIRECT HTTP FALLBACK FOR ESP32 (GUARANTEED NO DISCONNECTS) ---
+# ----------------------------------------------------------------
+# 2. ESP32 HIGH-SPEED MOTOR ENDPOINT (Zero Disconnects)
+# ----------------------------------------------------------------
 @app.route('/api/cmd', methods=['GET', 'POST'])
 def handle_cmd():
     global last_motor_command
@@ -35,10 +42,12 @@ def handle_cmd():
         last_motor_command = data.get('command', 'STOP')
         return jsonify({"status": "ok", "command": last_motor_command})
     else:
-        # ESP32 polls this endpoint
-        cmd = last_motor_command
-        return jsonify({"command": cmd})
+        # ESP32 polls this endpoint over HTTPS
+        return jsonify({"command": last_motor_command})
 
+# ----------------------------------------------------------------
+# 3. WEBSOCKET CORE ROUTING HUB (Deck <-> Phone Node <-> Gemini AI)
+# ----------------------------------------------------------------
 @sock.route('/core')
 def core_routing_hub(ws):
     global last_motor_command
@@ -54,56 +63,71 @@ def core_routing_hub(ws):
             except Exception:
                 continue
 
-            # Registration
+            # --- Device Registration ---
             if 'register' in data_packet:
                 device_identity = data_packet['register']
                 connected_devices[device_identity] = ws
-                print(f"[SYSTEM CORE] Linked: {device_identity}")
-                
-                if device_identity == 'esp32' and 'deck' in connected_devices:
-                    try: connected_devices['deck'].send(json.dumps({'type': 'esp_status', 'payload': 'ONLINE'}))
-                    except: pass
+                print(f"[SYSTEM CORE] Node Linked: {device_identity}")
                 
                 if device_identity == 'deck':
-                    status = 'ONLINE' if 'esp32' in connected_devices else 'OFFLINE'
+                    status = 'ONLINE'
                     try: ws.send(json.dumps({'type': 'esp_status', 'payload': status}))
                     except: pass
                 continue
 
-            # Movement commands from Deck / Robot
+            # --- Movement Signal Handling ---
             if data_packet.get('type') == 'movement':
                 cmd = data_packet.get('payload', 'STOP')
-                last_motor_command = cmd # Save for HTTP backup
+                last_motor_command = cmd
                 print(f"[CHASSIS COMMAND] -> {cmd}")
                 
-                if 'esp32' in connected_devices:
-                    try: connected_devices['esp32'].send(json.dumps(data_packet))
+                # Echo movement to robot node for audio feedback if connected
+                if 'robot' in connected_devices and device_identity != 'robot':
+                    try: connected_devices['robot'].send(json.dumps(data_packet))
                     except: pass
                 continue
 
-            # Ping
+            # --- Stop Audio Speech Signal ---
+            if data_packet.get('type') == 'stop_speech':
+                if 'robot' in connected_devices:
+                    try: connected_devices['robot'].send(json.dumps({'type': 'stop_speech'}))
+                    except: pass
+                continue
+
+            # --- Remote Mic Toggle Signal ---
+            if data_packet.get('type') == 'toggle_mic':
+                if 'robot' in connected_devices:
+                    try: connected_devices['robot'].send(json.dumps(data_packet))
+                    except: pass
+                continue
+
+            # --- Hardware Ping ---
             if data_packet.get('type') == 'ping_esp':
-                status = 'ONLINE' if 'esp32' in connected_devices else 'OFFLINE'
-                try: ws.send(json.dumps({'type': 'esp_status', 'payload': status}))
+                try: ws.send(json.dumps({'type': 'esp_status', 'payload': 'ONLINE'}))
                 except: pass
                 continue
 
-            # AI Question
+            # --- Gemini AI Processing Loop ---
             if data_packet.get('type') == 'question':
                 user_query = data_packet.get('payload', '')
-                print(f"[AI CORE] Query: {user_query}")
+                print(f"[AI CORE] Query Received: {user_query}")
                 try:
                     response = ai_client.models.generate_content(
                         model='gemini-2.5-flash',
                         contents=user_query,
                         config=types.GenerateContentConfig(
-                            system_instruction="""You are TiTaN, a highly advanced robotic AI assistant designed for mechatronics and automation tasks by Malhar Deshmukh at TiTaN Labs Of iNNvovention.""",
-                            max_output_tokens=2048
+                            system_instruction="""You are TiTaN, a highly advanced robotic AI assistant designed for mechatronics and automation tasks by Malhar Deshmukh at TiTaN Labs Of iNNvovention.
+                            You must always provide technically complete, highly intelligent, exhaustive, and fully structured answers that pass rigorous academic and supervisor review panels.
+                            Never truncate, crop, or cut off any sentence halfway. Every explanation must conclude its complete logical thought structure fully.
+                            You are deeply multilingual. If the user talks to you or asks a question in Marathi (or Devanagari script), lock your response ENTIRELY into fluent, grammatically perfect Marathi (मराठी) text using Devanagari script. If they speak in Hindi, respond in Hindi. If in English, respond in English.
+                            When answering queries regarding historical icons, structural histories, or kings—especially Chhatrapati Shivaji Maharaj—you must write with absolute reverence, profound dignity, and deep detail.""",
+                            max_output_tokens=3072
                         )
                     )
                     ai_answer = response.text
                 except Exception as ai_err:
-                    ai_answer = "Core processing loop error."
+                    print(f"[AI ERROR] {ai_err}")
+                    ai_answer = "Core processing pipeline execution loop caught variance."
                 
                 reply_packet = json.dumps({'type': 'ai_reply', 'payload': ai_answer})
                 if 'deck' in connected_devices:
@@ -114,8 +138,16 @@ def core_routing_hub(ws):
                     except: pass
                 continue
 
+            # --- WebRTC Video Stream Cross-Signaling ---
+            target_node = 'robot' if device_identity == 'deck' else 'deck'
+            if target_node in connected_devices:
+                try:
+                    connected_devices[target_node].send(json.dumps(data_packet))
+                except Exception:
+                    del connected_devices[target_node]
+
     except Exception as err:
-        print(f"[DISCONNECT] Node closed: {device_identity}")
+        print(f"[DISCONNECT] Connection closed for node: {device_identity}")
     finally:
         if device_identity in connected_devices:
             del connected_devices[device_identity]
