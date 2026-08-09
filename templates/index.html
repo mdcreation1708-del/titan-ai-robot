@@ -26,7 +26,7 @@
         .nav-link { color: #00e5ff; text-decoration: none; font-family: monospace; font-weight: bold; font-size: 0.95rem; transition: 0.2s; }
         .nav-link:hover { text-decoration: underline; opacity: 0.8; }
         
-        /* Settings Gear Icon Button */
+        /* Settings Gear Icon Button (Zero Text) */
         .settings-btn {
             position: absolute;
             top: 20px;
@@ -63,9 +63,10 @@
             gap: 8px;
         }
         .mic-btn.active {
-            background: #00e5ff;
+            background: #39ff14;
             color: #000;
-            box-shadow: 0 0 12px rgba(0, 229, 255, 0.8);
+            border-color: #39ff14;
+            box-shadow: 0 0 12px rgba(57, 255, 20, 0.8);
             animation: pulse 1.5s infinite;
         }
         .stop-speech-btn {
@@ -139,11 +140,11 @@
             </div>
             
             <div class="chat-input-row">
-                <button class="mic-btn" id="dashboard-mic-btn" onclick="toggleDashboardMic()" title="Toggle Voice Command">
+                <button class="mic-btn" id="dashboard-mic-btn" onclick="toggleDashboardMic()" title="Toggle Robot Node Microphone Remote">
                     <span id="mic-icon">🎙️</span>
-                    <span id="mic-text">MIC OFF</span>
+                    <span id="mic-text">ROBOT MIC ON</span>
                 </button>
-                <input type="text" class="chat-input" id="user-msg" placeholder="Type or click MIC to speak..." onkeydown="if(event.key==='Enter') sendManualMessage()">
+                <input type="text" class="chat-input" id="user-msg" placeholder="Type instructions here..." onkeydown="if(event.key==='Enter') sendManualMessage()">
                 <button class="btn" style="padding:10px 20px;" onclick="sendManualMessage()">SEND</button>
             </div>
         </div>
@@ -152,8 +153,7 @@
     <script>
         const logs = document.getElementById('terminal-logs');
         let ws; let peerConnection;
-        let deskRecognition;
-        let isDeskMicListening = false;
+        let isRobotMicActive = true;
         const rtcConfig = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
 
         function updateEspUI(isOnline) {
@@ -181,67 +181,25 @@
             }
         }
 
-        // --- DASHBOARD MIC TOGGLE LOGIC ---
-        function initDashboardMic() {
-            window.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!window.SpeechRecognition) {
-                logs.innerHTML += `<div style="color:#ff5555;">&gt; Browser doesn't support Speech Recognition.</div>`;
-                return;
-            }
-
-            deskRecognition = new window.SpeechRecognition();
-            deskRecognition.continuous = false;
-            deskRecognition.interimResults = false;
-            deskRecognition.lang = 'en-IN'; // Works for Marathi/Hindi queries in Devanagari or English
-
-            deskRecognition.onstart = () => {
-                isDeskMicListening = true;
-                const btn = document.getElementById('dashboard-mic-btn');
-                btn.classList.add('active');
-                document.getElementById('mic-text').innerText = "LISTENING...";
-                logs.innerHTML += `<div style="color:#00e5ff;">&gt; Dashboard Mic Active. Speak now...</div>`;
-                logs.scrollTop = logs.scrollHeight;
-            };
-
-            deskRecognition.onend = () => {
-                isDeskMicListening = false;
-                const btn = document.getElementById('dashboard-mic-btn');
-                btn.classList.remove('active');
-                document.getElementById('mic-text').innerText = "MIC OFF";
-            };
-
-            deskRecognition.onerror = (event) => {
-                isDeskMicListening = false;
-                const btn = document.getElementById('dashboard-mic-btn');
-                btn.classList.remove('active');
-                document.getElementById('mic-text').innerText = "MIC OFF";
-                if (event.error !== 'no-speech' && event.error !== 'aborted') {
-                    logs.innerHTML += `<div style="color:#ffaa00;">&gt; Dashboard Mic Notice: ${event.error}</div>`;
-                }
-            };
-
-            deskRecognition.onresult = (event) => {
-                const speech = event.results[0][0].transcript.trim();
-                logs.innerHTML += `<div style="color:#fff;">&gt; Voice Input: "${speech}"</div>`;
-                logs.scrollTop = logs.scrollHeight;
-                
-                // Transmit query over WebSocket
-                if (ws && ws.readyState === WebSocket.OPEN) {
-                    ws.send(JSON.stringify({ type: 'question', payload: speech }));
-                }
-            };
-        }
-
+        // --- REMOTE ROBOT MIC TOGGLE LOGIC ---
         function toggleDashboardMic() {
-            if (!deskRecognition) initDashboardMic();
-            if (!deskRecognition) return;
-
-            if (isDeskMicListening) {
-                deskRecognition.stop();
+            isRobotMicActive = !isRobotMicActive;
+            const btn = document.getElementById('dashboard-mic-btn');
+            
+            if (isRobotMicActive) {
+                btn.classList.add('active');
+                document.getElementById('mic-text').innerText = "ROBOT MIC ON";
+                logs.innerHTML += `<div style="color:#39ff14;">&gt; Signal Sent: Robot Mic ENABLED</div>`;
             } else {
-                try {
-                    deskRecognition.start();
-                } catch(e) {}
+                btn.classList.remove('active');
+                document.getElementById('mic-text').innerText = "ROBOT MIC OFF";
+                logs.innerHTML += `<div style="color:#ffaa00;">&gt; Signal Sent: Robot Mic DISABLED</div>`;
+            }
+            logs.scrollTop = logs.scrollHeight;
+
+            // Broadcast state to Robot Phone Node via WebSocket
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: 'toggle_mic', state: isRobotMicActive }));
             }
         }
 
@@ -320,7 +278,7 @@
 
         window.onload = () => {
             initWebSocket();
-            initDashboardMic();
+            document.getElementById('dashboard-mic-btn').classList.add('active');
         };
     </script>
 </body>
