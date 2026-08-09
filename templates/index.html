@@ -26,7 +26,6 @@
         .nav-link { color: #00e5ff; text-decoration: none; font-family: monospace; font-weight: bold; font-size: 0.95rem; transition: 0.2s; }
         .nav-link:hover { text-decoration: underline; opacity: 0.8; }
         
-        /* Settings Gear Icon Button (Zero Text) */
         .settings-btn {
             position: absolute;
             top: 20px;
@@ -48,11 +47,10 @@
         .settings-btn.online { border-color: #39ff14; color: #39ff14; box-shadow: 0 0 12px rgba(57, 255, 20, 0.6); }
         .settings-btn svg { width: 22px; height: 22px; fill: currentColor; }
 
-        /* Mic Button & Speech Controls */
         .mic-btn {
             background: #21262d;
-            border: 1px solid #00e5ff;
-            color: #00e5ff;
+            border: 1px solid #8b949e;
+            color: #8b949e;
             padding: 10px 15px;
             border-radius: 6px;
             font-weight: bold;
@@ -142,7 +140,7 @@
             <div class="chat-input-row">
                 <button class="mic-btn" id="dashboard-mic-btn" onclick="toggleDashboardMic()" title="Toggle Robot Node Microphone Remote">
                     <span id="mic-icon">🎙️</span>
-                    <span id="mic-text">ROBOT MIC ON</span>
+                    <span id="mic-text">ROBOT MIC OFF</span>
                 </button>
                 <input type="text" class="chat-input" id="user-msg" placeholder="Type instructions here..." onkeydown="if(event.key==='Enter') sendManualMessage()">
                 <button class="btn" style="padding:10px 20px;" onclick="sendManualMessage()">SEND</button>
@@ -153,7 +151,7 @@
     <script>
         const logs = document.getElementById('terminal-logs');
         let ws; let peerConnection;
-        let isRobotMicActive = true;
+        let isRobotMicActive = false; // Starts OFF by default
         const rtcConfig = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
 
         function updateEspUI(isOnline) {
@@ -181,7 +179,6 @@
             }
         }
 
-        // --- REMOTE ROBOT MIC TOGGLE LOGIC ---
         function toggleDashboardMic() {
             isRobotMicActive = !isRobotMicActive;
             const btn = document.getElementById('dashboard-mic-btn');
@@ -197,7 +194,6 @@
             }
             logs.scrollTop = logs.scrollHeight;
 
-            // Broadcast state to Robot Phone Node via WebSocket
             if (ws && ws.readyState === WebSocket.OPEN) {
                 ws.send(JSON.stringify({ type: 'toggle_mic', state: isRobotMicActive }));
             }
@@ -278,7 +274,6 @@
 
         window.onload = () => {
             initWebSocket();
-            document.getElementById('dashboard-mic-btn').classList.add('active');
         };
     </script>
 </body>
