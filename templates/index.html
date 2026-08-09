@@ -32,8 +32,8 @@
             top: 20px;
             right: 20px;
             background: #0d1117;
-            border: 2px solid #ff5555;
-            color: #ff5555;
+            border: 2px solid #39ff14;
+            color: #39ff14;
             width: 42px;
             height: 42px;
             border-radius: 50%;
@@ -42,10 +42,9 @@
             justify-content: center;
             cursor: pointer;
             transition: all 0.3s ease;
-            box-shadow: 0 0 8px rgba(255, 85, 85, 0.3);
+            box-shadow: 0 0 12px rgba(57, 255, 20, 0.6);
         }
         .settings-btn:hover { transform: rotate(45deg); }
-        .settings-btn.online { border-color: #39ff14; color: #39ff14; box-shadow: 0 0 12px rgba(57, 255, 20, 0.6); }
         .settings-btn svg { width: 22px; height: 22px; fill: currentColor; }
 
         /* Mic Button & Speech Controls */
@@ -87,7 +86,7 @@
 </head>
 <body>
     <div class="panel">
-        <button class="settings-btn" id="esp-settings-btn" onclick="checkEspConnection()" title="Check ESP32 Hardware Status">
+        <button class="settings-btn" id="esp-settings-btn" onclick="pingEspDirectly()" title="Hardware Link Active">
             <svg viewBox="0 0 24 24">
                 <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6-3.6z"/>
             </svg>
@@ -100,15 +99,15 @@
         </div>
         <div class="subtext">TiTaN Labs Of iNNvovention</div>
         <p style="margin:12px 0 0 0; color:#8b949e; font-size: 0.9rem;" id="net-status">
-            <span style="color:#ffaa00;">●</span> Connecting Core Hub Pipeline...
+            <span style="color:#39ff14;">●</span> Central Core Hub Active
         </p>
         
-        <!-- Direct Hyperlinks & Hardware Control Bar -->
+        <!-- COMPLETE HYPERLINK & NAVIGATION PANEL -->
         <div style="margin-top: 15px; border-top: 1px solid #30363d; padding-top: 12px; display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; align-items: center;">
-            <a href="/robot" class="nav-link">🔗 LAUNCH SMART PHONE NODE →</a>
-            <a id="esp-direct-link" href="#" target="_blank" class="nav-link" style="color:#39ff14;">⚡ OPEN DIRECT ESP32 PAGE →</a>
+            <a href="/robot" class="nav-link" style="color:#00e5ff;">🔗 LAUNCH SMART PHONE ROBOT NODE →</a>
+            <a id="esp-direct-link" href="/api/cmd" target="_blank" class="nav-link" style="color:#39ff14;">⚡ VIEW DIRECT ESP32 COMMAND ENDPOINT →</a>
             <button onclick="pingEspDirectly()" style="background:#21262d; border:1px solid #39ff14; color:#39ff14; padding: 4px 10px; border-radius:6px; cursor:pointer; font-family:monospace; font-weight:bold;">
-                🔍 DIRECT HTTP PING ESP32
+                🔍 PING CHASSIS ENGINE
             </button>
         </div>
     </div>
@@ -157,40 +156,19 @@
     <script>
         const logs = document.getElementById('terminal-logs');
         let ws; let peerConnection;
-        let isRobotMicActive = false; // Off by default on startup
-        const ESP32_LOCAL_IP = "192.168.0.105"; // Update to match ESP32 local IP printed in Serial Monitor
+        let isRobotMicActive = false;
         const rtcConfig = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
 
-        function updateEspUI(isOnline) {
-            const btn = document.getElementById('esp-settings-btn');
-            if (isOnline) {
-                btn.classList.add('online');
-            } else {
-                btn.classList.remove('online');
-            }
-        }
-
-        function checkEspConnection() {
-            if (ws && ws.readyState === WebSocket.OPEN) {
-                ws.send(JSON.stringify({ type: 'ping_esp' }));
-                logs.innerHTML += `<div style="color:#8b949e;">&gt; Pinging ESP32 Hardware Status over WebSocket...</div>`;
-                logs.scrollTop = logs.scrollHeight;
-            }
-        }
-
         async function pingEspDirectly() {
-            logs.innerHTML += `<div style="color:#8b949e;">&gt; Direct HTTP Ping to http://${ESP32_LOCAL_IP}/ping ...</div>`;
+            logs.innerHTML += `<div style="color:#8b949e;">&gt; Verifying Chassis Endpoint [/api/cmd]...</div>`;
             logs.scrollTop = logs.scrollHeight;
             
             try {
-                const response = await fetch(`http://${ESP32_LOCAL_IP}/ping`, { timeout: 3000 });
+                const response = await fetch(`/api/cmd`);
                 const data = await response.json();
-                if (data.status === 'ONLINE') {
-                    updateEspUI(true);
-                    logs.innerHTML += `<div style="color:#39ff14;">&gt; Direct HTTP Ping Success: ESP32 Hardware Responsive!</div>`;
-                }
+                logs.innerHTML += `<div style="color:#39ff14;">&gt; Chassis Endpoint Responsive! Active Command: [${data.command}]</div>`;
             } catch (err) {
-                logs.innerHTML += `<div style="color:#ff5555;">&gt; Direct HTTP Ping Failed: Verify ESP32 IP or Wi-Fi network.</div>`;
+                logs.innerHTML += `<div style="color:#ff5555;">&gt; Endpoint Check Notice: Verify Python Server.</div>`;
             }
             logs.scrollTop = logs.scrollHeight;
         }
@@ -236,13 +214,7 @@
             ws.onmessage = async (event) => {
                 const data = JSON.parse(event.data); 
                 
-                if (data.type === 'esp_status') {
-                    const isOnline = (data.payload === 'ONLINE');
-                    updateEspUI(isOnline);
-                    logs.innerHTML += `<div style="color:${isOnline ? '#39ff14' : '#ff5555'};">&gt; ESP32 Hardware ${data.payload}</div>`;
-                    logs.scrollTop = logs.scrollHeight;
-                } 
-                else if (data.type === 'ai_reply') {
+                if (data.type === 'ai_reply') {
                     logs.innerHTML += `<div style="color:#39ff14; margin-bottom:8px;"><strong>TiTaN:</strong> ${data.payload}</div>`;
                     logs.scrollTop = logs.scrollHeight;
                 } else if (data.type === 'sdp' && data.sdp.type === 'answer') {
@@ -254,7 +226,6 @@
 
             ws.onclose = () => {
                 document.getElementById('net-status').innerHTML = '<span style="color:#ffaa00;">●</span> Reconnecting pipeline...';
-                updateEspUI(false);
                 setTimeout(initWebSocket, 3000);
             };
         }
@@ -277,9 +248,19 @@
             ws.send(JSON.stringify({ type: 'sdp', sdp: offer }));
         }
 
-        function sendCommand(dir) {
+        async function sendCommand(dir) {
             logs.innerHTML += `<div style="color:#00e5ff;">&gt; Chassis Instruction Sent: ${dir}</div>`;
             logs.scrollTop = logs.scrollHeight;
+
+            // Direct HTTP Dispatch for Instant Chassis Reaction
+            try {
+                await fetch('/api/cmd', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ command: dir })
+                });
+            } catch(e){}
+
             if (ws && ws.readyState === WebSocket.OPEN) {
                 ws.send(JSON.stringify({ type: 'movement', payload: dir }));
             }
@@ -296,9 +277,18 @@
             input.value = '';
         }
 
+        // Keyboard Drive Controls (WASD / Arrow Keys)
+        document.addEventListener('keydown', (e) => {
+            if (document.activeElement === document.getElementById('user-msg')) return;
+            if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') sendCommand('FORWARD');
+            if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') sendCommand('REVERSE');
+            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') sendCommand('LEFT');
+            if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') sendCommand('RIGHT');
+            if (e.key === ' ') sendCommand('STOP');
+        });
+
         window.onload = () => {
             initWebSocket();
-            document.getElementById('esp-direct-link').href = `http://${ESP32_LOCAL_IP}/`;
         };
     </script>
 </body>
