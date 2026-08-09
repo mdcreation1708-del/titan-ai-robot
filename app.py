@@ -9,7 +9,10 @@ app = Flask(__name__)
 sock = Sock(app)
 
 connected_devices = {}
-ai_client = genai.Client(api_key="AQ.Ab8RN6KZpYeF4n86cwzgJJffYagaZiZlxlcB9airDlhCIgjikg")
+
+# Safely load Gemini API key from Render Environment Variables
+GEMINI_KEY = os.environ.get("GEMINI_API_KEY", "YOUR_FALLBACK_KEY_HERE")
+ai_client = genai.Client(api_key=GEMINI_KEY)
 
 # Holds last chassis motor instruction for instant ESP32 polling execution
 last_motor_command = "STOP"
@@ -42,7 +45,6 @@ def handle_cmd():
         last_motor_command = data.get('command', 'STOP')
         return jsonify({"status": "ok", "command": last_motor_command})
     else:
-        # ESP32 polls this endpoint over HTTPS
         return jsonify({"command": last_motor_command})
 
 # ----------------------------------------------------------------
@@ -81,7 +83,6 @@ def core_routing_hub(ws):
                 last_motor_command = cmd
                 print(f"[CHASSIS COMMAND] -> {cmd}")
                 
-                # Echo movement to robot node for audio feedback if connected
                 if 'robot' in connected_devices and device_identity != 'robot':
                     try: connected_devices['robot'].send(json.dumps(data_packet))
                     except: pass
@@ -126,8 +127,8 @@ def core_routing_hub(ws):
                     )
                     ai_answer = response.text
                 except Exception as ai_err:
-                    print(f"[AI ERROR] {ai_err}")
-                    ai_answer = "Core processing pipeline execution loop caught variance."
+                    print(f"[AI ERROR DETAILED] {ai_err}")
+                    ai_answer = f"AI Error: {str(ai_err)}"
                 
                 reply_packet = json.dumps({'type': 'ai_reply', 'payload': ai_answer})
                 if 'deck' in connected_devices:
