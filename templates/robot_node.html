@@ -52,7 +52,7 @@
         let ws; 
         let recognition; 
         let active = false; 
-        let micEnabledByDashboard = true; 
+        let micEnabledByDashboard = false; // STARTS OFF BY DEFAULT
         let localStream; 
         let peerConnection;
         let speechQueue = []; 
@@ -70,7 +70,6 @@
             logBox.scrollTop = logBox.scrollHeight;
         }
 
-        // --- BACKGROUND KEEP-ALIVE & BATTERY BACKUP ENGINES ---
         async function requestWakeLock() {
             try {
                 if ('wakeLock' in navigator) {
@@ -209,6 +208,8 @@
             } catch (err) { 
                 printLog("Camera access blocked by browser.", "#ff5555"); 
             }
+            
+            printLog("Mic Standby: Waiting for Dashboard trigger...", "#ffaa00");
             
             setTimeout(() => {
                 robotSpeak("System online boss. TiTaN core ready.");
