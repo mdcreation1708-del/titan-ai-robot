@@ -31,38 +31,67 @@ def core_routing_hub(ws):
             raw_payload = ws.receive()
             if not raw_payload:
                 break
-            data_packet = json.loads(raw_payload)
             
-            # Device Registration
+            try:
+                data_packet = json.loads(raw_payload)
+            except Exception:
+                continue
+
+            # 1. Device Registration
             if 'register' in data_packet:
                 device_identity = data_packet['register']
                 connected_devices[device_identity] = ws
                 print(f"[SYSTEM CORE] Device linked successfully: {device_identity}")
                 
+                # Notify Deck if ESP32 connected
                 if device_identity == 'esp32' and 'deck' in connected_devices:
                     try:
                         connected_devices['deck'].send(json.dumps({'type': 'esp_status', 'payload': 'ONLINE'}))
-                    except: pass
+                    except Exception: pass
                 
+                # Send current ESP status when Deck joins
                 if device_identity == 'deck':
                     status = 'ONLINE' if 'esp32' in connected_devices else 'OFFLINE'
-                    ws.send(json.dumps({'type': 'esp_status', 'payload': status}))
-                continue
-            
-            # ESP Ping Handler
+                    try:
+                        ws.send(json.dumps({'type': 'esp_status', 'payload': status}))
+                    except Exception: pass
+                
+                continue  # <--- CRITICAL FIX: Prevent loop fallthrough!
+
+            # 2. ESP Ping Handler
             if data_packet.get('type') == 'ping_esp':
                 status = 'ONLINE' if 'esp32' in connected_devices else 'OFFLINE'
-                ws.send(json.dumps({'type': 'esp_status', 'payload': status}))
+                try:
+                    ws.send(json.dumps({'type': 'esp_status', 'payload': status}))
+                except Exception: pass
                 continue
 
-            # Stop Audio Speech Signal
+            # 3. Stop Audio Speech Signal
             if data_packet.get('type') == 'stop_speech':
                 if 'robot' in connected_devices:
                     try: connected_devices['robot'].send(json.dumps({'type': 'stop_speech'}))
-                    except: pass
+                    except Exception: pass
                 continue
 
-            # AI Query Processing Loop
+            # 4. Remote Mic Toggle Signal (Dashboard -> Robot Node)
+            if data_packet.get('type') == 'toggle_mic':
+                if 'robot' in connected_devices:
+                    try: connected_devices['robot'].send(json.dumps(data_packet))
+                    except Exception: pass
+                continue
+
+            # 5. Chassis Motor Movement Routing (Send to ESP32!)
+            if data_packet.get('type') == 'movement':
+                if 'esp32' in connected_devices:
+                    try: connected_devices['esp32'].send(json.dumps(data_packet))
+                    except Exception: pass
+                # Also echo to robot node for audio feedback
+                if 'robot' in connected_devices and device_identity != 'robot':
+                    try: connected_devices['robot'].send(json.dumps(data_packet))
+                    except Exception: pass
+                continue
+
+            # 6. AI Query Processing Loop
             if data_packet.get('type') == 'question':
                 user_query = data_packet.get('payload', '')
                 print(f"[AI CORE] Processing query: {user_query}")
@@ -87,13 +116,13 @@ def core_routing_hub(ws):
                 reply_packet = json.dumps({'type': 'ai_reply', 'payload': ai_answer})
                 if 'deck' in connected_devices:
                     try: connected_devices['deck'].send(reply_packet)
-                    except: pass
+                    except Exception: pass
                 if 'robot' in connected_devices:
                     try: connected_devices['robot'].send(reply_packet)
-                    except: pass
+                    except Exception: pass
                 continue
-            
-            # Standard Message Cross-Routing
+
+            # 7. WebRTC & Cross-Node Signalling
             target_node = 'robot' if device_identity == 'deck' else 'deck'
             if target_node in connected_devices:
                 try:
@@ -109,7 +138,7 @@ def core_routing_hub(ws):
         if device_identity == 'esp32' and 'deck' in connected_devices:
             try:
                 connected_devices['deck'].send(json.dumps({'type': 'esp_status', 'payload': 'OFFLINE'}))
-            except: pass
+            except Exception: pass
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
