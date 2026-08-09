@@ -52,7 +52,7 @@
         let ws; 
         let recognition; 
         let active = false; 
-        let micEnabledByDashboard = false; // STARTS OFF BY DEFAULT
+        let micEnabledByDashboard = false; // Off by default on boot
         let localStream; 
         let peerConnection;
         let speechQueue = []; 
@@ -70,6 +70,7 @@
             logBox.scrollTop = logBox.scrollHeight;
         }
 
+        // --- BACKGROUND KEEP-ALIVE & BATTERY BACKUP ENGINES ---
         async function requestWakeLock() {
             try {
                 if ('wakeLock' in navigator) {
@@ -305,6 +306,7 @@
                 const speech = event.results[0][0].transcript.toLowerCase().trim();
                 printLog(`Captured: "${speech}"`, "#fff");
                 
+                // --- FAST DIRECT MOTOR COMMANDS ---
                 if (speech.includes("forward") || speech.includes("पुढे") || speech.includes("आगे")) {
                     if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'movement', payload: 'FORWARD' }));
                     robotSpeak("Moving forward.");
@@ -331,8 +333,9 @@
                     return;
                 } 
 
+                // --- AI QUERY PROCESSING WITH INSTANT FEEDBACK ---
                 if (speech.length > 2) {
-                    robotSpeak("Analyzing query.");
+                    robotSpeak("Checking..."); // Instant feedback removes delay lag feeling!
                     if (ws && ws.readyState === WebSocket.OPEN) {
                         ws.send(JSON.stringify({ type: 'question', payload: speech }));
                     }
