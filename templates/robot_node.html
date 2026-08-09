@@ -52,12 +52,15 @@
         let ws; 
         let recognition; 
         let active = false; 
+        let micEnabledByDashboard = true; 
         let localStream; 
         let peerConnection;
         let speechQueue = []; 
         let isSpeaking = false; 
         let isProcessing = false;
         let micRestartTimer = null;
+        let wakeLock = null;
+        let audioCtxKeepAlive = null;
 
         const logBox = document.getElementById('signal-log');
         const rtcConfig = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
@@ -66,6 +69,40 @@
             logBox.innerHTML += `<div style="color:${color}">&gt; ${text}</div>`;
             logBox.scrollTop = logBox.scrollHeight;
         }
+
+        // --- BACKGROUND KEEP-ALIVE & BATTERY BACKUP ENGINES ---
+        async function requestWakeLock() {
+            try {
+                if ('wakeLock' in navigator) {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                    printLog("Screen Wake Lock active (Battery Backup Mode Ready).", "#39ff14");
+                }
+            } catch (err) {
+                printLog("Wake Lock notice: " + err.message, "#ffaa00");
+            }
+        }
+
+        function startSilentAudioKeepAlive() {
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (AudioContext) {
+                    audioCtxKeepAlive = new AudioContext();
+                    const osc = audioCtxKeepAlive.createOscillator();
+                    const gain = audioCtxKeepAlive.createGain();
+                    gain.gain.value = 0.0001; 
+                    osc.connect(gain);
+                    gain.connect(audioCtxKeepAlive.destination);
+                    osc.start();
+                    printLog("Background Audio Engine initialized.", "#39ff14");
+                }
+            } catch(e){}
+        }
+
+        document.addEventListener('visibilitychange', async () => {
+            if (document.visibilityState === 'visible' && active) {
+                requestWakeLock();
+            }
+        });
 
         function stopRobotSpeechDirectly() {
             speechQueue = [];
@@ -76,7 +113,7 @@
             }
             printLog("Speech canceled by operator.", "#ff0055");
             setTimeout(() => {
-                if (active) startListeningLoop();
+                if (active && micEnabledByDashboard) startListeningLoop();
             }, 300);
         }
 
@@ -107,7 +144,7 @@
                     isSpeaking = false;
                     isProcessing = false;
                     setTimeout(() => {
-                        if (active) startListeningLoop();
+                        if (active && micEnabledByDashboard) startListeningLoop();
                     }, 600);
                     return;
                 }
@@ -115,27 +152,19 @@
                 isSpeaking = true;
                 const nextUtteranceText = speechQueue.shift();
                 const voiceOut = new SpeechSynthesisUtterance(nextUtteranceText);
-                
-                // --- MARATHI & DEVANAGARI ACCURATE LOCALE DETECTION ---
                 const DevanagariPattern = /[\u0900-\u097F]/;
                 
                 if (DevanagariPattern.test(nextUtteranceText)) {
-                    // Force Marathi locale for Devanagari script output
                     voiceOut.lang = 'mr-IN';
                 } else {
                     voiceOut.lang = 'en-IN';
                 }
 
-                // Deep Male Voice Modulations
                 voiceOut.rate = 0.88;
                 voiceOut.pitch = 0.75;
 
                 const systemVoices = window.speechSynthesis.getVoices();
-                
-                // Search for explicit Marathi/Hindi/Indian locale voices
                 let targetVoice = systemVoices.find(v => v.lang === voiceOut.lang || v.lang.startsWith(voiceOut.lang.slice(0, 2)));
-
-                // Try finding male-tagged voice variant
                 let maleVoice = systemVoices.find(v => 
                     (v.lang.startsWith(voiceOut.lang.slice(0, 2)) || v.lang === 'mr-IN' || v.lang === 'hi-IN') && 
                     (v.name.toLowerCase().includes('male') || 
@@ -165,6 +194,8 @@
             document.getElementById('status-text').innerHTML = "ONLINE";
             document.getElementById('status-text').className = "live-indicator";
             
+            requestWakeLock();
+            startSilentAudioKeepAlive();
             initWebSocket();
             initVoiceRecognitionEngine();
             
@@ -193,6 +224,16 @@
                 
                 if (data.type === "stop_speech") {
                     stopRobotSpeechDirectly();
+                }
+                else if (data.type === "toggle_mic") {
+                    micEnabledByDashboard = data.state;
+                    if (micEnabledByDashboard) {
+                        printLog("Remote Mic ENABLED by Dashboard.", "#39ff14");
+                        startListeningLoop();
+                    } else {
+                        printLog("Remote Mic DISABLED by Dashboard.", "#ffaa00");
+                        stopMicSafely();
+                    }
                 }
                 else if (data.type === "ai_reply") {
                     printLog(`AI response received...`, "#39ff14");
@@ -233,7 +274,7 @@
             recognition = new window.SpeechRecognition();
             recognition.continuous = false; 
             recognition.interimResults = false; 
-            recognition.lang = 'mr-IN'; // Default to Marathi/Indian recognition locale
+            recognition.lang = 'mr-IN';
 
             recognition.onstart = () => {
                 isProcessing = false;
@@ -242,7 +283,7 @@
 
             recognition.onend = () => {
                 isProcessing = false;
-                if (active && !isSpeaking) {
+                if (active && !isSpeaking && micEnabledByDashboard) {
                     clearTimeout(micRestartTimer);
                     micRestartTimer = setTimeout(() => {
                         startListeningLoop();
@@ -263,7 +304,6 @@
                 const speech = event.results[0][0].transcript.toLowerCase().trim();
                 printLog(`Captured: "${speech}"`, "#fff");
                 
-                // Movement Commands
                 if (speech.includes("forward") || speech.includes("पुढे") || speech.includes("आगे")) {
                     if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'movement', payload: 'FORWARD' }));
                     robotSpeak("Moving forward.");
@@ -290,7 +330,6 @@
                     return;
                 } 
 
-                // Direct Query Mode
                 if (speech.length > 2) {
                     robotSpeak("Analyzing query.");
                     if (ws && ws.readyState === WebSocket.OPEN) {
@@ -298,7 +337,7 @@
                     }
                 } else {
                     isProcessing = false;
-                    setTimeout(() => { if (active && !isSpeaking) startListeningLoop(); }, 400);
+                    setTimeout(() => { if (active && !isSpeaking && micEnabledByDashboard) startListeningLoop(); }, 400);
                 }
             };
         }
@@ -310,7 +349,7 @@
         }
 
         function startListeningLoop() {
-            if (!active || isSpeaking) return;
+            if (!active || isSpeaking || !micEnabledByDashboard) return;
             isProcessing = false;
             try { recognition.start(); } catch(e) {}
         }
