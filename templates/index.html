@@ -3,385 +3,235 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TITAN AI - Robot Node</title>
+    <title>TITAN AI - Main Control Dashboard</title>
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <style>
-        body { background-color: #0b0e14; color: #c9d1d9; font-family: Arial, sans-serif; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
-        .robot-box { border: 2px solid #39ff14; background: #101520; border-radius: 12px; padding: 30px; text-align: center; width: 90%; max-width: 500px; box-shadow: 0 0 20px rgba(57, 255, 20, 0.15); }
-        .header-container { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 5px; }
-        .logo-img { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #39ff14; }
-        .badge { background: transparent; border: 2px solid #39ff14; color: #39ff14; padding: 1px 8px; border-radius: 5px; font-size: 0.95rem; font-weight: bold; font-family: monospace; }
-        .subtext { color: #8b949e; font-size: 0.9rem; letter-spacing: 1px; margin: 0 0 20px 0; font-family: monospace; }
-        .live-indicator { color: #39ff14; font-weight: bold; animation: blink 1.5s infinite; }
-        .log-box { background: #070a0f; border: 1px solid #30363d; height: 180px; border-radius: 6px; margin-top: 20px; padding: 10px; overflow-y: auto; text-align: left; font-family: monospace; font-size: 0.85rem; }
-        .action-btn { background: #101520; border: 2px solid #39ff14; color: #39ff14; padding: 12px 30px; font-size: 1.1rem; font-weight: bold; border-radius: 8px; cursor: pointer; margin-top: 25px; transition: 0.3s; }
-        .action-btn:hover { background: #39ff14; color: #000; }
-        .stop-btn { background: #ff0055; border: none; color: #fff; padding: 12px 20px; font-size: 1rem; font-weight: bold; border-radius: 8px; cursor: pointer; margin-top: 15px; width: 100%; transition: 0.2s; }
-        .stop-btn:hover { background: #e6004c; }
-        .video-preview { width: 100%; height: 180px; background: #000; border-radius: 6px; margin-top: 15px; overflow: hidden; scroll-margin-top: 20px; }
-        video { width: 100%; height: 100%; object-fit: cover; }
-        .nav-link { color: #39ff14; text-decoration: none; font-family: monospace; font-weight: bold; font-size: 0.95rem; transition: 0.2s; }
-        .nav-link:hover { text-decoration: underline; opacity: 0.8; }
-        @keyframes blink { 0% { opacity: 0.4; } 50% { opacity: 1; } 100% { opacity: 0.4; } }
+        body { background-color: #0d1117; color: #c9d1d9; font-family: Arial, sans-serif; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; user-select: none; }
+        .panel { background: #161b22; border: 2px solid #00e5ff; border-radius: 12px; padding: 20px; text-align: center; box-shadow: 0 0 15px rgba(0, 229, 255, 0.1); width: 90%; max-width: 960px; margin-bottom: 20px; position: relative; }
+        .header-container { display: flex; align-items: center; justify-content: center; gap: 15px; }
+        .logo-img { width: 45px; height: 45px; border-radius: 50%; border: 2px solid #00e5ff; }
+        .badge { background: transparent; border: 2px solid #00e5ff; color: #00e5ff; padding: 2px 10px; border-radius: 6px; font-size: 1rem; font-weight: bold; font-family: monospace; }
+        .subtext { color: #8b949e; font-size: 0.95rem; letter-spacing: 1px; margin: 5px 0 0 0; font-family: monospace; }
+        .grid-container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 90%; max-width: 1000px; }
+        h2 { color: #00e5ff; margin-top: 0; font-size: 1.3rem; letter-spacing: 1px; }
+        .stream-window { width: 100%; height: 240px; background: #000; border-radius: 8px; border: 1px dashed #00e5ff; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+        video { width: 100%; height: 100%; object-fit: cover; background: #000; }
+        .control-pad { display: grid; grid-template-columns: repeat(3, 75px); gap: 12px; justify-content: center; margin: 20px 0; }
+        .btn { background: #21262d; border: 1px solid #00e5ff; color: #00e5ff; padding: 18px; border-radius: 10px; font-weight: bold; font-size: 1.2rem; cursor: pointer; transition: 0.1s; touch-action: manipulation; }
+        .btn:active, .btn.active { background: #00e5ff; color: #000; box-shadow: 0 0 15px #00e5ff; }
+        .btn-empty { border: none; background: transparent; }
+        .chat-area { height: 140px; background: #0d1117; border-radius: 6px; border: 1px solid #30363d; overflow-y: auto; padding: 10px; text-align: left; font-size: 0.9rem; }
+        .chat-input-row { display: flex; gap: 10px; margin-top: 10px; }
+        .chat-input { flex: 1; background: #0d1117; border: 1px solid #30363d; color: #fff; padding: 10px; border-radius: 6px; }
+        .nav-link { color: #00e5ff; text-decoration: none; font-family: monospace; font-weight: bold; font-size: 0.95rem; }
+        .nav-link:hover { text-decoration: underline; }
+        .stop-speech-btn { background: #ff0055; color: #fff; border: none; padding: 8px 14px; font-weight: bold; border-radius: 6px; cursor: pointer; margin-top: 8px; width: 100%; }
     </style>
 </head>
 <body>
-    <div class="robot-box">
+    <div class="panel">
         <div class="header-container">
             <img src="/favicon.ico" class="logo-img" alt="Logo">
-            <h1 style="color:#39ff14; margin:0; font-size:1.6rem; letter-spacing:2px;">TITAN CORE NODE</h1>
+            <h1 style="color:#00e5ff; margin:0; font-size:1.8rem; letter-spacing:2px;">TITAN CENTRAL COMMAND</h1>
             <span class="badge">MD</span>
         </div>
         <div class="subtext">TiTaN Labs Of iNNvovention</div>
-        <div>SYSTEM ENGINE STATUS: <span id="status-text" style="color:#ffaa00;">OFFLINE</span></div>
-        <div class="video-preview">
-            <video id="localVideo" autoplay muted playsinline></video>
+        <p style="margin:12px 0 0 0; color:#8b949e; font-size: 0.9rem;" id="net-status">
+            <span style="color:#ffaa00;">●</span> Connecting Core Hub...
+        </p>
+        
+        <div style="margin-top: 15px; border-top: 1px solid #30363d; padding-top: 12px; display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; align-items: center;">
+            <a href="/robot" target="_blank" class="nav-link" style="color:#00e5ff;">🔗 LAUNCH PHONE ROBOT NODE →</a>
+            <a href="/api/cmd" target="_blank" class="nav-link" style="color:#39ff14;">⚡ API CMD ENDPOINT →</a>
         </div>
-        <button class="action-btn" id="act-btn" onclick="bootRobotHead()">BOOT SYSTEM</button>
-        <button class="stop-btn" onclick="stopRobotSpeechDirectly()">🛑 STOP SPEAKING</button>
-        <div class="log-box" id="signal-log">
-            <div style="color:#8b949e;">[System Ready. Awaiting User Activation Loop...]</div>
+    </div>
+
+    <div class="grid-container">
+        <div class="panel" style="width: auto; margin-bottom: 0;">
+            <h2>LIVE VIDEO STREAM</h2>
+            <div class="stream-window">
+                <video id="remoteVideo" autoplay playsinline muted controls></video>
+            </div>
+            
+            <h2>TOUCH DRIVE (HOLD TO MOVE)</h2>
+            <div class="control-pad">
+                <button class="btn-empty"></button>
+                <button class="btn" id="btn-fwd">▲</button>
+                <button class="btn-empty"></button>
+                <button class="btn" id="btn-left">◀</button>
+                <button class="btn" id="btn-stop" style="border-color:#ff5555; color:#ff5555;">■</button>
+                <button class="btn" id="btn-right">▶</button>
+                <button class="btn-empty"></button>
+                <button class="btn" id="btn-rev">▼</button>
+                <button class="btn-empty"></button>
+            </div>
         </div>
-        <div style="margin-top: 20px; border-top: 1px solid #30363d; padding-top: 15px; display: flex; flex-direction: column; gap: 10px;">
-            <a href="/" class="nav-link">← RETURN TO MAIN CONTROL DESK</a>
-            <a href="#localVideo" class="nav-link" style="color: #ff007f;">📸 VIEW LOCAL PHONE CAMERA FEED ↓</a>
+
+        <div class="panel" style="width: auto; margin-bottom: 0; display:flex; flex-direction:column; justify-content:space-between;">
+            <div>
+                <h2>MANUAL AI TERMINAL</h2>
+                <div class="chat-area" id="terminal-logs">
+                    <div style="color:#8b949e;">[System Initialization Complete] Console Ready...</div>
+                </div>
+                <button class="stop-speech-btn" onclick="triggerStopSpeech()">🛑 MUTE / STOP TITAN SPEECH</button>
+            </div>
+            
+            <div class="chat-input-row">
+                <input type="text" class="chat-input" id="user-msg" placeholder="Type instructions here..." onkeydown="if(event.key==='Enter') sendManualMessage()">
+                <button class="btn" style="padding:10px 20px;" onclick="sendManualMessage()">SEND</button>
+            </div>
         </div>
     </div>
 
     <script>
-        let ws; 
-        let recognition; 
-        let active = false; 
-        let micEnabledByDashboard = false; // STARTS OFF BY DEFAULT
-        let localStream; 
-        let peerConnection;
-        let speechQueue = []; 
-        let isSpeaking = false; 
-        let isProcessing = false;
-        let micRestartTimer = null;
-        let wakeLock = null;
-        let audioCtxKeepAlive = null;
-
-        const logBox = document.getElementById('signal-log');
+        const logs = document.getElementById('terminal-logs');
+        let ws; let peerConnection;
+        let activeDirection = "STOP";
+        let isKeyPressed = false;
         const rtcConfig = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
-
-        function printLog(text, color="#c9d1d9") {
-            logBox.innerHTML += `<div style="color:${color}">&gt; ${text}</div>`;
-            logBox.scrollTop = logBox.scrollHeight;
-        }
-
-        async function requestWakeLock() {
-            try {
-                if ('wakeLock' in navigator) {
-                    wakeLock = await navigator.wakeLock.request('screen');
-                    printLog("Screen Wake Lock active (Battery Backup Mode Ready).", "#39ff14");
-                }
-            } catch (err) {
-                printLog("Wake Lock notice: " + err.message, "#ffaa00");
-            }
-        }
-
-        function startSilentAudioKeepAlive() {
-            try {
-                const AudioContext = window.AudioContext || window.webkitAudioContext;
-                if (AudioContext) {
-                    audioCtxKeepAlive = new AudioContext();
-                    const osc = audioCtxKeepAlive.createOscillator();
-                    const gain = audioCtxKeepAlive.createGain();
-                    gain.gain.value = 0.0001; 
-                    osc.connect(gain);
-                    gain.connect(audioCtxKeepAlive.destination);
-                    osc.start();
-                    printLog("Background Audio Engine initialized.", "#39ff14");
-                }
-            } catch(e){}
-        }
-
-        document.addEventListener('visibilitychange', async () => {
-            if (document.visibilityState === 'visible' && active) {
-                requestWakeLock();
-            }
-        });
-
-        function stopRobotSpeechDirectly() {
-            speechQueue = [];
-            isSpeaking = false;
-            isProcessing = false;
-            if ('speechSynthesis' in window) {
-                window.speechSynthesis.cancel();
-            }
-            printLog("Speech canceled by operator.", "#ff0055");
-            setTimeout(() => {
-                if (active && micEnabledByDashboard) startListeningLoop();
-            }, 300);
-        }
-
-        function robotSpeak(textToSay) {
-            if (!textToSay) return;
-            
-            speechQueue = [];
-            if ('speechSynthesis' in window) {
-                window.speechSynthesis.cancel();
-            }
-
-            stopMicSafely();
-
-            const cleanText = textToSay.replace(/\*/g, '').replace(/#/g, '').trim();
-            const fragments = cleanText.match(/[^.!?\n\।]+[.!?\n\।]*/g) || [cleanText];
-            
-            fragments.forEach(frag => {
-                if (frag.trim().length > 0) speechQueue.push(frag.trim());
-            });
-
-            isSpeaking = true;
-            processNextQueueItem();
-        }
-
-        function processNextQueueItem() {
-            if ('speechSynthesis' in window) {
-                if (speechQueue.length === 0) {
-                    isSpeaking = false;
-                    isProcessing = false;
-                    setTimeout(() => {
-                        if (active && micEnabledByDashboard) startListeningLoop();
-                    }, 600);
-                    return;
-                }
-                
-                isSpeaking = true;
-                const nextUtteranceText = speechQueue.shift();
-                const voiceOut = new SpeechSynthesisUtterance(nextUtteranceText);
-                const DevanagariPattern = /[\u0900-\u097F]/;
-                
-                if (DevanagariPattern.test(nextUtteranceText)) {
-                    voiceOut.lang = 'mr-IN';
-                } else {
-                    voiceOut.lang = 'en-IN';
-                }
-
-                voiceOut.rate = 0.88;
-                voiceOut.pitch = 0.75;
-
-                const systemVoices = window.speechSynthesis.getVoices();
-                let targetVoice = systemVoices.find(v => v.lang === voiceOut.lang || v.lang.startsWith(voiceOut.lang.slice(0, 2)));
-                let maleVoice = systemVoices.find(v => 
-                    (v.lang.startsWith(voiceOut.lang.slice(0, 2)) || v.lang === 'mr-IN' || v.lang === 'hi-IN') && 
-                    (v.name.toLowerCase().includes('male') || 
-                     v.name.toLowerCase().includes('google male') || 
-                     v.name.toLowerCase().includes('david') || 
-                     v.name.toLowerCase().includes('ravi') || 
-                     v.name.toLowerCase().includes('guy'))
-                );
-
-                if (maleVoice) {
-                    voiceOut.voice = maleVoice;
-                } else if (targetVoice) {
-                    voiceOut.voice = targetVoice;
-                }
-
-                voiceOut.onend = () => { setTimeout(processNextQueueItem, 50); };
-                voiceOut.onerror = () => { isSpeaking = false; setTimeout(processNextQueueItem, 50); };
-
-                stopMicSafely();
-                window.speechSynthesis.speak(voiceOut);
-            }
-        }
-
-        async function bootRobotHead() {
-            active = true;
-            document.getElementById('act-btn').style.display = 'none';
-            document.getElementById('status-text').innerHTML = "ONLINE";
-            document.getElementById('status-text').className = "live-indicator";
-            
-            requestWakeLock();
-            startSilentAudioKeepAlive();
-            initWebSocket();
-            initVoiceRecognitionEngine();
-            
-            try {
-                localStream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { facingMode: "environment", width: 640, height: 480 }, 
-                    audio: false 
-                });
-                document.getElementById('localVideo').srcObject = localStream;
-                printLog("Camera stream pipeline active.", "#39ff14");
-            } catch (err) { 
-                printLog("Camera access blocked by browser.", "#ff5555"); 
-            }
-            
-            printLog("Mic Standby: Waiting for Dashboard trigger...", "#ffaa00");
-            
-            setTimeout(() => {
-                robotSpeak("System online boss. TiTaN core ready.");
-            }, 1000);
-        }
 
         function initWebSocket() {
             const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
             ws = new WebSocket(protocol + window.location.host + '/core');
-            
-            ws.onopen = () => { 
-                ws.send(JSON.stringify({ register: 'robot' })); 
-                printLog("Connected to Python Core Hub.", "#39ff14"); 
 
-                // Cloud Keep-Alive Ping for Render
+            ws.onopen = () => {
+                ws.send(JSON.stringify({ register: 'deck' }));
+                document.getElementById('net-status').innerHTML = '<span style="color:#39ff14;">●</span> Render Core Linked';
+                
                 setInterval(() => {
                     if(ws.readyState === WebSocket.OPEN) {
                         ws.send(JSON.stringify({ type: 'ping_esp' }));
                     }
                 }, 10000);
+
+                startVideoCall();
             };
 
             ws.onmessage = async (event) => {
                 const data = JSON.parse(event.data); 
                 
-                if (data.type === "stop_speech") {
-                    stopRobotSpeechDirectly();
-                }
-                else if (data.type === "toggle_mic") {
-                    micEnabledByDashboard = data.state;
-                    if (micEnabledByDashboard) {
-                        printLog("Remote Mic ENABLED by Dashboard.", "#39ff14");
-                        startListeningLoop();
-                    } else {
-                        printLog("Remote Mic DISABLED by Dashboard.", "#ffaa00");
-                        stopMicSafely();
-                    }
-                }
-                else if (data.type === "ai_reply") {
-                    printLog(`AI response received...`, "#39ff14");
-                    robotSpeak(data.payload);
-                } 
-                else if (data.type === "movement") {
-                    printLog(`Movement Received: [${data.payload}]`, "#39ff14");
-                    robotSpeak(data.payload === "STOP" ? "Stopping" : "Executing movement");
-                } 
-                else if (data.type === "sdp" && data.sdp.type === 'offer') {
-                    peerConnection = new RTCPeerConnection(rtcConfig);
-                    if (localStream) {
-                        localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
-                    }
-                    peerConnection.onicecandidate = (e) => { 
-                        if (e.candidate && ws.readyState === WebSocket.OPEN) {
-                            ws.send(JSON.stringify({ type: 'candidate', candidate: e.candidate })); 
-                        }
-                    };
+                if (data.type === 'ai_reply') {
+                    logs.innerHTML += `<div style="color:#39ff14; margin-bottom:8px;"><strong>TiTaN:</strong> ${data.payload}</div>`;
+                    logs.scrollTop = logs.scrollHeight;
+                } else if (data.type === 'sdp' && data.sdp.type === 'answer') {
                     await peerConnection.setRemoteDescription(new RTCSessionDescription(data.sdp));
-                    const answer = await peerConnection.createAnswer();
-                    await peerConnection.setLocalDescription(answer);
-                    ws.send(JSON.stringify({ type: 'sdp', sdp: answer })); 
-                } else if (data.type === "candidate" && peerConnection) {
+                } else if (data.type === 'candidate') {
                     try { await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate)); } catch(e){}
                 }
             };
-            ws.onclose = () => { setTimeout(initWebSocket, 3000); };
+
+            ws.onclose = () => {
+                document.getElementById('net-status').innerHTML = '<span style="color:#ffaa00;">●</span> Reconnecting...';
+                setTimeout(initWebSocket, 2000);
+            };
         }
 
-        function initVoiceRecognitionEngine() {
-            window.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!window.SpeechRecognition) {
-                printLog("Speech Recognition unsupported on this browser.", "#ff5555");
-                return;
+        async function startVideoCall() {
+            peerConnection = new RTCPeerConnection(rtcConfig);
+            peerConnection.ontrack = (event) => { 
+                const remoteVid = document.getElementById('remoteVideo');
+                remoteVid.srcObject = event.streams[0];
+                remoteVid.play().catch(err => console.log("Auto-play wait:", err));
+            };
+            peerConnection.onicecandidate = (e) => {
+                if (e.candidate && ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({ type: 'candidate', candidate: e.candidate }));
+                }
+            };
+            peerConnection.addTransceiver('video', { direction: 'recvonly' });
+            const offer = await peerConnection.createOffer();
+            await peerConnection.setLocalDescription(offer);
+            ws.send(JSON.stringify({ type: 'sdp', sdp: offer }));
+        }
+
+        async function sendCommand(dir) {
+            if (activeDirection === dir) return;
+            activeDirection = dir;
+
+            logs.innerHTML += `<div style="color:#00e5ff;">&gt; Instruction: ${dir}</div>`;
+            logs.scrollTop = logs.scrollHeight;
+
+            try {
+                await fetch('/api/cmd', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ command: dir })
+                });
+            } catch(e){}
+
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: 'movement', payload: dir }));
             }
+        }
+
+        function attachHoldControls(elementId, direction) {
+            const btn = document.getElementById(elementId);
             
-            recognition = new window.SpeechRecognition();
-            recognition.continuous = false; 
-            recognition.interimResults = false; 
-            recognition.lang = 'mr-IN';
-
-            recognition.onstart = () => {
-                isProcessing = false;
-                printLog("Mic active & listening...", "#00e5ff");
+            const startDrive = (e) => {
+                e.preventDefault();
+                btn.classList.add('active');
+                sendCommand(direction);
             };
 
-            recognition.onend = () => {
-                isProcessing = false;
-                if (active && !isSpeaking && micEnabledByDashboard) {
-                    clearTimeout(micRestartTimer);
-                    micRestartTimer = setTimeout(() => {
-                        startListeningLoop();
-                    }, 500);
-                }
+            const stopDrive = (e) => {
+                e.preventDefault();
+                btn.classList.remove('active');
+                sendCommand('STOP');
             };
 
-            recognition.onerror = (event) => {
-                isProcessing = false;
-                if (event.error === 'no-speech' || event.error === 'aborted') return;
-                printLog("Mic status notice: " + event.error, "#ffaa00");
-            };
+            btn.addEventListener('mousedown', startDrive);
+            btn.addEventListener('mouseup', stopDrive);
+            btn.addEventListener('mouseleave', stopDrive);
 
-            recognition.onresult = (event) => {
-                isProcessing = true; 
-                stopMicSafely();
-
-                const speech = event.results[0][0].transcript.toLowerCase().trim();
-                printLog(`Captured: "${speech}"`, "#fff");
-                
-                // Voice Movement Command Dispatch (Sends directly via HTTP to API and WS)
-                const dispatchVoiceDrive = async (dir) => {
-                    try {
-                        await fetch('/api/cmd', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ command: dir })
-                        });
-                    } catch(e){}
-                    if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'movement', payload: dir }));
-                };
-
-                if (speech.includes("forward") || speech.includes("पुढे") || speech.includes("आगे")) {
-                    dispatchVoiceDrive('FORWARD');
-                    robotSpeak("Moving forward.");
-                    return;
-                } 
-                if (speech.includes("reverse") || speech.includes("मागे") || speech.includes("पीछे")) {
-                    dispatchVoiceDrive('REVERSE');
-                    robotSpeak("Backing up.");
-                    return;
-                } 
-                if (speech.includes("left") || speech.includes("डावीकडे") || speech.includes("बाये")) {
-                    dispatchVoiceDrive('LEFT');
-                    robotSpeak("Turning left.");
-                    return;
-                } 
-                if (speech.includes("right") || speech.includes("उजवीकडे") || speech.includes("दाये")) {
-                    dispatchVoiceDrive('RIGHT');
-                    robotSpeak("Turning right.");
-                    return;
-                } 
-                if (speech.includes("stop") || speech.includes("थांब") || speech.includes("रुको")) {
-                    dispatchVoiceDrive('STOP');
-                    robotSpeak("Stopping all engines.");
-                    return;
-                } 
-
-                if (speech.length > 2) {
-                    robotSpeak("Analyzing query.");
-                    if (ws && ws.readyState === WebSocket.OPEN) {
-                        ws.send(JSON.stringify({ type: 'question', payload: speech }));
-                    }
-                } else {
-                    isProcessing = false;
-                    setTimeout(() => { if (active && !isSpeaking && micEnabledByDashboard) startListeningLoop(); }, 400);
-                }
-            };
+            btn.addEventListener('touchstart', startDrive);
+            btn.addEventListener('touchend', stopDrive);
+            btn.addEventListener('touchcancel', stopDrive);
         }
 
-        function stopMicSafely() {
-            if (recognition) {
-                try { recognition.abort(); } catch(e) {}
+        attachHoldControls('btn-fwd', 'FORWARD');
+        attachHoldControls('btn-rev', 'REVERSE');
+        attachHoldControls('btn-left', 'LEFT');
+        attachHoldControls('btn-right', 'RIGHT');
+        document.getElementById('btn-stop').onclick = () => sendCommand('STOP');
+
+        document.addEventListener('keydown', (e) => {
+            if (document.activeElement === document.getElementById('user-msg')) return;
+            if (isKeyPressed) return;
+            isKeyPressed = true;
+
+            if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') sendCommand('FORWARD');
+            if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') sendCommand('REVERSE');
+            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') sendCommand('LEFT');
+            if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') sendCommand('RIGHT');
+            if (e.key === ' ') sendCommand('STOP');
+        });
+
+        document.addEventListener('keyup', (e) => {
+            if (document.activeElement === document.getElementById('user-msg')) return;
+            isKeyPressed = false;
+            if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','w','W','s','S','a','A','d','D'].includes(e.key)) {
+                sendCommand('STOP');
+            }
+        });
+
+        function sendManualMessage() {
+            const input = document.getElementById('user-msg');
+            if(!input.value.trim()) return;
+            logs.innerHTML += `<div style="color:#fff;">&gt; Operator: ${input.value}</div>`;
+            logs.scrollTop = logs.scrollHeight;
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: 'question', payload: input.value }));
+            }
+            input.value = '';
+        }
+
+        function triggerStopSpeech() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: 'stop_speech' }));
             }
         }
 
-        function startListeningLoop() {
-            if (!active || isSpeaking || !micEnabledByDashboard) return;
-            isProcessing = false;
-            try { recognition.start(); } catch(e) {}
-        }
-
-        if ('speechSynthesis' in window) {
-            window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); };
-        }
+        window.onload = () => { initWebSocket(); };
     </script>
 </body>
 </html>
