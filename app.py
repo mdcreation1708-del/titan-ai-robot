@@ -2,17 +2,16 @@ import os
 import json
 from flask import Flask, render_template, send_from_directory, request, jsonify
 from flask_sock import Sock
-from google import genai
-from google.genai import types
+from openai import OpenAI
 
 app = Flask(__name__)
 sock = Sock(app)
 
 connected_devices = {}
 
-# Safely load Gemini API key from Render Environment Variables
-GEMINI_KEY = os.environ.get("GEMINI_API_KEY", "YOUR_FALLBACK_KEY_HERE")
-ai_client = genai.Client(api_key=GEMINI_KEY)
+# Safely initialize OpenAI client using Render Environment Variable
+OPENAI_KEY = os.environ.get("OPENAI_API_KEY", "")
+ai_client = OpenAI(api_key=OPENAI_KEY) if OPENAI_KEY else None
 
 # Holds last chassis motor instruction for instant ESP32 polling execution
 last_motor_command = "STOP"
@@ -48,7 +47,7 @@ def handle_cmd():
         return jsonify({"command": last_motor_command})
 
 # ----------------------------------------------------------------
-# 3. WEBSOCKET CORE ROUTING HUB (Deck <-> Phone Node <-> Gemini AI)
+# 3. WEBSOCKET CORE ROUTING HUB (Deck <-> Phone Node <-> OpenAI)
 # ----------------------------------------------------------------
 @sock.route('/core')
 def core_routing_hub(ws):
@@ -108,27 +107,37 @@ def core_routing_hub(ws):
                 except: pass
                 continue
 
-            # --- Gemini AI Processing Loop ---
+            # --- OpenAI Processing Loop ---
             if data_packet.get('type') == 'question':
                 user_query = data_packet.get('payload', '')
                 print(f"[AI CORE] Query Received: {user_query}")
-                try:
-                    response = ai_client.models.generate_content(
-                        model='gemini-2.5-flash',
-                        contents=user_query,
-                        config=types.GenerateContentConfig(
-                            system_instruction="""You are TiTaN, a highly advanced robotic AI assistant designed for mechatronics and automation tasks by Malhar Deshmukh at TiTaN Labs Of iNNvovention.
-                            You must always provide technically complete, highly intelligent, exhaustive, and fully structured answers that pass rigorous academic and supervisor review panels.
-                            Never truncate, crop, or cut off any sentence halfway. Every explanation must conclude its complete logical thought structure fully.
-                            You are deeply multilingual. If the user talks to you or asks a question in Marathi (or Devanagari script), lock your response ENTIRELY into fluent, grammatically perfect Marathi (मराठी) text using Devanagari script. If they speak in Hindi, respond in Hindi. If in English, respond in English.
-                            When answering queries regarding historical icons, structural histories, or kings—especially Chhatrapati Shivaji Maharaj—you must write with absolute reverence, profound dignity, and deep detail.""",
-                            max_output_tokens=3072
+
+                if not ai_client:
+                    ai_answer = "Error: OPENAI_API_KEY is not configured in Render Environment."
+                else:
+                    try:
+                        response = ai_client.chat.completions.create(
+                            model="gpt-4o-mini",
+                            messages=[
+                                {
+                                    "role": "system",
+                                    "content": """You are TiTaN, a highly advanced robotic AI assistant designed for mechatronics and automation tasks by Malhar Deshmukh at TiTaN Labs Of iNNvovention.
+                                    You must always provide technically complete, highly intelligent, exhaustive, and fully structured answers that pass rigorous academic and supervisor review panels.
+                                    Never truncate, crop, or cut off any sentence halfway. Every explanation must conclude its complete logical thought structure fully.
+                                    You are deeply multilingual. If the user talks to you or asks a question in Marathi (or Devanagari script), lock your response ENTIRELY into fluent, grammatically perfect Marathi (मराठी) text using Devanagari script. If they speak in Hindi, respond in Hindi. If in English, respond in English.
+                                    When answering queries regarding historical icons, structural histories, or kings—especially Chhatrapati Shivaji Maharaj—you must write with absolute reverence, profound dignity, and deep detail."""
+                                },
+                                {
+                                    "role": "user",
+                                    "content": user_query
+                                }
+                            ],
+                            max_tokens=2048
                         )
-                    )
-                    ai_answer = response.text
-                except Exception as ai_err:
-                    print(f"[AI ERROR DETAILED] {ai_err}")
-                    ai_answer = f"AI Error: {str(ai_err)}"
+                        ai_answer = response.choices[0].message.content
+                    except Exception as ai_err:
+                        print(f"[AI ERROR DETAILED] {ai_err}")
+                        ai_answer = f"OpenAI Error: {str(ai_err)}"
                 
                 reply_packet = json.dumps({'type': 'ai_reply', 'payload': ai_answer})
                 if 'deck' in connected_devices:
