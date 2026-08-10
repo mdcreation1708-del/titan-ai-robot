@@ -1,5 +1,5 @@
 flask
 flask-sock
-google-genai
+openai
 gunicorn
 gevent-websocket
