@@ -2,4 +2,5 @@ flask
 flask-sock
 openai
 gunicorn
+gevent
 gevent-websocket
