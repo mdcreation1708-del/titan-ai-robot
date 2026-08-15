@@ -1,6 +1,6 @@
 flask
 flask-sock
-openai
+groq
 gunicorn
 gevent
 gevent-websocket
