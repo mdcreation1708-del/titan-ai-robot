@@ -8,34 +8,23 @@ app = Flask(__name__)
 sock = Sock(app)
 
 connected_devices = {}
-
-# Safely initialize OpenAI client using Render Environment Variable
 OPENAI_KEY = os.environ.get("OPENAI_API_KEY", "")
 ai_client = OpenAI(api_key=OPENAI_KEY) if OPENAI_KEY else None
 
-# Holds last chassis motor instruction for instant ESP32 polling execution
 last_motor_command = "STOP"
 
-# ----------------------------------------------------------------
-# 1. WEB PAGE ROUTES
-# ----------------------------------------------------------------
 @app.route('/favicon.ico')
 def favicon():
     return send_from_directory(app.root_path, 'favicon.ico', mimetype='image/vnd.microsoft.icon')
 
 @app.route('/')
 def index():
-    """ Main Control Desk Dashboard """
     return render_template('index.html')
 
 @app.route('/robot')
 def robot():
-    """ Robot Phone Node (Camera & Mic) """
     return render_template('robot_node.html')
 
-# ----------------------------------------------------------------
-# 2. ESP32 HIGH-SPEED MOTOR ENDPOINT (Zero Disconnects)
-# ----------------------------------------------------------------
 @app.route('/api/cmd', methods=['GET', 'POST'])
 def handle_cmd():
     global last_motor_command
@@ -46,9 +35,6 @@ def handle_cmd():
     else:
         return jsonify({"command": last_motor_command})
 
-# ----------------------------------------------------------------
-# 3. WEBSOCKET CORE ROUTING HUB (Deck <-> Phone Node <-> OpenAI)
-# ----------------------------------------------------------------
 @sock.route('/core')
 def core_routing_hub(ws):
     global last_motor_command
@@ -64,81 +50,78 @@ def core_routing_hub(ws):
             except Exception:
                 continue
 
-            # --- Device Registration ---
+            # Registration
             if 'register' in data_packet:
                 device_identity = data_packet['register']
                 connected_devices[device_identity] = ws
-                print(f"[SYSTEM CORE] Node Linked: {device_identity}")
+                print(f"[CORE LINKED] Device registered: {device_identity}")
                 
-                if device_identity == 'deck':
-                    status = 'ONLINE'
-                    try: ws.send(json.dumps({'type': 'esp_status', 'payload': status}))
+                # Notify deck if robot is already present or vice versa
+                if device_identity == 'robot' and 'deck' in connected_devices:
+                    try: connected_devices['deck'].send(json.dumps({'type': 'robot_online'}))
+                    except: pass
+                elif device_identity == 'deck' and 'robot' in connected_devices:
+                    try: ws.send(json.dumps({'type': 'robot_online'}))
                     except: pass
                 continue
 
-            # --- Movement Signal Handling ---
-            if data_packet.get('type') == 'movement':
-                cmd = data_packet.get('payload', 'STOP')
-                last_motor_command = cmd
-                print(f"[CHASSIS COMMAND] -> {cmd}")
-                
-                if 'robot' in connected_devices and device_identity != 'robot':
-                    try: connected_devices['robot'].send(json.dumps(data_packet))
-                    except: pass
+            # Keep-alive Ping / Pong
+            if data_packet.get('type') == 'ping_heartbeat':
+                try: ws.send(json.dumps({'type': 'pong_heartbeat'}))
+                except: pass
                 continue
 
-            # --- Stop Audio Speech Signal ---
-            if data_packet.get('type') == 'stop_speech':
-                if 'robot' in connected_devices:
-                    try: connected_devices['robot'].send(json.dumps({'type': 'stop_speech'}))
-                    except: pass
+            # Hardware Ping
+            if data_packet.get('type') == 'ping_esp':
+                try: ws.send(json.dumps({'type': 'esp_status', 'payload': 'ONLINE'}))
+                except: pass
                 continue
 
-            # --- Remote Mic Toggle Signal ---
+            # Remote Mic Toggle from Dashboard
             if data_packet.get('type') == 'toggle_mic':
                 if 'robot' in connected_devices:
                     try: connected_devices['robot'].send(json.dumps(data_packet))
                     except: pass
                 continue
 
-            # --- Hardware Ping ---
-            if data_packet.get('type') == 'ping_esp':
-                try: ws.send(json.dumps({'type': 'esp_status', 'payload': 'ONLINE'}))
-                except: pass
+            # Stop Speech
+            if data_packet.get('type') == 'stop_speech':
+                if 'robot' in connected_devices:
+                    try: connected_devices['robot'].send(json.dumps(data_packet))
+                    except: pass
                 continue
 
-            # --- OpenAI Processing Loop ---
+            # Movement Signal
+            if data_packet.get('type') == 'movement':
+                cmd = data_packet.get('payload', 'STOP')
+                last_motor_command = cmd
+                if 'robot' in connected_devices and device_identity != 'robot':
+                    try: connected_devices['robot'].send(json.dumps(data_packet))
+                    except: pass
+                continue
+
+            # OpenAI Processing
             if data_packet.get('type') == 'question':
                 user_query = data_packet.get('payload', '')
-                print(f"[AI CORE] Query Received: {user_query}")
-
                 if not ai_client:
-                    ai_answer = "Error: OPENAI_API_KEY is not configured in Render Environment."
+                    ai_answer = "API Key not configured."
                 else:
                     try:
-                        response = ai_client.chat.completions.create(
+                        res = ai_client.chat.completions.create(
                             model="gpt-4o-mini",
                             messages=[
                                 {
-                                    "role": "system",
-                                    "content": """You are TiTaN, a highly advanced robotic AI assistant designed for mechatronics and automation tasks by Malhar Deshmukh at TiTaN Labs Of iNNvovention.
-                                    You must always provide technically complete, highly intelligent, exhaustive, and fully structured answers that pass rigorous academic and supervisor review panels.
-                                    Never truncate, crop, or cut off any sentence halfway. Every explanation must conclude its complete logical thought structure fully.
-                                    You are deeply multilingual. If the user talks to you or asks a question in Marathi (or Devanagari script), lock your response ENTIRELY into fluent, grammatically perfect Marathi (मराठी) text using Devanagari script. If they speak in Hindi, respond in Hindi. If in English, respond in English.
-                                    When answering queries regarding historical icons, structural histories, or kings—especially Chhatrapati Shivaji Maharaj—you must write with absolute reverence, profound dignity, and deep detail."""
+                                    "role": "system", 
+                                    "content": "You are TiTaN, an industrial robotic AI assistant. If spoken to in Marathi, reply in Marathi Devanagari. If Hindi, reply in Hindi. Keep responses clear and concise."
                                 },
-                                {
-                                    "role": "user",
-                                    "content": user_query
-                                }
+                                {"role": "user", "content": user_query}
                             ],
                             max_tokens=2048
                         )
-                        ai_answer = response.choices[0].message.content
-                    except Exception as ai_err:
-                        print(f"[AI ERROR DETAILED] {ai_err}")
-                        ai_answer = f"OpenAI Error: {str(ai_err)}"
-                
+                        ai_answer = res.choices[0].message.content
+                    except Exception as e:
+                        ai_answer = f"Error: {str(e)}"
+
                 reply_packet = json.dumps({'type': 'ai_reply', 'payload': ai_answer})
                 if 'deck' in connected_devices:
                     try: connected_devices['deck'].send(reply_packet)
@@ -148,16 +131,16 @@ def core_routing_hub(ws):
                     except: pass
                 continue
 
-            # --- WebRTC Video Stream Cross-Signaling ---
-            target_node = 'robot' if device_identity == 'deck' else 'deck'
-            if target_node in connected_devices:
+            # WebRTC Signaling Relay (SDP Offer/Answer/Candidates)
+            target = 'robot' if device_identity == 'deck' else 'deck'
+            if target in connected_devices:
                 try:
-                    connected_devices[target_node].send(json.dumps(data_packet))
+                    connected_devices[target].send(json.dumps(data_packet))
                 except Exception:
-                    del connected_devices[target_node]
+                    del connected_devices[target]
 
-    except Exception as err:
-        print(f"[DISCONNECT] Connection closed for node: {device_identity}")
+    except Exception:
+        pass
     finally:
         if device_identity in connected_devices:
             del connected_devices[device_identity]
