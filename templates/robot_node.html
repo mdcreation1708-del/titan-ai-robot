@@ -9,7 +9,6 @@
         body { background-color: #0b0e14; color: #c9d1d9; font-family: Arial, sans-serif; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
         .robot-box { border: 2px solid #39ff14; background: #101520; border-radius: 12px; padding: 25px; text-align: center; width: 90%; max-width: 480px; }
         .header-container { display: flex; align-items: center; justify-content: center; gap: 12px; }
-        .logo-img { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #39ff14; }
         .badge { border: 2px solid #39ff14; color: #39ff14; padding: 1px 8px; border-radius: 5px; font-family: monospace; font-weight: bold; }
         .video-preview { width: 100%; height: 180px; background: #000; border-radius: 6px; margin-top: 15px; overflow: hidden; border: 1px solid #39ff14; }
         video { width: 100%; height: 100%; object-fit: cover; }
@@ -22,18 +21,18 @@
 <body>
     <div class="robot-box">
         <div class="header-container">
-            <img src="/favicon.ico" class="logo-img" alt="Logo">
             <h1 style="color:#39ff14; margin:0; font-size:1.6rem;">TITAN CORE NODE</h1>
             <span class="badge">MD</span>
         </div>
         <div style="margin-top: 5px;">STATUS: <span id="status-text" style="color:#ffaa00;">OFFLINE</span></div>
         <div class="video-preview">
             <video id="localVideo" autoplay muted playsinline></video>
+            <canvas id="captureCanvas" style="display:none;"></canvas>
         </div>
         <button class="action-btn" id="act-btn" onclick="bootRobotHead()">BOOT SYSTEM</button>
         <button class="stop-btn" onclick="stopRobotSpeechDirectly()">🛑 STOP SPEAKING</button>
         <div class="log-box" id="signal-log">
-            <div style="color:#8b949e;">[System Ready. Awaiting Boot...]</div>
+            <div style="color:#8b949e;">[System Ready. Tap 'BOOT SYSTEM']</div>
         </div>
         <div style="margin-top: 15px;">
             <a href="/" style="color:#39ff14; text-decoration:none; font-family:monospace; font-weight:bold;">← RETURN TO MAIN DESK</a>
@@ -41,20 +40,13 @@
     </div>
 
     <script>
-        let ws; let recognition; let active = false; 
-        let micEnabledByDashboard = false;
-        let localStream; let peerConnection;
-        let speechQueue = []; let isSpeaking = false; let isProcessing = false;
-        let micRestartTimer = null; let heartbeatTimer = null;
-
+        let active = false; 
+        let recognition;
+        let isMicEnabled = false;
+        let isSpeaking = false;
         const logBox = document.getElementById('signal-log');
-        const rtcConfig = { 
-            iceServers: [
-                { urls: 'stun:stun.l.google.com:19302' },
-                { urls: 'stun:stun1.l.google.com:19302' },
-                { urls: 'stun:stun2.l.google.com:19302' }
-            ] 
-        };
+        const video = document.getElementById('localVideo');
+        const canvas = document.getElementById('captureCanvas');
 
         function printLog(text, color="#c9d1d9") {
             logBox.innerHTML += `<div style="color:${color}">&gt; ${text}</div>`;
@@ -62,40 +54,21 @@
         }
 
         function stopRobotSpeechDirectly() {
-            speechQueue = []; isSpeaking = false; isProcessing = false;
             if ('speechSynthesis' in window) window.speechSynthesis.cancel();
-            printLog("Speech canceled.", "#ff0055");
-            setTimeout(() => { if (active && micEnabledByDashboard) startListeningLoop(); }, 300);
+            isSpeaking = false;
+            printLog("Speech stopped.", "#ff0055");
         }
 
-        function robotSpeak(textToSay) {
-            if (!textToSay || !('speechSynthesis' in window)) return;
-            speechQueue = [];
+        function robotSpeak(text) {
+            if (!text || !('speechSynthesis' in window)) return;
             window.speechSynthesis.cancel();
-            stopMicSafely();
-
-            const cleanText = textToSay.replace(/\*/g, '').replace(/#/g, '').trim();
-            const fragments = cleanText.match(/[^.!?\n\।]+[.!?\n\।]*/g) || [cleanText];
-            fragments.forEach(f => { if (f.trim()) speechQueue.push(f.trim()); });
-
             isSpeaking = true;
-            processNextQueue();
-        }
 
-        function processNextQueue() {
-            if (speechQueue.length === 0) {
-                isSpeaking = false; isProcessing = false;
-                setTimeout(() => { if (active && micEnabledByDashboard) startListeningLoop(); }, 500);
-                return;
-            }
-            isSpeaking = true;
-            const text = speechQueue.shift();
-            const voiceOut = new SpeechSynthesisUtterance(text);
-            voiceOut.lang = /[\u0900-\u097F]/.test(text) ? 'mr-IN' : 'en-IN';
-            voiceOut.onend = () => setTimeout(processNextQueue, 50);
-            voiceOut.onerror = () => { isSpeaking = false; setTimeout(processNextQueue, 50); };
-            stopMicSafely();
-            window.speechSynthesis.speak(voiceOut);
+            const utterance = new SpeechSynthesisUtterance(text.replace(/\*/g, ''));
+            utterance.lang = /[\u0900-\u097F]/.test(text) ? 'mr-IN' : 'en-IN';
+            utterance.onend = () => { isSpeaking = false; if (isMicEnabled) startListening(); };
+            utterance.onerror = () => { isSpeaking = false; };
+            window.speechSynthesis.speak(utterance);
         }
 
         async function bootRobotHead() {
@@ -104,87 +77,59 @@
             document.getElementById('status-text').innerHTML = "ONLINE";
             document.getElementById('status-text').style.color = "#39ff14";
 
-            initWebSocket();
-            initVoiceEngine();
-
             try {
-                localStream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { facingMode: "environment", width: 640, height: 480 }, 
-                    audio: false 
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: "environment", width: 480, height: 360 },
+                    audio: false
                 });
-                document.getElementById('localVideo').srcObject = localStream;
-                printLog("Camera stream pipeline active.", "#39ff14");
+                video.srcObject = stream;
+                printLog("Camera active. Streaming frames to Cloud...", "#39ff14");
+
+                // Start continuous frame uploading to /api/video_feed (10 fps)
+                setInterval(captureAndUploadFrame, 100);
             } catch (err) {
                 printLog("Camera error: " + err.message, "#ff5555");
             }
 
-            printLog("Mic Standby: Waiting for Dashboard trigger...", "#ffaa00");
-            setTimeout(() => robotSpeak("System online boss. TiTaN ready."), 800);
+            initVoiceEngine();
+            setInterval(checkMicStatus, 1000); // Check if operator toggled mic ON
+            robotSpeak("TiTaN system online.");
         }
 
-        function initWebSocket() {
-            const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
-            ws = new WebSocket(protocol + window.location.host + '/core');
+        function captureAndUploadFrame() {
+            if (!active || video.readyState !== video.HAVE_ENOUGH_DATA) return;
+            canvas.width = 320;
+            canvas.height = 240;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-            ws.onopen = () => {
-                ws.send(JSON.stringify({ register: 'robot' }));
-                printLog("Connected to Render Core Hub.", "#39ff14");
-                
-                clearInterval(heartbeatTimer);
-                heartbeatTimer = setInterval(() => {
-                    if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'ping_heartbeat' }));
-                }, 5000);
-            };
+            canvas.toBlob((blob) => {
+                if (blob) {
+                    fetch('/api/video_feed', {
+                        method: 'POST',
+                        body: blob,
+                        headers: { 'Content-Type': 'image/jpeg' }
+                    }).catch(() => {});
+                }
+            }, 'image/jpeg', 0.5);
+        }
 
-            ws.onmessage = async (event) => {
-                const data = JSON.parse(event.data);
-
-                if (data.type === 'toggle_mic') {
-                    micEnabledByDashboard = data.state;
-                    if (micEnabledByDashboard) {
-                        printLog("Remote Mic ENABLED by Dashboard.", "#39ff14");
-                        startListeningLoop();
+        async function checkMicStatus() {
+            if (!active) return;
+            try {
+                const res = await fetch('/api/mic_status');
+                const data = await res.json();
+                if (data.mic_active !== isMicEnabled) {
+                    isMicEnabled = data.mic_active;
+                    if (isMicEnabled) {
+                        printLog("Remote Mic ENABLED by Dashboard!", "#39ff14");
+                        startListening();
                     } else {
                         printLog("Remote Mic DISABLED by Dashboard.", "#ffaa00");
-                        stopMicSafely();
+                        if (recognition) recognition.abort();
                     }
-                } else if (data.type === 'stop_speech') {
-                    stopRobotSpeechDirectly();
-                } else if (data.type === 'ai_reply') {
-                    printLog("AI response received.", "#39ff14");
-                    robotSpeak(data.payload);
-                } else if (data.type === 'movement') {
-                    printLog(`Movement: [${data.payload}]`, "#39ff14");
-                    robotSpeak(data.payload === "STOP" ? "Stopping" : "Moving");
-                } else if (data.type === 'sdp' && data.sdp.type === 'offer') {
-                    printLog("Negotiating video stream with dashboard...", "#00e5ff");
-                    peerConnection = new RTCPeerConnection(rtcConfig);
-                    
-                    if (localStream) {
-                        localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
-                    }
-
-                    peerConnection.onicecandidate = (e) => {
-                        if (e.candidate && ws.readyState === WebSocket.OPEN) {
-                            ws.send(JSON.stringify({ type: 'candidate', candidate: e.candidate }));
-                        }
-                    };
-
-                    await peerConnection.setRemoteDescription(new RTCSessionDescription(data.sdp));
-                    const answer = await peerConnection.createAnswer();
-                    await peerConnection.setLocalDescription(answer);
-                    ws.send(JSON.stringify({ type: 'sdp', sdp: answer }));
-                    printLog("Video pipeline established!", "#39ff14");
-                } else if (data.type === 'candidate' && peerConnection) {
-                    try { await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate)); } catch(e){}
                 }
-            };
-
-            ws.onclose = () => {
-                printLog("Reconnecting...", "#ffaa00");
-                clearInterval(heartbeatTimer);
-                setTimeout(initWebSocket, 2000);
-            };
+            } catch (e) {}
         }
 
         function initVoiceEngine() {
@@ -198,68 +143,55 @@
             recognition.interimResults = false;
             recognition.lang = 'mr-IN';
 
-            recognition.onstart = () => { isProcessing = false; printLog("Mic active & listening...", "#00e5ff"); };
-            recognition.onend = () => {
-                isProcessing = false;
-                if (active && !isSpeaking && micEnabledByDashboard) {
-                    clearTimeout(micRestartTimer);
-                    micRestartTimer = setTimeout(startListeningLoop, 500);
-                }
-            };
-            recognition.onerror = (e) => {
-                isProcessing = false;
-                if (e.error !== 'no-speech' && e.error !== 'aborted') printLog("Mic notice: " + e.error, "#ffaa00");
-            };
-
-            recognition.onresult = (event) => {
-                isProcessing = true;
-                stopMicSafely();
+            recognition.onresult = async (event) => {
                 const speech = event.results[0][0].transcript.toLowerCase().trim();
                 printLog(`Captured: "${speech}"`, "#fff");
 
-                const dispatchDrive = (dir) => {
+                const drive = (cmd) => {
                     fetch('/api/cmd', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ command: dir }),
-                        keepalive: true
-                    }).catch(() => {});
-                    if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'movement', payload: dir }));
+                        body: JSON.stringify({ command: cmd })
+                    });
                 };
 
                 if (speech.includes("forward") || speech.includes("पुढे") || speech.includes("आगे")) {
-                    dispatchDrive('FORWARD'); robotSpeak("Moving forward."); return;
+                    drive('FORWARD'); robotSpeak("Moving forward."); return;
                 }
                 if (speech.includes("reverse") || speech.includes("मागे") || speech.includes("पीछे")) {
-                    dispatchDrive('REVERSE'); robotSpeak("Backing up."); return;
+                    drive('REVERSE'); robotSpeak("Backing up."); return;
                 }
                 if (speech.includes("left") || speech.includes("डावीकडे") || speech.includes("बाये")) {
-                    dispatchDrive('LEFT'); robotSpeak("Turning left."); return;
+                    drive('LEFT'); robotSpeak("Turning left."); return;
                 }
                 if (speech.includes("right") || speech.includes("उजवीकडे") || speech.includes("दाये")) {
-                    dispatchDrive('RIGHT'); robotSpeak("Turning right."); return;
+                    drive('RIGHT'); robotSpeak("Turning right."); return;
                 }
                 if (speech.includes("stop") || speech.includes("थांब") || speech.includes("रुको")) {
-                    dispatchDrive('STOP'); robotSpeak("Stopping."); return;
+                    drive('STOP'); robotSpeak("Stopping."); return;
                 }
 
                 if (speech.length > 2) {
-                    robotSpeak("Analyzing.");
-                    if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'question', payload: speech }));
-                } else {
-                    isProcessing = false;
-                    setTimeout(() => { if (active && !isSpeaking && micEnabledByDashboard) startListeningLoop(); }, 400);
+                    robotSpeak("Checking...");
+                    const res = await fetch('/api/ask_ai', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ query: speech })
+                    });
+                    const data = await res.json();
+                    robotSpeak(data.reply);
+                }
+            };
+
+            recognition.onend = () => {
+                if (active && isMicEnabled && !isSpeaking) {
+                    setTimeout(startListening, 400);
                 }
             };
         }
 
-        function stopMicSafely() {
-            if (recognition) { try { recognition.abort(); } catch(e){} }
-        }
-
-        function startListeningLoop() {
-            if (!active || isSpeaking || !micEnabledByDashboard) return;
-            isProcessing = false;
+        function startListening() {
+            if (!recognition || isSpeaking || !isMicEnabled) return;
             try { recognition.start(); } catch(e){}
         }
     </script>
