@@ -26,7 +26,6 @@
         .nav-link { color: #00e5ff; text-decoration: none; font-family: monospace; font-weight: bold; font-size: 0.95rem; }
         .nav-link:hover { text-decoration: underline; }
         
-        /* ESP Hardware Gear Button */
         .settings-btn {
             position: absolute;
             top: 20px;
@@ -48,7 +47,6 @@
         .settings-btn.online { border-color: #39ff14; color: #39ff14; box-shadow: 0 0 12px rgba(57, 255, 20, 0.6); }
         .settings-btn svg { width: 22px; height: 22px; fill: currentColor; }
 
-        /* Remote Mic Toggle Button */
         .mic-btn {
             background: #21262d;
             border: 1px solid #8b949e;
@@ -78,7 +76,7 @@
     <div class="panel">
         <button class="settings-btn" id="esp-settings-btn" onclick="checkEspConnection()" title="Check ESP32 Status">
             <svg viewBox="0 0 24 24">
-                <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6-3.6z"/>
+                <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
             </svg>
         </button>
 
@@ -95,7 +93,6 @@
         <div style="margin-top: 15px; border-top: 1px solid #30363d; padding-top: 12px; display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; align-items: center;">
             <a href="/robot" target="_blank" class="nav-link" style="color:#00e5ff;">🔗 LAUNCH SMART PHONE NODE →</a>
             <a href="/api/cmd" target="_blank" class="nav-link" style="color:#39ff14;">⚡ API CMD ENDPOINT →</a>
-            <a href="#remoteVideo" class="nav-link" style="color: #ff007f;">📺 FOCUS CAMERA VIEWPORT ↓</a>
         </div>
     </div>
 
@@ -143,18 +140,15 @@
     <script>
         const logs = document.getElementById('terminal-logs');
         let ws; let peerConnection;
-        let isRobotMicActive = false; // Starts OFF by default
+        let isRobotMicActive = false;
         let activeDirection = "STOP";
         let isKeyPressed = false;
         const rtcConfig = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
 
         function updateEspUI(isOnline) {
             const btn = document.getElementById('esp-settings-btn');
-            if (isOnline) {
-                btn.classList.add('online');
-            } else {
-                btn.classList.remove('online');
-            }
+            if (isOnline) btn.classList.add('online');
+            else btn.classList.remove('online');
         }
 
         function checkEspConnection() {
@@ -201,11 +195,8 @@
                 ws.send(JSON.stringify({ register: 'deck' }));
                 document.getElementById('net-status').innerHTML = '<span style="color:#39ff14;">●</span> Central Deck Link Active';
                 
-                // Cloud Ping Keep-Alive
                 setInterval(() => {
-                    if(ws.readyState === WebSocket.OPEN) {
-                        ws.send(JSON.stringify({ type: 'ping_esp' }));
-                    }
+                    if(ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'ping_esp' }));
                 }, 10000);
 
                 startVideoCall();
@@ -242,7 +233,7 @@
             peerConnection.ontrack = (event) => { 
                 const remoteVid = document.getElementById('remoteVideo');
                 remoteVid.srcObject = event.streams[0];
-                remoteVid.play().catch(err => console.log("Auto-play blocked by browser layout constraints:", err));
+                remoteVid.play().catch(err => console.log("Auto-play blocked:", err));
             };
             peerConnection.onicecandidate = (e) => {
                 if (e.candidate && ws.readyState === WebSocket.OPEN) {
@@ -255,20 +246,20 @@
             ws.send(JSON.stringify({ type: 'sdp', sdp: offer }));
         }
 
-        async function sendCommand(dir) {
+        function sendCommand(dir) {
             if (activeDirection === dir) return;
             activeDirection = dir;
 
-            logs.innerHTML += `<div style="color:#00e5ff;">&gt; Chassis Instruction Sent: ${dir}</div>`;
+            logs.innerHTML += `<div style="color:#00e5ff;">&gt; Chassis: ${dir}</div>`;
             logs.scrollTop = logs.scrollHeight;
 
-            try {
-                await fetch('/api/cmd', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ command: dir })
-                });
-            } catch(e){}
+            // Non-blocking fire-and-forget HTTP request
+            fetch('/api/cmd', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ command: dir }),
+                keepalive: true
+            }).catch(() => {});
 
             if (ws && ws.readyState === WebSocket.OPEN) {
                 ws.send(JSON.stringify({ type: 'movement', payload: dir }));
@@ -328,7 +319,7 @@
         function sendManualMessage() {
             const input = document.getElementById('user-msg');
             if(!input.value.trim()) return;
-            logs.innerHTML += `<div style="color:#fff;">&gt; Operator: ${input.value}</div>`;
+            logs.innerHTML += `<div style="color:#fff;">&gt; User: ${input.value}</div>`;
             logs.scrollTop = logs.scrollHeight;
             if (ws && ws.readyState === WebSocket.OPEN) {
                 ws.send(JSON.stringify({ type: 'question', payload: input.value }));
@@ -336,9 +327,7 @@
             input.value = '';
         }
 
-        window.onload = () => {
-            initWebSocket();
-        };
+        window.onload = () => { initWebSocket(); };
     </script>
 </body>
 </html>
