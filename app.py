@@ -1,16 +1,22 @@
 import os
+import json
+import time
 from flask import Flask, render_template, send_from_directory, request, jsonify, Response
-from openai import OpenAI
+from groq import Groq
 
 app = Flask(__name__)
 
-OPENAI_KEY = os.environ.get("OPENAI_API_KEY", "")
-ai_client = OpenAI(api_key=OPENAI_KEY) if OPENAI_KEY else None
+# Initialize free Groq AI client
+GROQ_KEY = os.environ.get("GROQ_API_KEY", "")
+ai_client = Groq(api_key=GROQ_KEY) if GROQ_KEY else None
 
 last_motor_command = "STOP"
-latest_frame = None  # Holds raw JPEG frame from phone camera
-mic_state = False    # Remote mic state
+latest_frame = None 
+mic_state = False   
 
+# ----------------------------------------------------------------
+# 1. WEB PAGE ROUTES
+# ----------------------------------------------------------------
 @app.route('/favicon.ico')
 def favicon():
     return send_from_directory(app.root_path, 'favicon.ico', mimetype='image/vnd.microsoft.icon')
@@ -23,9 +29,9 @@ def index():
 def robot():
     return render_template('robot_node.html')
 
-# ---------------------------------------------------------
-# 1. LIVE VIDEO STREAMING PIPELINE (Zero WebRTC Complexity)
-# ---------------------------------------------------------
+# ----------------------------------------------------------------
+# 2. VIDEO STREAMING PIPELINE
+# ----------------------------------------------------------------
 @app.route('/api/video_feed', methods=['POST'])
 def upload_frame():
     global latest_frame
@@ -38,14 +44,15 @@ def generate_stream():
         if latest_frame is not None:
             yield (b'--frame\r\n'
                    b'Content-Type: image/jpeg\r\n\r\n' + latest_frame + b'\r\n')
+        time.sleep(0.04)
 
 @app.route('/video_stream')
 def video_stream():
     return Response(generate_stream(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
-# ---------------------------------------------------------
-# 2. CHASSIS MOTOR API (Instant ESP32 Polling)
-# ---------------------------------------------------------
+# ----------------------------------------------------------------
+# 3. CHASSIS MOTOR ENDPOINT
+# ----------------------------------------------------------------
 @app.route('/api/cmd', methods=['GET', 'POST'])
 def handle_cmd():
     global last_motor_command
@@ -56,9 +63,9 @@ def handle_cmd():
     else:
         return jsonify({"command": last_motor_command})
 
-# ---------------------------------------------------------
-# 3. REMOTE MIC & AI VOICE PROCESSING
-# ---------------------------------------------------------
+# ----------------------------------------------------------------
+# 4. REMOTE MIC & FAST FREE AI PROCESSING (GROQ)
+# ----------------------------------------------------------------
 @app.route('/api/mic_status', methods=['GET', 'POST'])
 def handle_mic():
     global mic_state
@@ -75,23 +82,27 @@ def ask_ai():
     user_query = data.get('query', '')
 
     if not ai_client:
-        return jsonify({"reply": "OpenAI API Key not set."})
+        return jsonify({"reply": "Groq API Key not configured in Render Environment."})
 
     try:
         response = ai_client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="llama-3.3-70b-versatile",
             messages=[
                 {
                     "role": "system",
-                    "content": "You are TiTaN, an industrial AI robotics assistant designed by Malhar Deshmukh at TiTaN Labs. If spoken to in Marathi, reply in Marathi Devanagari. If Hindi, reply in Hindi. Keep responses crisp and direct."
+                    "content": """You are TiTaN, an advanced robotic AI assistant engineered for automation and mechatronics systems by Malhar Deshmukh at TiTaN Labs Of iNNvovention.
+                    If spoken to in Marathi (or Devanagari script), reply completely in fluent, clean Marathi text in Devanagari script. If in Hindi, reply in Hindi. If in English, reply in English.
+                    Keep responses direct, crisp, and conversational for audio speech output."""
                 },
                 {"role": "user", "content": user_query}
             ],
-            max_tokens=1024
+            max_tokens=512,
+            temperature=0.6
         )
-        answer = response.choices[0].message.content
-        return jsonify({"reply": answer})
+        ai_answer = response.choices[0].message.content
+        return jsonify({"reply": ai_answer})
     except Exception as e:
+        print(f"[AI ERROR] {e}")
         return jsonify({"reply": f"AI Engine Error: {str(e)}"})
 
 if __name__ == '__main__':
