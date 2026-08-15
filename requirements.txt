@@ -1,6 +1,8 @@
 flask
 flask-sock
 groq
+httpx
+certifi
 gunicorn
 gevent
 gevent-websocket
