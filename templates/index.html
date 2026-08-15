@@ -10,89 +10,49 @@
         .panel { background: #161b22; border: 2px solid #00e5ff; border-radius: 12px; padding: 20px; text-align: center; box-shadow: 0 0 15px rgba(0, 229, 255, 0.1); width: 90%; max-width: 960px; margin-bottom: 20px; position: relative; }
         .header-container { display: flex; align-items: center; justify-content: center; gap: 15px; }
         .logo-img { width: 45px; height: 45px; border-radius: 50%; border: 2px solid #00e5ff; }
-        .badge { background: transparent; border: 2px solid #00e5ff; color: #00e5ff; padding: 2px 10px; border-radius: 6px; font-size: 1rem; font-weight: bold; font-family: monospace; }
+        .badge { border: 2px solid #00e5ff; color: #00e5ff; padding: 2px 10px; border-radius: 6px; font-family: monospace; font-weight: bold; }
         .subtext { color: #8b949e; font-size: 0.95rem; letter-spacing: 1px; margin: 5px 0 0 0; font-family: monospace; }
         .grid-container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 90%; max-width: 1000px; }
         h2 { color: #00e5ff; margin-top: 0; font-size: 1.3rem; letter-spacing: 1px; }
         .stream-window { width: 100%; height: 240px; background: #000; border-radius: 8px; border: 1px dashed #00e5ff; overflow: hidden; display: flex; align-items: center; justify-content: center; }
-        video { width: 100%; height: 100%; object-fit: cover; background: #000; }
+        video { width: 100%; height: 100%; object-fit: cover; }
         .control-pad { display: grid; grid-template-columns: repeat(3, 75px); gap: 12px; justify-content: center; margin: 20px 0; }
-        .btn { background: #21262d; border: 1px solid #00e5ff; color: #00e5ff; padding: 18px; border-radius: 10px; font-weight: bold; font-size: 1.2rem; cursor: pointer; transition: 0.1s; touch-action: manipulation; }
+        .btn { background: #21262d; border: 1px solid #00e5ff; color: #00e5ff; padding: 18px; border-radius: 10px; font-weight: bold; font-size: 1.2rem; cursor: pointer; transition: 0.1s; }
         .btn:active, .btn.active { background: #00e5ff; color: #000; box-shadow: 0 0 15px #00e5ff; }
         .btn-empty { border: none; background: transparent; }
-        .chat-area { height: 140px; background: #0d1117; border-radius: 6px; border: 1px solid #30363d; overflow-y: auto; padding: 10px; text-align: left; font-size: 0.9rem; }
+        .chat-area { height: 140px; background: #0d1117; border-radius: 6px; border: 1px solid #30363d; overflow-y: auto; padding: 10px; text-align: left; font-size: 0.9rem; font-family: monospace; }
         .chat-input-row { display: flex; gap: 10px; margin-top: 10px; }
         .chat-input { flex: 1; background: #0d1117; border: 1px solid #30363d; color: #fff; padding: 10px; border-radius: 6px; }
         .nav-link { color: #00e5ff; text-decoration: none; font-family: monospace; font-weight: bold; font-size: 0.95rem; }
         .nav-link:hover { text-decoration: underline; }
         
-        .settings-btn {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: #0d1117;
-            border: 2px solid #ff5555;
-            color: #ff5555;
-            width: 42px;
-            height: 42px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 0 8px rgba(255, 85, 85, 0.3);
-        }
-        .settings-btn:hover { transform: rotate(45deg); }
-        .settings-btn.online { border-color: #39ff14; color: #39ff14; box-shadow: 0 0 12px rgba(57, 255, 20, 0.6); }
+        .settings-btn { position: absolute; top: 20px; right: 20px; background: #0d1117; border: 2px solid #ff5555; color: #ff5555; width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .settings-btn.online { border-color: #39ff14; color: #39ff14; }
         .settings-btn svg { width: 22px; height: 22px; fill: currentColor; }
 
-        .mic-btn {
-            background: #21262d;
-            border: 1px solid #8b949e;
-            color: #8b949e;
-            padding: 10px 15px;
-            border-radius: 6px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .mic-btn.active {
-            background: #39ff14;
-            color: #000;
-            border-color: #39ff14;
-            box-shadow: 0 0 12px rgba(57, 255, 20, 0.8);
-            animation: pulse 1.5s infinite;
-        }
-        .stop-speech-btn { background: #ff0055; color: #fff; border: none; padding: 8px 14px; font-weight: bold; border-radius: 6px; cursor: pointer; margin-top: 8px; width: 100%; transition: 0.2s; }
-        .stop-speech-btn:hover { background: #e6004c; box-shadow: 0 0 10px rgba(255, 0, 85, 0.5); }
-        @keyframes pulse { 0% { opacity: 0.7; } 50% { opacity: 1; } 100% { opacity: 0.7; } }
+        .mic-btn { background: #21262d; border: 1px solid #8b949e; color: #8b949e; padding: 10px 15px; border-radius: 6px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+        .mic-btn.active { background: #39ff14; color: #000; border-color: #39ff14; }
+        .stop-speech-btn { background: #ff0055; color: #fff; border: none; padding: 8px 14px; font-weight: bold; border-radius: 6px; cursor: pointer; margin-top: 8px; width: 100%; }
     </style>
 </head>
 <body>
     <div class="panel">
-        <button class="settings-btn" id="esp-settings-btn" onclick="checkEspConnection()" title="Check ESP32 Status">
-            <svg viewBox="0 0 24 24">
-                <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
-            </svg>
+        <button class="settings-btn" id="esp-settings-btn" onclick="checkEspConnection()" title="ESP32 Status">
+            <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
         </button>
 
         <div class="header-container">
             <img src="/favicon.ico" class="logo-img" alt="Logo">
-            <h1 style="color:#00e5ff; margin:0; font-size:1.8rem; letter-spacing:2px;">TITAN CENTRAL COMMAND</h1>
+            <h1 style="color:#00e5ff; margin:0; font-size:1.8rem;">TITAN CENTRAL COMMAND</h1>
             <span class="badge">MD</span>
         </div>
         <div class="subtext">TiTaN Labs Of iNNvovention</div>
-        <p style="margin:12px 0 0 0; color:#8b949e; font-size: 0.9rem;" id="net-status">
-            <span style="color:#ffaa00;">●</span> Connecting Core Hub Pipeline...
+        <p style="margin:12px 0 0 0; color:#8b949e;" id="net-status">
+            <span style="color:#ffaa00;">●</span> Connecting Core Hub...
         </p>
         
-        <div style="margin-top: 15px; border-top: 1px solid #30363d; padding-top: 12px; display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; align-items: center;">
-            <a href="/robot" target="_blank" class="nav-link" style="color:#00e5ff;">🔗 LAUNCH SMART PHONE NODE →</a>
-            <a href="/api/cmd" target="_blank" class="nav-link" style="color:#39ff14;">⚡ API CMD ENDPOINT →</a>
+        <div style="margin-top: 15px; border-top: 1px solid #30363d; padding-top: 12px;">
+            <a href="/robot" target="_blank" class="nav-link">🔗 LAUNCH SMART PHONE NODE →</a>
         </div>
     </div>
 
@@ -121,17 +81,17 @@
             <div>
                 <h2>MANUAL AI TERMINAL</h2>
                 <div class="chat-area" id="terminal-logs">
-                    <div style="color:#8b949e;">[System Initialization Complete] Console Ready...</div>
+                    <div style="color:#8b949e;">[System Ready...]</div>
                 </div>
                 <button class="stop-speech-btn" onclick="triggerStopSpeech()">🛑 MUTE / STOP TITAN SPEECH</button>
             </div>
             
             <div class="chat-input-row">
-                <button class="mic-btn" id="dashboard-mic-btn" onclick="toggleDashboardMic()" title="Toggle Robot Node Microphone Remote">
+                <button class="mic-btn" id="dashboard-mic-btn" onclick="toggleDashboardMic()">
                     <span id="mic-icon">🎙️</span>
                     <span id="mic-text">ROBOT MIC OFF</span>
                 </button>
-                <input type="text" class="chat-input" id="user-msg" placeholder="Type instructions here..." onkeydown="if(event.key==='Enter') sendManualMessage()">
+                <input type="text" class="chat-input" id="user-msg" placeholder="Type prompt..." onkeydown="if(event.key==='Enter') sendManualMessage()">
                 <button class="btn" style="padding:10px 20px;" onclick="sendManualMessage()">SEND</button>
             </div>
         </div>
@@ -143,27 +103,32 @@
         let isRobotMicActive = false;
         let activeDirection = "STOP";
         let isKeyPressed = false;
-        const rtcConfig = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
+        let heartbeatTimer = null;
 
-        function updateEspUI(isOnline) {
-            const btn = document.getElementById('esp-settings-btn');
-            if (isOnline) btn.classList.add('online');
-            else btn.classList.remove('online');
+        const rtcConfig = { 
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' },
+                { urls: 'stun:stun2.l.google.com:19302' }
+            ] 
+        };
+
+        function printLog(text, color="#c9d1d9") {
+            logs.innerHTML += `<div style="color:${color}">&gt; ${text}</div>`;
+            logs.scrollTop = logs.scrollHeight;
         }
 
         function checkEspConnection() {
             if (ws && ws.readyState === WebSocket.OPEN) {
                 ws.send(JSON.stringify({ type: 'ping_esp' }));
-                logs.innerHTML += `<div style="color:#8b949e;">&gt; Pinging ESP32 Hardware Status...</div>`;
-                logs.scrollTop = logs.scrollHeight;
+                printLog("Pinging ESP32...", "#8b949e");
             }
         }
 
         function triggerStopSpeech() {
             if (ws && ws.readyState === WebSocket.OPEN) {
                 ws.send(JSON.stringify({ type: 'stop_speech' }));
-                logs.innerHTML += `<div style="color:#ff0055;">&gt; Speech Interrupted by Operator.</div>`;
-                logs.scrollTop = logs.scrollHeight;
+                printLog("Speech canceled.", "#ff0055");
             }
         }
 
@@ -174,13 +139,12 @@
             if (isRobotMicActive) {
                 btn.classList.add('active');
                 document.getElementById('mic-text').innerText = "ROBOT MIC ON";
-                logs.innerHTML += `<div style="color:#39ff14;">&gt; Signal Sent: Robot Mic ENABLED</div>`;
+                printLog("Signal Sent: Robot Mic ENABLED", "#39ff14");
             } else {
                 btn.classList.remove('active');
                 document.getElementById('mic-text').innerText = "ROBOT MIC OFF";
-                logs.innerHTML += `<div style="color:#ffaa00;">&gt; Signal Sent: Robot Mic DISABLED</div>`;
+                printLog("Signal Sent: Robot Mic DISABLED", "#ffaa00");
             }
-            logs.scrollTop = logs.scrollHeight;
 
             if (ws && ws.readyState === WebSocket.OPEN) {
                 ws.send(JSON.stringify({ type: 'toggle_mic', state: isRobotMicActive }));
@@ -193,67 +157,74 @@
 
             ws.onopen = () => {
                 ws.send(JSON.stringify({ register: 'deck' }));
-                document.getElementById('net-status').innerHTML = '<span style="color:#39ff14;">●</span> Central Deck Link Active';
+                document.getElementById('net-status').innerHTML = '<span style="color:#39ff14;">●</span> Central Deck Linked';
+                printLog("Connected to Render Core Hub.", "#39ff14");
                 
-                setInterval(() => {
-                    if(ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'ping_esp' }));
-                }, 10000);
+                // Continuous heartbeat to prevent Render timeout
+                clearInterval(heartbeatTimer);
+                heartbeatTimer = setInterval(() => {
+                    if(ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'ping_heartbeat' }));
+                }, 5000);
 
-                startVideoCall();
+                startWebRTC();
             };
 
             ws.onmessage = async (event) => {
                 const data = JSON.parse(event.data); 
-                
-                if (data.type === 'esp_status') {
+
+                if (data.type === 'robot_online') {
+                    printLog("Robot Node detected! Requesting video...", "#39ff14");
+                    startWebRTC();
+                } else if (data.type === 'esp_status') {
                     const isOnline = (data.payload === 'ONLINE');
-                    updateEspUI(isOnline);
-                    logs.innerHTML += `<div style="color:${isOnline ? '#39ff14' : '#ff5555'};">&gt; ESP32 Hardware ${data.payload}</div>`;
-                    logs.scrollTop = logs.scrollHeight;
-                } 
-                else if (data.type === 'ai_reply') {
-                    logs.innerHTML += `<div style="color:#39ff14; margin-bottom:8px;"><strong>TiTaN:</strong> ${data.payload}</div>`;
-                    logs.scrollTop = logs.scrollHeight;
+                    document.getElementById('esp-settings-btn').className = isOnline ? 'settings-btn online' : 'settings-btn';
+                    printLog(`ESP32 Hardware: ${data.payload}`, isOnline ? '#39ff14' : '#ff5555');
+                } else if (data.type === 'ai_reply') {
+                    printLog(`TiTaN: ${data.payload}`, "#39ff14");
                 } else if (data.type === 'sdp' && data.sdp.type === 'answer') {
                     await peerConnection.setRemoteDescription(new RTCSessionDescription(data.sdp));
-                } else if (data.type === 'candidate') {
+                    printLog("WebRTC Stream Connected!", "#39ff14");
+                } else if (data.type === 'candidate' && peerConnection) {
                     try { await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate)); } catch(e){}
                 }
             };
 
             ws.onclose = () => {
                 document.getElementById('net-status').innerHTML = '<span style="color:#ffaa00;">●</span> Reconnecting pipeline...';
-                updateEspUI(false);
+                clearInterval(heartbeatTimer);
                 setTimeout(initWebSocket, 2000);
             };
         }
 
-        async function startVideoCall() {
+        async function startWebRTC() {
             peerConnection = new RTCPeerConnection(rtcConfig);
-            peerConnection.ontrack = (event) => { 
+
+            peerConnection.ontrack = (event) => {
                 const remoteVid = document.getElementById('remoteVideo');
                 remoteVid.srcObject = event.streams[0];
-                remoteVid.play().catch(err => console.log("Auto-play blocked:", err));
+                remoteVid.play().catch(e => console.log("Auto-play blocked:", e));
             };
+
             peerConnection.onicecandidate = (e) => {
                 if (e.candidate && ws.readyState === WebSocket.OPEN) {
                     ws.send(JSON.stringify({ type: 'candidate', candidate: e.candidate }));
                 }
             };
+
             peerConnection.addTransceiver('video', { direction: 'recvonly' });
             const offer = await peerConnection.createOffer();
             await peerConnection.setLocalDescription(offer);
-            ws.send(JSON.stringify({ type: 'sdp', sdp: offer }));
+            
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: 'sdp', sdp: offer }));
+            }
         }
 
         function sendCommand(dir) {
             if (activeDirection === dir) return;
             activeDirection = dir;
+            printLog(`Chassis: ${dir}`, "#00e5ff");
 
-            logs.innerHTML += `<div style="color:#00e5ff;">&gt; Chassis: ${dir}</div>`;
-            logs.scrollTop = logs.scrollHeight;
-
-            // Non-blocking fire-and-forget HTTP request
             fetch('/api/cmd', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -268,23 +239,12 @@
 
         function attachHoldControls(elementId, direction) {
             const btn = document.getElementById(elementId);
-            
-            const startDrive = (e) => {
-                e.preventDefault();
-                btn.classList.add('active');
-                sendCommand(direction);
-            };
-
-            const stopDrive = (e) => {
-                e.preventDefault();
-                btn.classList.remove('active');
-                sendCommand('STOP');
-            };
+            const startDrive = (e) => { e.preventDefault(); btn.classList.add('active'); sendCommand(direction); };
+            const stopDrive = (e) => { e.preventDefault(); btn.classList.remove('active'); sendCommand('STOP'); };
 
             btn.addEventListener('mousedown', startDrive);
             btn.addEventListener('mouseup', stopDrive);
             btn.addEventListener('mouseleave', stopDrive);
-
             btn.addEventListener('touchstart', startDrive);
             btn.addEventListener('touchend', stopDrive);
             btn.addEventListener('touchcancel', stopDrive);
@@ -300,18 +260,17 @@
             if (document.activeElement === document.getElementById('user-msg')) return;
             if (isKeyPressed) return;
             isKeyPressed = true;
-
-            if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') sendCommand('FORWARD');
-            if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') sendCommand('REVERSE');
-            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') sendCommand('LEFT');
-            if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') sendCommand('RIGHT');
+            if (e.key === 'ArrowUp' || e.key === 'w') sendCommand('FORWARD');
+            if (e.key === 'ArrowDown' || e.key === 's') sendCommand('REVERSE');
+            if (e.key === 'ArrowLeft' || e.key === 'a') sendCommand('LEFT');
+            if (e.key === 'ArrowRight' || e.key === 'd') sendCommand('RIGHT');
             if (e.key === ' ') sendCommand('STOP');
         });
 
         document.addEventListener('keyup', (e) => {
             if (document.activeElement === document.getElementById('user-msg')) return;
             isKeyPressed = false;
-            if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','w','W','s','S','a','A','d','D'].includes(e.key)) {
+            if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','w','s','a','d'].includes(e.key)) {
                 sendCommand('STOP');
             }
         });
@@ -319,8 +278,7 @@
         function sendManualMessage() {
             const input = document.getElementById('user-msg');
             if(!input.value.trim()) return;
-            logs.innerHTML += `<div style="color:#fff;">&gt; User: ${input.value}</div>`;
-            logs.scrollTop = logs.scrollHeight;
+            printLog(`User: ${input.value}`, "#fff");
             if (ws && ws.readyState === WebSocket.OPEN) {
                 ws.send(JSON.stringify({ type: 'question', payload: input.value }));
             }
