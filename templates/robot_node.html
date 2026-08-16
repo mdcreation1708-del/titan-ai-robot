@@ -189,6 +189,7 @@
                 printLog("System operational. Audio & search systems armed.");
                 document.getElementById('telemetry-audio').innerText = "Active";
                 
+                // Initialize camera stream element
                 const vBox = document.getElementById('video-container');
                 vBox.innerHTML = `<img src="/video_stream" alt="TiTaN Live Feed" onerror="handleStreamError(this)">`;
 
@@ -211,6 +212,7 @@
             document.getElementById('video-container').innerHTML = `<div class="video-placeholder" style="color: #ff5555;">Stream Connection Lost</div>`;
         }
 
+        // Custom ElevenLabs Audio TTS Playback
         async function robotSpeak(textToSay) {
             if (!textToSay) return;
             
@@ -252,6 +254,7 @@
             }
         }
 
+        // Voice Recognition & Command Router
         function initVoiceEngine() {
             window.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (!window.SpeechRecognition) {
@@ -262,7 +265,7 @@
             recognition = new window.SpeechRecognition();
             recognition.continuous = false;
             recognition.interimResults = false;
-            recognition.lang = 'mr-IN';
+            recognition.lang = 'mr-IN'; // Multi-language localized default
 
             recognition.onresult = async (event) => {
                 const speech = event.results[0][0].transcript.trim().toLowerCase();
@@ -277,6 +280,7 @@
                     });
                 };
 
+                // Direct Hardware Hardware Overrides (Bypasses LLM for instant reaction)
                 if (speech.includes("forward") || speech.includes("पुढे")) { 
                     await drive('FORWARD'); 
                     robotSpeak("Moving forward."); 
@@ -293,6 +297,7 @@
                     return; 
                 }
 
+                // Complex Query Handler (DuckDuckGo + Gemini + ElevenLabs)
                 if (speech.length > 2) {
                     printLog("Querying search & AI network...", "#ffcc00");
                     try {
@@ -314,7 +319,7 @@
             };
 
             recognition.onerror = (e) => {
-                console.warn("Speech recognition error:", e.error);
+                console.warn("Speech recognition event error:", e.error);
             };
 
             recognition.onend = () => {
@@ -328,7 +333,9 @@
             if (!active || !isMicEnabled || isSpeaking) return;
             try {
                 recognition.start();
-            } catch (e) {}
+            } catch (e) {
+                // Ignore instances where recognition is already active
+            }
         }
     </script>
 </body>
