@@ -1,8 +1,8 @@
 flask
 flask-sock
-groq
-httpx
-certifi
+google-genai
 gunicorn
 gevent
 gevent-websocket
+duckduckgo-search
+requests
