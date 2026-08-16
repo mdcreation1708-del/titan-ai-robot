@@ -3,184 +3,318 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TITAN AI - Robot Node</title>
-    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <title>TiTaN - Robot Operations Node</title>
     <style>
-        body { background-color: #0b0e14; color: #c9d1d9; font-family: Arial, sans-serif; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
-        .robot-box { border: 2px solid #39ff14; background: #101520; border-radius: 12px; padding: 25px; text-align: center; width: 90%; max-width: 480px; }
-        .header-container { display: flex; align-items: center; justify-content: center; gap: 12px; }
-        .badge { border: 2px solid #39ff14; color: #39ff14; padding: 1px 8px; border-radius: 5px; font-family: monospace; font-weight: bold; }
-        .video-preview { width: 100%; height: 180px; background: #000; border-radius: 6px; margin-top: 15px; overflow: hidden; border: 1px solid #39ff14; }
-        video { width: 100%; height: 100%; object-fit: cover; }
-        .action-btn { background: #101520; border: 2px solid #39ff14; color: #39ff14; padding: 12px 30px; font-size: 1.1rem; font-weight: bold; border-radius: 8px; cursor: pointer; margin-top: 15px; }
-        .action-btn:hover { background: #39ff14; color: #000; }
-        .stop-btn { background: #ff0055; border: none; color: #fff; padding: 10px 20px; font-size: 1rem; font-weight: bold; border-radius: 8px; cursor: pointer; margin-top: 10px; width: 100%; }
-        .log-box { background: #070a0f; border: 1px solid #30363d; height: 160px; border-radius: 6px; margin-top: 15px; padding: 10px; overflow-y: auto; text-align: left; font-family: monospace; font-size: 0.85rem; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        body {
+            background-color: #0b0f19;
+            color: #00e5ff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        h1 {
+            font-size: 1.8rem;
+            letter-spacing: 2px;
+            color: #00e5ff;
+            text-shadow: 0 0 10px rgba(0, 229, 255, 0.4);
+        }
+        p.subtitle {
+            font-size: 0.85rem;
+            color: #8a99ad;
+        }
+        .container {
+            width: 100%;
+            max-width: 480px;
+            background: #131b2e;
+            border: 1px solid #1f2d4a;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .video-box {
+            width: 100%;
+            height: 240px;
+            background: #000;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #24345c;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        .video-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .video-placeholder {
+            color: #4a5c80;
+            font-size: 0.9rem;
+        }
+        .status-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .status-card {
+            background: #1a253f;
+            padding: 10px;
+            border-radius: 6px;
+            border-left: 4px solid #00e5ff;
+            font-size: 0.8rem;
+        }
+        .status-card span {
+            display: block;
+            color: #8a99ad;
+            margin-bottom: 4px;
+        }
+        .status-card strong {
+            color: #fff;
+            font-size: 0.95rem;
+        }
+        .controls-box {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        button {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        #boot-btn {
+            background-color: #00e5ff;
+            color: #0b0f19;
+            box-shadow: 0 0 15px rgba(0, 229, 255, 0.3);
+        }
+        #boot-btn.active {
+            background-color: #ff3366;
+            color: #fff;
+            box-shadow: 0 0 15px rgba(255, 51, 102, 0.3);
+        }
+        .log-box {
+            background: #080c14;
+            border: 1px solid #1a253f;
+            border-radius: 6px;
+            padding: 10px;
+            height: 100px;
+            overflow-y: auto;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.75rem;
+            color: #00ffcc;
+        }
     </style>
 </head>
 <body>
-    <div class="robot-box">
-        <div class="header-container">
-            <h1 style="color:#39ff14; margin:0; font-size:1.6rem;">TITAN CORE NODE</h1>
-            <span class="badge">MD</span>
+
+    <header>
+        <h1>TiTaN // NODE</h1>
+        <p class="subtitle">Industrial Autonomous Systems & Neural Interface</p>
+    </header>
+
+    <div class="container">
+        <!-- Live Video Stream Feed -->
+        <div class="video-box" id="video-container">
+            <div class="video-placeholder" id="vid-status">Camera Feed Offline</div>
         </div>
-        <div style="margin-top: 5px;">STATUS: <span id="status-text" style="color:#ffaa00;">OFFLINE</span></div>
-        <div class="video-preview">
-            <video id="localVideo" autoplay muted playsinline></video>
-            <canvas id="captureCanvas" style="display:none;"></canvas>
+
+        <!-- System Telemetry Status -->
+        <div class="status-grid">
+            <div class="status-card">
+                <span>Motor Command</span>
+                <strong id="telemetry-cmd">STOP</strong>
+            </div>
+            <div class="status-card">
+                <span>Neural Audio</span>
+                <strong id="telemetry-audio">Standby</strong>
+            </div>
         </div>
-        <button class="action-btn" id="act-btn" onclick="bootRobotHead()">BOOT SYSTEM</button>
-        <button class="stop-btn" onclick="stopRobotSpeechDirectly()">🛑 STOP SPEAKING</button>
-        <div class="log-box" id="signal-log">
-            <div style="color:#8b949e;">[System Ready. Tap 'BOOT SYSTEM']</div>
+
+        <!-- Primary Control Button -->
+        <div class="controls-box">
+            <button id="boot-btn" onclick="toggleSystem()">Boot System & Mic</button>
         </div>
-        <div style="margin-top: 15px;">
-            <a href="/" style="color:#39ff14; text-decoration:none; font-family:monospace; font-weight:bold;">← RETURN TO MAIN DESK</a>
+
+        <!-- System Activity Console -->
+        <div class="log-box" id="console-logs">
+            [System]: Ready for command initiation.<br>
         </div>
     </div>
 
     <script>
-        let active = false; 
-        let recognition;
+        let active = false;
         let isMicEnabled = false;
         let isSpeaking = false;
-        const logBox = document.getElementById('signal-log');
-        const video = document.getElementById('localVideo');
-        const canvas = document.getElementById('captureCanvas');
+        let recognition = null;
+        let currentAudio = null;
 
-        function printLog(text, color="#c9d1d9") {
-            logBox.innerHTML += `<div style="color:${color}">&gt; ${text}</div>`;
-            logBox.scrollTop = logBox.scrollHeight;
+        function printLog(text, color = "#00ffcc") {
+            const box = document.getElementById('console-logs');
+            box.innerHTML += `<span style="color: ${color}">[${new Date().toLocaleTimeString()}] ${text}</span><br>`;
+            box.scrollTop = box.scrollHeight;
         }
 
-        function stopRobotSpeechDirectly() {
-            if ('speechSynthesis' in window) window.speechSynthesis.cancel();
-            isSpeaking = false;
-            printLog("Speech stopped.", "#ff0055");
+        async function toggleSystem() {
+            active = !active;
+            const btn = document.getElementById('boot-btn');
+            
+            if (active) {
+                btn.classList.add('active');
+                btn.innerText = "Shutdown System";
+                isMicEnabled = true;
+                printLog("System operational. Audio & search systems armed.");
+                document.getElementById('telemetry-audio').innerText = "Active";
+                
+                const vBox = document.getElementById('video-container');
+                vBox.innerHTML = `<img src="/video_stream" alt="TiTaN Live Feed" onerror="handleStreamError(this)">`;
+
+                initVoiceEngine();
+                startListening();
+            } else {
+                btn.classList.remove('active');
+                btn.innerText = "Boot System & Mic";
+                isMicEnabled = false;
+                if (recognition) recognition.stop();
+                if (currentAudio) currentAudio.pause();
+                document.getElementById('telemetry-audio').innerText = "Standby";
+                document.getElementById('video-container').innerHTML = `<div class="video-placeholder">Camera Feed Offline</div>`;
+                printLog("System safely shut down.", "#ff5555");
+            }
         }
 
-        function robotSpeak(text) {
-            if (!text || !('speechSynthesis' in window)) return;
-            window.speechSynthesis.cancel();
-            isSpeaking = true;
-
-            const utterance = new SpeechSynthesisUtterance(text.replace(/\*/g, ''));
-            utterance.lang = /[\u0900-\u097F]/.test(text) ? 'mr-IN' : 'en-IN';
-            utterance.onend = () => { isSpeaking = false; if (isMicEnabled) startListening(); };
-            utterance.onerror = () => { isSpeaking = false; };
-            window.speechSynthesis.speak(utterance);
+        function handleStreamError(imgElement) {
+            imgElement.style.display = 'none';
+            document.getElementById('video-container').innerHTML = `<div class="video-placeholder" style="color: #ff5555;">Stream Connection Lost</div>`;
         }
 
-        async function bootRobotHead() {
-            active = true;
-            document.getElementById('act-btn').style.display = 'none';
-            document.getElementById('status-text').innerHTML = "ONLINE";
-            document.getElementById('status-text').style.color = "#39ff14";
-
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: "environment", width: 480, height: 360 },
-                    audio: false
-                });
-                video.srcObject = stream;
-                printLog("Camera active. Streaming frames to Cloud...", "#39ff14");
-
-                // Start continuous frame uploading to /api/video_feed (10 fps)
-                setInterval(captureAndUploadFrame, 100);
-            } catch (err) {
-                printLog("Camera error: " + err.message, "#ff5555");
+        async function robotSpeak(textToSay) {
+            if (!textToSay) return;
+            
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio.currentTime = 0;
             }
 
-            initVoiceEngine();
-            setInterval(checkMicStatus, 1000); // Check if operator toggled mic ON
-            robotSpeak("TiTaN system online.");
-        }
-
-        function captureAndUploadFrame() {
-            if (!active || video.readyState !== video.HAVE_ENOUGH_DATA) return;
-            canvas.width = 320;
-            canvas.height = 240;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-            canvas.toBlob((blob) => {
-                if (blob) {
-                    fetch('/api/video_feed', {
-                        method: 'POST',
-                        body: blob,
-                        headers: { 'Content-Type': 'image/jpeg' }
-                    }).catch(() => {});
-                }
-            }, 'image/jpeg', 0.5);
-        }
-
-        async function checkMicStatus() {
-            if (!active) return;
             try {
-                const res = await fetch('/api/mic_status');
-                const data = await res.json();
-                if (data.mic_active !== isMicEnabled) {
-                    isMicEnabled = data.mic_active;
-                    if (isMicEnabled) {
-                        printLog("Remote Mic ENABLED by Dashboard!", "#39ff14");
-                        startListening();
-                    } else {
-                        printLog("Remote Mic DISABLED by Dashboard.", "#ffaa00");
-                        if (recognition) recognition.abort();
-                    }
-                }
-            } catch (e) {}
+                const cleanText = textToSay.replace(/\*/g, '').replace(/#/g, '').trim();
+                printLog(`Speaking: "${cleanText}"`, "#00e5ff");
+                document.getElementById('telemetry-audio').innerText = "Synthesizing";
+
+                const response = await fetch('/api/tts', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: cleanText })
+                });
+
+                if (!response.ok) throw new Error("TTS route failure");
+
+                const audioBlob = await response.blob();
+                const audioUrl = URL.createObjectURL(audioBlob);
+                
+                currentAudio = new Audio(audioUrl);
+                currentAudio.play();
+                isSpeaking = true;
+                document.getElementById('telemetry-audio').innerText = "Broadcasting";
+
+                currentAudio.onended = () => {
+                    isSpeaking = false;
+                    document.getElementById('telemetry-audio').innerText = "Active";
+                    if (active && isMicEnabled) setTimeout(startListening, 300);
+                };
+            } catch (err) {
+                printLog("Audio synthesis error.", "#ff5555");
+                isSpeaking = false;
+                document.getElementById('telemetry-audio').innerText = "Error";
+            }
         }
 
         function initVoiceEngine() {
             window.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (!window.SpeechRecognition) {
-                printLog("Speech Recognition unsupported.", "#ff5555");
+                printLog("Web Speech API not supported on this browser.", "#ff5555");
                 return;
             }
+            
             recognition = new window.SpeechRecognition();
             recognition.continuous = false;
             recognition.interimResults = false;
             recognition.lang = 'mr-IN';
 
             recognition.onresult = async (event) => {
-                const speech = event.results[0][0].transcript.toLowerCase().trim();
+                const speech = event.results[0][0].transcript.trim().toLowerCase();
                 printLog(`Captured: "${speech}"`, "#fff");
 
-                const drive = (cmd) => {
-                    fetch('/api/cmd', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ command: cmd })
+                const drive = async (cmd) => {
+                    document.getElementById('telemetry-cmd').innerText = cmd;
+                    await fetch('/api/cmd', { 
+                        method: 'POST', 
+                        body: JSON.stringify({ command: cmd }), 
+                        headers: {'Content-Type':'application/json'}
                     });
                 };
 
-                if (speech.includes("forward") || speech.includes("पुढे") || speech.includes("आगे")) {
-                    drive('FORWARD'); robotSpeak("Moving forward."); return;
+                if (speech.includes("forward") || speech.includes("पुढे")) { 
+                    await drive('FORWARD'); 
+                    robotSpeak("Moving forward."); 
+                    return; 
                 }
-                if (speech.includes("reverse") || speech.includes("मागे") || speech.includes("पीछे")) {
-                    drive('REVERSE'); robotSpeak("Backing up."); return;
+                if (speech.includes("reverse") || speech.includes("मागे")) { 
+                    await drive('REVERSE'); 
+                    robotSpeak("Backing up."); 
+                    return; 
                 }
-                if (speech.includes("left") || speech.includes("डावीकडे") || speech.includes("बाये")) {
-                    drive('LEFT'); robotSpeak("Turning left."); return;
-                }
-                if (speech.includes("right") || speech.includes("उजवीकडे") || speech.includes("दाये")) {
-                    drive('RIGHT'); robotSpeak("Turning right."); return;
-                }
-                if (speech.includes("stop") || speech.includes("थांब") || speech.includes("रुको")) {
-                    drive('STOP'); robotSpeak("Stopping."); return;
+                if (speech.includes("stop") || speech.includes("थांब") || speech.includes("रुको")) { 
+                    await drive('STOP'); 
+                    robotSpeak("Stopping systems."); 
+                    return; 
                 }
 
                 if (speech.length > 2) {
-                    robotSpeak("Checking...");
-                    const res = await fetch('/api/ask_ai', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ query: speech })
-                    });
-                    const data = await res.json();
-                    robotSpeak(data.reply);
+                    printLog("Querying search & AI network...", "#ffcc00");
+                    try {
+                        const res = await fetch('/api/ask_ai', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ query: speech })
+                        });
+                        const data = await res.json();
+                        
+                        if (data.reply) {
+                            robotSpeak(data.reply);
+                        }
+                    } catch (e) {
+                        printLog("AI server communication failure.", "#ff5555");
+                        robotSpeak("Communication error.");
+                    }
                 }
+            };
+
+            recognition.onerror = (e) => {
+                console.warn("Speech recognition error:", e.error);
             };
 
             recognition.onend = () => {
@@ -191,8 +325,10 @@
         }
 
         function startListening() {
-            if (!recognition || isSpeaking || !isMicEnabled) return;
-            try { recognition.start(); } catch(e){}
+            if (!active || !isMicEnabled || isSpeaking) return;
+            try {
+                recognition.start();
+            } catch (e) {}
         }
     </script>
 </body>
