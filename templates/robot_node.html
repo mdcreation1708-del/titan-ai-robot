@@ -5,164 +5,38 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TiTaN - Robot Operations Node</title>
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        body {
-            background-color: #0b0f19;
-            color: #00e5ff;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: flex-start;
-            min-height: 100vh;
-            padding: 20px;
-        }
-        header {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        h1 {
-            font-size: 1.8rem;
-            letter-spacing: 2px;
-            color: #00e5ff;
-            text-shadow: 0 0 10px rgba(0, 229, 255, 0.4);
-        }
-        p.subtitle {
-            font-size: 0.85rem;
-            color: #8a99ad;
-        }
-        .container {
-            width: 100%;
-            max-width: 480px;
-            background: #131b2e;
-            border: 1px solid #1f2d4a;
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-        .video-box {
-            width: 100%;
-            height: 240px;
-            background: #000;
-            border-radius: 8px;
-            overflow: hidden;
-            border: 1px solid #24345c;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-        }
-        .video-box img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        .video-placeholder {
-            color: #4a5c80;
-            font-size: 0.9rem;
-        }
-        .status-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-        }
-        .status-card {
-            background: #1a253f;
-            padding: 10px;
-            border-radius: 6px;
-            border-left: 4px solid #00e5ff;
-            font-size: 0.8rem;
-        }
-        .status-card span {
-            display: block;
-            color: #8a99ad;
-            margin-bottom: 4px;
-        }
-        .status-card strong {
-            color: #fff;
-            font-size: 0.95rem;
-        }
-        .controls-box {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-        button {
-            width: 100%;
-            padding: 14px;
-            border: none;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.2s ease-in-out;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-        #boot-btn {
-            background-color: #00e5ff;
-            color: #0b0f19;
-            box-shadow: 0 0 15px rgba(0, 229, 255, 0.3);
-        }
-        #boot-btn.active {
-            background-color: #ff3366;
-            color: #fff;
-            box-shadow: 0 0 15px rgba(255, 51, 102, 0.3);
-        }
-        .log-box {
-            background: #080c14;
-            border: 1px solid #1a253f;
-            border-radius: 6px;
-            padding: 10px;
-            height: 100px;
-            overflow-y: auto;
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 0.75rem;
-            color: #00ffcc;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #0b0f19; color: #00e5ff; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; min-height: 100vh; padding: 20px; }
+        header { text-align: center; margin-bottom: 20px; }
+        h1 { font-size: 1.8rem; letter-spacing: 2px; color: #00e5ff; text-shadow: 0 0 10px rgba(0, 229, 255, 0.4); }
+        .container { width: 100%; max-width: 480px; background: #131b2e; border: 1px solid #1f2d4a; border-radius: 12px; padding: 20px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5); display: flex; flex-direction: column; gap: 20px; }
+        .video-box { width: 100%; height: 240px; background: #000; border-radius: 8px; overflow: hidden; border: 1px solid #24345c; display: flex; align-items: center; justify-content: center; }
+        .video-box img { width: 100%; height: 100%; object-fit: cover; }
+        .video-placeholder { color: #4a5c80; font-size: 0.9rem; }
+        .status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .status-card { background: #1a253f; padding: 10px; border-radius: 6px; border-left: 4px solid #00e5ff; font-size: 0.8rem; }
+        .status-card span { display: block; color: #8a99ad; margin-bottom: 4px; }
+        .status-card strong { color: #fff; font-size: 0.95rem; }
+        button { width: 100%; padding: 14px; border: none; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; }
+        #boot-btn { background-color: #00e5ff; color: #0b0f19; }
+        #boot-btn.active { background-color: #ff3366; color: #fff; }
+        .log-box { background: #080c14; border: 1px solid #1a253f; border-radius: 6px; padding: 10px; height: 100px; overflow-y: auto; font-family: monospace; font-size: 0.75rem; color: #00ffcc; }
     </style>
 </head>
 <body>
-
     <header>
         <h1>TiTaN // NODE</h1>
-        <p class="subtitle">Industrial Autonomous Systems & Neural Interface</p>
     </header>
-
     <div class="container">
-        <!-- Live Video Stream Feed -->
         <div class="video-box" id="video-container">
-            <div class="video-placeholder" id="vid-status">Camera Feed Offline</div>
+            <div class="video-placeholder">Camera Feed Offline</div>
         </div>
-
-        <!-- System Telemetry Status -->
         <div class="status-grid">
-            <div class="status-card">
-                <span>Motor Command</span>
-                <strong id="telemetry-cmd">STOP</strong>
-            </div>
-            <div class="status-card">
-                <span>Neural Audio</span>
-                <strong id="telemetry-audio">Standby</strong>
-            </div>
+            <div class="status-card"><span>Motor</span><strong id="telemetry-cmd">STOP</strong></div>
+            <div class="status-card"><span>Audio</span><strong id="telemetry-audio">Standby</strong></div>
         </div>
-
-        <!-- Primary Control Button -->
-        <div class="controls-box">
-            <button id="boot-btn" onclick="toggleSystem()">Boot System & Mic</button>
-        </div>
-
-        <!-- System Activity Console -->
-        <div class="log-box" id="console-logs">
-            [System]: Ready for command initiation.<br>
-        </div>
+        <button id="boot-btn" onclick="toggleSystem()">Boot System & Mic</button>
+        <div class="log-box" id="console-logs">[System]: Initialized.<br></div>
     </div>
 
     <script>
@@ -178,21 +52,15 @@
             box.scrollTop = box.scrollHeight;
         }
 
-        async function toggleSystem() {
+        function toggleSystem() {
             active = !active;
             const btn = document.getElementById('boot-btn');
-            
             if (active) {
                 btn.classList.add('active');
                 btn.innerText = "Shutdown System";
                 isMicEnabled = true;
-                printLog("System operational. Audio & search systems armed.");
-                document.getElementById('telemetry-audio').innerText = "Active";
-                
-                // Initialize camera stream element
-                const vBox = document.getElementById('video-container');
-                vBox.innerHTML = `<img src="/video_stream" alt="TiTaN Live Feed" onerror="handleStreamError(this)">`;
-
+                printLog("System active.");
+                document.getElementById('video-container').innerHTML = `<img src="/video_stream" alt="Feed">`;
                 initVoiceEngine();
                 startListening();
             } else {
@@ -201,105 +69,61 @@
                 isMicEnabled = false;
                 if (recognition) recognition.stop();
                 if (currentAudio) currentAudio.pause();
-                document.getElementById('telemetry-audio').innerText = "Standby";
-                document.getElementById('video-container').innerHTML = `<div class="video-placeholder">Camera Feed Offline</div>`;
-                printLog("System safely shut down.", "#ff5555");
+                document.getElementById('video-container').innerHTML = `<div class="video-placeholder">Offline</div>`;
+                printLog("System shutdown.", "#ff5555");
             }
         }
 
-        function handleStreamError(imgElement) {
-            imgElement.style.display = 'none';
-            document.getElementById('video-container').innerHTML = `<div class="video-placeholder" style="color: #ff5555;">Stream Connection Lost</div>`;
-        }
-
-        // Custom ElevenLabs Audio TTS Playback
         async function robotSpeak(textToSay) {
             if (!textToSay) return;
-            
-            if (currentAudio) {
-                currentAudio.pause();
-                currentAudio.currentTime = 0;
-            }
+            if (currentAudio) { currentAudio.pause(); currentAudio.currentTime = 0; }
 
             try {
-                const cleanText = textToSay.replace(/\*/g, '').replace(/#/g, '').trim();
-                printLog(`Speaking: "${cleanText}"`, "#00e5ff");
-                document.getElementById('telemetry-audio').innerText = "Synthesizing";
-
                 const response = await fetch('/api/tts', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text: cleanText })
+                    body: JSON.stringify({ text: textToSay })
                 });
-
-                if (!response.ok) throw new Error("TTS route failure");
-
-                const audioBlob = await response.blob();
-                const audioUrl = URL.createObjectURL(audioBlob);
-                
-                currentAudio = new Audio(audioUrl);
+                if (!response.ok) throw new Error("TTS failed");
+                const blob = await response.blob();
+                currentAudio = new Audio(URL.createObjectURL(blob));
                 currentAudio.play();
                 isSpeaking = true;
-                document.getElementById('telemetry-audio').innerText = "Broadcasting";
-
                 currentAudio.onended = () => {
                     isSpeaking = false;
-                    document.getElementById('telemetry-audio').innerText = "Active";
                     if (active && isMicEnabled) setTimeout(startListening, 300);
                 };
-            } catch (err) {
-                printLog("Audio synthesis error.", "#ff5555");
+            } catch (e) {
+                printLog("Voice error.", "#ff5555");
                 isSpeaking = false;
-                document.getElementById('telemetry-audio').innerText = "Error";
             }
         }
 
-        // Voice Recognition & Command Router
         function initVoiceEngine() {
             window.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!window.SpeechRecognition) {
-                printLog("Web Speech API not supported on this browser.", "#ff5555");
-                return;
-            }
-            
+            if (!window.SpeechRecognition) return;
             recognition = new window.SpeechRecognition();
             recognition.continuous = false;
             recognition.interimResults = false;
-            recognition.lang = 'mr-IN'; // Multi-language localized default
+            recognition.lang = 'mr-IN';
 
             recognition.onresult = async (event) => {
                 const speech = event.results[0][0].transcript.trim().toLowerCase();
-                printLog(`Captured: "${speech}"`, "#fff");
+                printLog(`Heard: "${speech}"`, "#fff");
 
-                const drive = async (cmd) => {
-                    document.getElementById('telemetry-cmd').innerText = cmd;
-                    await fetch('/api/cmd', { 
-                        method: 'POST', 
-                        body: JSON.stringify({ command: cmd }), 
-                        headers: {'Content-Type':'application/json'}
-                    });
-                };
-
-                // Direct Hardware Hardware Overrides (Bypasses LLM for instant reaction)
-                if (speech.includes("forward") || speech.includes("पुढे")) { 
-                    await drive('FORWARD'); 
-                    robotSpeak("Moving forward."); 
-                    return; 
+                if (speech.includes("forward") || speech.includes("पुढे")) {
+                    await fetch('/api/cmd', { method: 'POST', body: JSON.stringify({ command: 'FORWARD' }), headers: {'Content-Type':'application/json'}});
+                    robotSpeak("Moving forward.");
+                    return;
                 }
-                if (speech.includes("reverse") || speech.includes("मागे")) { 
-                    await drive('REVERSE'); 
-                    robotSpeak("Backing up."); 
-                    return; 
-                }
-                if (speech.includes("stop") || speech.includes("थांब") || speech.includes("रुको")) { 
-                    await drive('STOP'); 
-                    robotSpeak("Stopping systems."); 
-                    return; 
+                if (speech.includes("stop") || speech.includes("थांब")) {
+                    await fetch('/api/cmd', { method: 'POST', body: JSON.stringify({ command: 'STOP' }), headers: {'Content-Type':'application/json'}});
+                    robotSpeak("Stopping.");
+                    return;
                 }
 
-                // Complex Query Handler (DuckDuckGo + Gemini + ElevenLabs)
                 if (speech.length > 2) {
-                    printLog("Querying search & AI network...", "#ffcc00");
+                    printLog("Searching web & AI...", "#ffcc00");
                     try {
                         const res = await fetch('/api/ask_ai', {
                             method: 'POST',
@@ -307,35 +131,21 @@
                             body: JSON.stringify({ query: speech })
                         });
                         const data = await res.json();
-                        
-                        if (data.reply) {
-                            robotSpeak(data.reply);
-                        }
+                        if (data.reply) robotSpeak(data.reply);
                     } catch (e) {
-                        printLog("AI server communication failure.", "#ff5555");
-                        robotSpeak("Communication error.");
+                        robotSpeak("Error processing query.");
                     }
                 }
             };
 
-            recognition.onerror = (e) => {
-                console.warn("Speech recognition event error:", e.error);
-            };
-
             recognition.onend = () => {
-                if (active && isMicEnabled && !isSpeaking) {
-                    setTimeout(startListening, 400);
-                }
+                if (active && isMicEnabled && !isSpeaking) setTimeout(startListening, 400);
             };
         }
 
         function startListening() {
             if (!active || !isMicEnabled || isSpeaking) return;
-            try {
-                recognition.start();
-            } catch (e) {
-                // Ignore instances where recognition is already active
-            }
+            try { recognition.start(); } catch (e) {}
         }
     </script>
 </body>
