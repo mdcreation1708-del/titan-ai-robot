@@ -3,10 +3,11 @@ import requests
 from flask import Flask, render_template, send_from_directory, request, jsonify, Response
 from duckduckgo_search import DDGS
 from google import genai
+from google.genai import types
 
 app = Flask(__name__)
 
-# Initialize Gemini Client (Reads GEMINI_API_KEY from Render environment)
+# Initialize Gemini Client cleanly using standard SDK initialization
 ai_client = genai.Client()
 
 last_motor_command = "STOP"
@@ -26,7 +27,7 @@ def robot():
     return render_template('robot_node.html')
 
 # ---------------------------------------------------------
-# 1. LIVE VIDEO STREAMING PIPELINE
+# 1. LIVE VIDEO & MOTOR ROUTES
 # ---------------------------------------------------------
 @app.route('/api/video_feed', methods=['POST'])
 def upload_frame():
@@ -47,9 +48,6 @@ def generate_stream():
 def video_stream():
     return Response(generate_stream(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
-# ---------------------------------------------------------
-# 2. CHASSIS MOTOR API (Instant ESP32 Polling)
-# ---------------------------------------------------------
 @app.route('/api/cmd', methods=['GET', 'POST'])
 def handle_cmd():
     global last_motor_command
@@ -60,9 +58,6 @@ def handle_cmd():
     else:
         return jsonify({"command": last_motor_command})
 
-# ---------------------------------------------------------
-# 3. REMOTE MIC & STATE SYNC
-# ---------------------------------------------------------
 @app.route('/api/mic_status', methods=['GET', 'POST'])
 def handle_mic():
     global mic_state
@@ -74,7 +69,7 @@ def handle_mic():
         return jsonify({"mic_active": mic_state})
 
 # ---------------------------------------------------------
-# 4. ELEVENLABS MULTILINGUAL TEXT-TO-SPEECH ROUTE
+# 2. FIXED ELEVENLABS TTS ROUTE (Voice Attached)
 # ---------------------------------------------------------
 @app.route('/api/tts', methods=['POST'])
 def text_to_speech():
@@ -87,6 +82,7 @@ def text_to_speech():
     if not text:
         return jsonify({"error": "No text provided"}), 400
     if not elevenlabs_key:
+        print("[TTS ERROR] ELEVENLABS_API_KEY missing on Render environment.")
         return jsonify({"error": "ElevenLabs API Key missing"}), 500
 
     url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
@@ -99,7 +95,7 @@ def text_to_speech():
     
     payload = {
         "text": text,
-        "model_id": "eleven_multilingual_v2", # Allows English, Hindi, and Marathi native synthesis
+        "model_id": "eleven_multilingual_v2",
         "voice_settings": {
             "stability": 0.80,
             "similarity_boost": 0.80,
@@ -116,21 +112,24 @@ def text_to_speech():
                 f.write(response.content)
             return send_file(audio_path, mimetype="audio/mpeg")
         else:
-            print(f"[ELEVENLABS ERROR]: {response.text}")
-            return jsonify({"error": "TTS synthesis failed"}), response.status_code
+            print(f"[ELEVENLABS ERROR Response]: {response.text}")
+            return jsonify({"error": f"ElevenLabs failed: {response.text}"}), 500
     except Exception as e:
-        print(f"[TTS EXCEPTION]: {str(e)}")
+        print(f"[TTS SERVER EXCEPTION]: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
 # ---------------------------------------------------------
-# 5. DUCKDUCKGO SEARCH + GEMINI AI BRAIN
+# 3. FIXED DUCKDUCKGO SEARCH + GEMINI AI BRAIN
 # ---------------------------------------------------------
 @app.route('/api/ask_ai', methods=['POST'])
 def ask_ai():
     data = request.get_json() or {}
     user_query = data.get('query', '')
 
-    # A. Fetch live internet data via DuckDuckGo (100% Free, No API Key)
+    if not user_query:
+        return jsonify({"reply": "No query received."})
+
+    # A. Fetch live internet data via DuckDuckGo (Free, No API Key)
     live_context = "No live internet data available."
     try:
         results = DDGS().text(user_query, max_results=2)
@@ -145,7 +144,7 @@ def ask_ai():
     except Exception as e:
         print(f"[DUCKDUCKGO ERROR]: {str(e)}")
 
-    # B. Send Search Results + User Query to Gemini AI Brain
+    # B. Send Search Results + User Query to Gemini AI Brain using types Config
     try:
         system_instruction = f"""You are TiTaN, an advanced industrial robotic AI assistant engineered by Malhar Deshmukh at TiTaN Labs Of iNNvovention.
         You have access to live internet search results. Use the 'Live Internet Data' below to answer the user accurately. If irrelevant, use your core knowledge.
@@ -157,14 +156,15 @@ def ask_ai():
         ==========================
         """
 
+        # Using the standard modern Google GenAI SDK configuration structure
         response = ai_client.models.generate_content(
             model='gemini-2.5-flash',
             contents=user_query,
-            config={
-                'system_instruction': system_instruction,
-                'max_output_tokens': 256,
-                'temperature': 0.4
-            }
+            config=types.GenerateContentConfig(
+                system_instruction=system_instruction,
+                max_output_tokens=256,
+                temperature=0.4
+            )
         )
         
         ai_answer = response.text
