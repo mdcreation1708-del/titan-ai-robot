@@ -5,9 +5,29 @@ services:
     plan: free
 
     buildCommand: pip install -r requirements.txt
-
-    startCommand: gunicorn app:app
+    startCommand: gunicorn --worker-class gevent --workers 1 app:app
 
     envVars:
       - key: GEMINI_API_KEY
         sync: false
+
+      - key: GEMINI_MODEL
+        value: gemini-3.8-flash
+
+      - key: ELEVENLABS_API_KEY
+        sync: false
+
+      - key: ELEVENLABS_VOICE_ID
+        sync: false
+
+      - key: COMMAND_TIMEOUT
+        value: "1.5"
+
+      - key: VIDEO_TIMEOUT
+        value: "3.0"
+
+      - key: PHONE_TIMEOUT
+        value: "5.0"
+
+      - key: ESP32_TIMEOUT
+        value: "5.0"
