@@ -1,183 +1,369 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TITAN AI - Main Control Dashboard</title>
-    <link rel="icon" type="image/x-icon" href="/favicon.ico">
-    <style>
-        body { background-color: #0d1117; color: #c9d1d9; font-family: Arial, sans-serif; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; user-select: none; }
-        .panel { background: #161b22; border: 2px solid #00e5ff; border-radius: 12px; padding: 20px; text-align: center; box-shadow: 0 0 15px rgba(0, 229, 255, 0.1); width: 90%; max-width: 960px; margin-bottom: 20px; position: relative; }
-        .header-container { display: flex; align-items: center; justify-content: center; gap: 15px; }
-        .badge { border: 2px solid #00e5ff; color: #00e5ff; padding: 2px 10px; border-radius: 6px; font-family: monospace; font-weight: bold; }
-        .subtext { color: #8b949e; font-size: 0.95rem; letter-spacing: 1px; margin: 5px 0 0 0; font-family: monospace; }
-        .grid-container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 90%; max-width: 1000px; }
-        h2 { color: #00e5ff; margin-top: 0; font-size: 1.3rem; letter-spacing: 1px; }
-        .stream-window { width: 100%; height: 260px; background: #000; border-radius: 8px; border: 1px dashed #00e5ff; overflow: hidden; display: flex; align-items: center; justify-content: center; }
-        .stream-window img { width: 100%; height: 100%; object-fit: cover; }
-        .control-pad { display: grid; grid-template-columns: repeat(3, 75px); gap: 12px; justify-content: center; margin: 20px 0; }
-        .btn { background: #21262d; border: 1px solid #00e5ff; color: #00e5ff; padding: 18px; border-radius: 10px; font-weight: bold; font-size: 1.2rem; cursor: pointer; transition: 0.1s; }
-        .btn:active, .btn.active { background: #00e5ff; color: #000; box-shadow: 0 0 15px #00e5ff; }
-        .btn-empty { border: none; background: transparent; }
-        .chat-area { height: 160px; background: #0d1117; border-radius: 6px; border: 1px solid #30363d; overflow-y: auto; padding: 10px; text-align: left; font-size: 0.9rem; font-family: monospace; }
-        .chat-input-row { display: flex; gap: 10px; margin-top: 10px; }
-        .chat-input { flex: 1; background: #0d1117; border: 1px solid #30363d; color: #fff; padding: 10px; border-radius: 6px; }
-        .nav-link { color: #00e5ff; text-decoration: none; font-family: monospace; font-weight: bold; }
-        .nav-link:hover { text-decoration: underline; }
-        .mic-btn { background: #21262d; border: 1px solid #8b949e; color: #8b949e; padding: 10px 15px; border-radius: 6px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 8px; }
-        .mic-btn.active { background: #39ff14; color: #000; border-color: #39ff14; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TITAN AI - Main Control Dashboard</title>
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+
+<style>
+*{box-sizing:border-box}
+body{
+    background:#0d1117;color:#c9d1d9;font-family:Arial,sans-serif;
+    margin:0;padding:20px;display:flex;flex-direction:column;
+    align-items:center;user-select:none
+}
+.panel{
+    background:#161b22;border:1px solid #30363d;border-radius:12px;
+    padding:20px;width:100%;box-shadow:0 0 15px rgba(0,229,255,.08)
+}
+.top-panel{max-width:1000px;margin-bottom:20px}
+.header-container{
+    display:flex;align-items:center;justify-content:center;gap:15px
+}
+.badge{
+    border:2px solid #00e5ff;color:#00e5ff;padding:2px 10px;
+    border-radius:6px;font-family:monospace;font-weight:bold
+}
+.subtext{
+    color:#8b949e;font-size:.95rem;letter-spacing:1px;
+    margin:5px 0 0;font-family:monospace
+}
+.status-row{
+    display:grid;grid-template-columns:repeat(5,1fr);
+    gap:8px;margin-top:18px
+}
+.status{
+    background:#0d1117;border:1px solid #30363d;border-radius:7px;
+    padding:8px 5px;font-size:.75rem;font-family:monospace
+}
+.online{color:#39ff14}.offline{color:#ff5555}.warning{color:#ffaa00}
+.grid-container{
+    display:grid;grid-template-columns:1fr 1fr;gap:20px;
+    width:100%;max-width:1000px
+}
+h2{color:#00e5ff;margin-top:0;font-size:1.15rem;letter-spacing:1px}
+.stream-window{
+    width:100%;height:300px;background:#000;border-radius:8px;
+    border:1px dashed #00e5ff;overflow:hidden;display:flex;
+    align-items:center;justify-content:center;position:relative
+}
+.stream-window img{width:100%;height:100%;object-fit:contain}
+.placeholder{color:#68717e;font-family:monospace;padding:20px}
+.control-pad{
+    display:grid;grid-template-columns:repeat(3,75px);gap:12px;
+    justify-content:center;margin:20px 0
+}
+.btn{
+    background:#21262d;border:1px solid #00e5ff;color:#00e5ff;
+    padding:18px;border-radius:10px;font-weight:bold;font-size:1.2rem;
+    cursor:pointer;transition:.1s;touch-action:none
+}
+.btn:active,.btn.active{background:#00e5ff;color:#000}
+.btn-empty{border:none;background:transparent}
+.stop-btn{border-color:#ff5555!important;color:#ff5555!important}
+.chat-area{
+    height:190px;background:#0d1117;border-radius:6px;
+    border:1px solid #30363d;overflow-y:auto;padding:10px;
+    text-align:left;font-size:.9rem;font-family:monospace
+}
+.chat-input-row{display:flex;gap:10px;margin-top:10px}
+.chat-input{
+    flex:1;min-width:0;background:#0d1117;border:1px solid #30363d;
+    color:#fff;padding:10px;border-radius:6px
+}
+.nav-link{
+    color:#00e5ff;text-decoration:none;font-family:monospace;font-weight:bold
+}
+.mic-btn{
+    background:#21262d;border:1px solid #8b949e;color:#8b949e;
+    padding:10px 15px;border-radius:6px;font-weight:bold;cursor:pointer
+}
+.mic-btn.active{background:#39ff14;color:#000;border-color:#39ff14}
+.telemetry{
+    margin-top:15px;color:#8b949e;font-family:monospace;font-size:.8rem
+}
+@media(max-width:760px){
+    .grid-container{grid-template-columns:1fr}
+    .status-row{grid-template-columns:repeat(2,1fr)}
+    .stream-window{height:250px}
+    .chat-input-row{flex-wrap:wrap}
+}
+</style>
 </head>
+
 <body>
-    <div class="panel">
-        <div class="header-container">
-            <h1 style="color:#00e5ff; margin:0; font-size:1.8rem;">TITAN CENTRAL COMMAND</h1>
-            <span class="badge">MD</span>
-        </div>
-        <div class="subtext">TiTaN Labs Of iNNvovention</div>
-        <p style="margin:12px 0 0 0; color:#39ff14;" id="net-status">
-            ● Cloud Core Connected
-        </p>
-        <div style="margin-top: 15px; border-top: 1px solid #30363d; padding-top: 12px;">
-            <a href="/robot" target="_blank" class="nav-link">🔗 LAUNCH SMART PHONE NODE →</a>
+
+<div class="panel top-panel">
+    <div class="header-container">
+        <h1 style="color:#00e5ff;margin:0;font-size:1.8rem">
+            TITAN CENTRAL COMMAND
+        </h1>
+        <span class="badge">MD</span>
+    </div>
+
+    <div class="subtext">TiTaN Labs Of iNNvovention</div>
+
+    <div class="status-row">
+        <div class="status" id="cloud-status">☁ CLOUD: CHECKING</div>
+        <div class="status" id="esp-status">🧠 ESP32: CHECKING</div>
+        <div class="status" id="phone-status">📱 PHONE: CHECKING</div>
+        <div class="status" id="cam-status">👁 CAMERA: CHECKING</div>
+        <div class="status" id="motor-status">⚙ MOTOR: STOP</div>
+    </div>
+
+    <div style="margin-top:15px">
+        <a href="/robot" target="_blank" class="nav-link">
+            🔗 LAUNCH SMART PHONE NODE →
+        </a>
+    </div>
+</div>
+
+<div class="grid-container">
+
+<div class="panel">
+    <h2>LIVE VIDEO STREAM</h2>
+
+    <div class="stream-window">
+        <img id="liveFeed" src="/video_stream"
+             alt="Waiting for robot camera">
+        <div id="videoPlaceholder" class="placeholder">
+            WAITING FOR ROBOT CAMERA...
         </div>
     </div>
 
-    <div class="grid-container">
-        <div class="panel" style="width: auto; margin-bottom: 0;">
-            <h2>LIVE VIDEO STREAM</h2>
-            <div class="stream-window">
-                <img id="liveFeed" src="/video_stream" alt="Awaiting Robot Camera Feed..." onerror="this.src=''; setTimeout(() => this.src='/video_stream', 2000);">
-            </div>
-            
-            <h2>TOUCH DRIVE (HOLD TO MOVE)</h2>
-            <div class="control-pad">
-                <button class="btn-empty"></button>
-                <button class="btn" id="btn-fwd">▲</button>
-                <button class="btn-empty"></button>
-                <button class="btn" id="btn-left">◀</button>
-                <button class="btn" id="btn-stop" style="border-color:#ff5555; color:#ff5555;">■</button>
-                <button class="btn" id="btn-right">▶</button>
-                <button class="btn-empty"></button>
-                <button class="btn" id="btn-rev">▼</button>
-                <button class="btn-empty"></button>
-            </div>
-        </div>
+    <h2 style="margin-top:20px">
+        TOUCH DRIVE (HOLD TO MOVE)
+    </h2>
 
-        <div class="panel" style="width: auto; margin-bottom: 0; display:flex; flex-direction:column; justify-content:space-between;">
-            <div>
-                <h2>MANUAL AI TERMINAL</h2>
-                <div class="chat-area" id="terminal-logs">
-                    <div style="color:#8b949e;">[System Ready...]</div>
-                </div>
-            </div>
-            
-            <div class="chat-input-row">
-                <button class="mic-btn" id="dashboard-mic-btn" onclick="toggleDashboardMic()">
-                    <span id="mic-icon">🎙️</span>
-                    <span id="mic-text">ROBOT MIC OFF</span>
-                </button>
-                <input type="text" class="chat-input" id="user-msg" placeholder="Type prompt..." onkeydown="if(event.key==='Enter') sendManualMessage()">
-                <button class="btn" style="padding:10px 20px;" onclick="sendManualMessage()">SEND</button>
-            </div>
-        </div>
+    <div class="control-pad">
+        <button class="btn-empty"></button>
+        <button class="btn" id="btn-fwd">▲</button>
+        <button class="btn-empty"></button>
+
+        <button class="btn" id="btn-left">◀</button>
+        <button class="btn stop-btn" id="btn-stop">■</button>
+        <button class="btn" id="btn-right">▶</button>
+
+        <button class="btn-empty"></button>
+        <button class="btn" id="btn-rev">▼</button>
+        <button class="btn-empty"></button>
     </div>
 
-    <script>
-        const logs = document.getElementById('terminal-logs');
-        let activeDirection = "STOP";
-        let isKeyPressed = false;
-        let isMicOn = false;
+    <div class="telemetry" id="telemetry">
+        Command: STOP | Battery: -- | RSSI: --
+    </div>
+</div>
 
-        function printLog(text, color="#c9d1d9") {
-            logs.innerHTML += `<div style="color:${color}">&gt; ${text}</div>`;
-            logs.scrollTop = logs.scrollHeight;
-        }
+<div class="panel">
+    <h2>MANUAL AI TERMINAL</h2>
 
-        async function toggleDashboardMic() {
-            isMicOn = !isMicOn;
-            const btn = document.getElementById('dashboard-mic-btn');
-            btn.classList.toggle('active', isMicOn);
-            document.getElementById('mic-text').innerText = isMicOn ? "ROBOT MIC ON" : "ROBOT MIC OFF";
-            printLog(`Signal Sent: Robot Mic ${isMicOn ? 'ENABLED' : 'DISABLED'}`, isMicOn ? '#39ff14' : '#ffaa00');
+    <div class="chat-area" id="terminal-logs">
+        <div style="color:#8b949e">[System Ready...]</div>
+    </div>
 
-            await fetch('/api/mic_status', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ active: isMicOn })
-            });
-        }
+    <div class="chat-input-row">
+        <button class="mic-btn" id="dashboard-mic-btn"
+                onclick="toggleDashboardMic()">
+            🎙️ <span id="mic-text">ROBOT MIC OFF</span>
+        </button>
 
-        function sendCommand(dir) {
-            if (activeDirection === dir) return;
-            activeDirection = dir;
-            printLog(`Chassis: ${dir}`, "#00e5ff");
+        <input type="text" class="chat-input" id="user-msg"
+               placeholder="Ask TiTaN..." autocomplete="off">
 
-            fetch('/api/cmd', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ command: dir }),
-                keepalive: true
-            }).catch(() => {});
-        }
+        <button class="btn" style="padding:10px 20px"
+                onclick="sendManualMessage()">
+            SEND
+        </button>
+    </div>
+</div>
 
-        function attachHoldControls(elementId, direction) {
-            const btn = document.getElementById(elementId);
-            const startDrive = (e) => { e.preventDefault(); btn.classList.add('active'); sendCommand(direction); };
-            const stopDrive = (e) => { e.preventDefault(); btn.classList.remove('active'); sendCommand('STOP'); };
+</div>
 
-            btn.addEventListener('mousedown', startDrive);
-            btn.addEventListener('mouseup', stopDrive);
-            btn.addEventListener('mouseleave', stopDrive);
-            btn.addEventListener('touchstart', startDrive);
-            btn.addEventListener('touchend', stopDrive);
-            btn.addEventListener('touchcancel', stopDrive);
-        }
+<script>
+const logs=document.getElementById("terminal-logs");
+let activeDirection="STOP";
+let isMicOn=false;
 
-        attachHoldControls('btn-fwd', 'FORWARD');
-        attachHoldControls('btn-rev', 'REVERSE');
-        attachHoldControls('btn-left', 'LEFT');
-        attachHoldControls('btn-right', 'RIGHT');
-        document.getElementById('btn-stop').onclick = () => sendCommand('STOP');
+function printLog(text,color="#c9d1d9"){
+    const div=document.createElement("div");
+    div.style.color=color;
+    div.textContent="> "+text;
+    logs.appendChild(div);
+    logs.scrollTop=logs.scrollHeight;
+}
 
-        document.addEventListener('keydown', (e) => {
-            if (document.activeElement === document.getElementById('user-msg')) return;
-            if (isKeyPressed) return;
-            isKeyPressed = true;
-            if (e.key === 'ArrowUp' || e.key === 'w') sendCommand('FORWARD');
-            if (e.key === 'ArrowDown' || e.key === 's') sendCommand('REVERSE');
-            if (e.key === 'ArrowLeft' || e.key === 'a') sendCommand('LEFT');
-            if (e.key === 'ArrowRight' || e.key === 'd') sendCommand('RIGHT');
-            if (e.key === ' ') sendCommand('STOP');
+async function apiJSON(url,options={}){
+    const r=await fetch(url,options);
+    if(!r.ok)throw new Error(`HTTP ${r.status}`);
+    return r.json();
+}
+
+async function toggleDashboardMic(){
+    isMicOn=!isMicOn;
+    const btn=document.getElementById("dashboard-mic-btn");
+    btn.classList.toggle("active",isMicOn);
+    document.getElementById("mic-text").textContent=
+        isMicOn?"ROBOT MIC ON":"ROBOT MIC OFF";
+
+    try{
+        await apiJSON("/api/mic_status",{
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({active:isMicOn})
+        });
+        printLog(
+            `Robot microphone ${isMicOn?"enabled":"disabled"}.`,
+            isMicOn?"#39ff14":"#ffaa00"
+        );
+    }catch(e){
+        printLog("Could not update microphone status.","#ff5555");
+    }
+}
+
+async function sendCommand(direction){
+    direction=direction.toUpperCase();
+    if(activeDirection===direction)return;
+    activeDirection=direction;
+
+    try{
+        await apiJSON("/api/cmd",{
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({command:direction}),
+            keepalive:true
+        });
+        printLog(`Chassis: ${direction}`,"#00e5ff");
+    }catch(e){
+        printLog("Command transmission failed.","#ff5555");
+    }
+}
+
+function attachHoldControls(id,direction){
+    const btn=document.getElementById(id);
+
+    const start=e=>{
+        e.preventDefault();
+        btn.classList.add("active");
+        sendCommand(direction);
+    };
+
+    const stop=e=>{
+        e.preventDefault();
+        btn.classList.remove("active");
+        sendCommand("STOP");
+    };
+
+    btn.addEventListener("pointerdown",start);
+    btn.addEventListener("pointerup",stop);
+    btn.addEventListener("pointercancel",stop);
+    btn.addEventListener("pointerleave",stop);
+}
+
+attachHoldControls("btn-fwd","FORWARD");
+attachHoldControls("btn-rev","REVERSE");
+attachHoldControls("btn-left","LEFT");
+attachHoldControls("btn-right","RIGHT");
+
+document.getElementById("btn-stop").onclick=()=>sendCommand("STOP");
+
+document.addEventListener("keydown",e=>{
+    if(document.activeElement===document.getElementById("user-msg"))return;
+    if(e.repeat)return;
+
+    const k=e.key.toLowerCase();
+
+    if(k==="arrowup"||k==="w"){e.preventDefault();sendCommand("FORWARD")}
+    if(k==="arrowdown"||k==="s"){e.preventDefault();sendCommand("REVERSE")}
+    if(k==="arrowleft"||k==="a"){e.preventDefault();sendCommand("LEFT")}
+    if(k==="arrowright"||k==="d"){e.preventDefault();sendCommand("RIGHT")}
+    if(k===" "){e.preventDefault();sendCommand("STOP")}
+});
+
+document.addEventListener("keyup",e=>{
+    if(document.activeElement===document.getElementById("user-msg"))return;
+
+    const keys=["arrowup","arrowdown","arrowleft","arrowright","w","a","s","d"];
+
+    if(keys.includes(e.key.toLowerCase()))sendCommand("STOP");
+});
+
+async function sendManualMessage(){
+    const input=document.getElementById("user-msg");
+    const query=input.value.trim();
+
+    if(!query)return;
+
+    input.value="";
+    printLog(`User: ${query}`,"#fff");
+
+    try{
+        const data=await apiJSON("/api/ask_ai",{
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({query})
         });
 
-        document.addEventListener('keyup', (e) => {
-            if (document.activeElement === document.getElementById('user-msg')) return;
-            isKeyPressed = false;
-            if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','w','s','a','d'].includes(e.key)) {
-                sendCommand('STOP');
-            }
-        });
+        printLog(`TiTaN: ${data.reply}`,"#39ff14");
+    }catch(e){
+        printLog("Gemini AI request failed.","#ff5555");
+    }
+}
 
-        async function sendManualMessage() {
-            const input = document.getElementById('user-msg');
-            const query = input.value.trim();
-            if (!query) return;
-            input.value = '';
-            printLog(`User: ${query}`, "#fff");
+document.getElementById("user-msg").addEventListener("keydown",e=>{
+    if(e.key==="Enter")sendManualMessage();
+});
 
-            try {
-                const res = await fetch('/api/ask_ai', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ query: query })
-                });
-                const data = await res.json();
-                printLog(`TiTaN: ${data.reply}`, "#39ff14");
-            } catch (err) {
-                printLog("AI Request Failed", "#ff5555");
-            }
-        }
-    </script>
+function setStatus(id,text,cls){
+    const el=document.getElementById(id);
+    el.textContent=text;
+    el.className="status "+cls;
+}
+
+async function updateStatus(){
+    try{
+        const data=await apiJSON("/api/health");
+
+        setStatus("cloud-status","☁ CLOUD: ONLINE","online");
+
+        setStatus(
+            "esp-status",
+            `🧠 ESP32: ${data.esp32}`,
+            data.esp32==="ONLINE"?"online":"offline"
+        );
+
+        setStatus(
+            "phone-status",
+            `📱 PHONE: ${data.phone}`,
+            data.phone==="ONLINE"?"online":"offline"
+        );
+
+        setStatus(
+            "cam-status",
+            `👁 CAMERA: ${data.camera}`,
+            data.camera==="ONLINE"?"online":"offline"
+        );
+
+        const cmd=data.motor_command||"STOP";
+
+        setStatus(
+            "motor-status",
+            `⚙ MOTOR: ${cmd}`,
+            cmd==="STOP"?"warning":"online"
+        );
+
+        const t=data.telemetry||{};
+
+        document.getElementById("telemetry").textContent=
+            `Command: ${cmd} | Battery: ${t.battery??"--"} | RSSI: ${t.wifi_rssi??"--"}`;
+
+    }catch(e){
+        setStatus("cloud-status","☁ CLOUD: OFFLINE","offline");
+    }
+}
+
+updateStatus();
+setInterval(updateStatus,2000);
+</script>
 </body>
 </html>
