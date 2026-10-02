@@ -1,83 +1,307 @@
 import os
+import threading
+import time
+
 import requests
-from flask import Flask, render_template, send_from_directory, request, jsonify, Response
+from flask import Flask, Response, jsonify, render_template, request
+
 from duckduckgo_search import DDGS
-from groq import Groq
+from google import genai
+from google.genai import types
 
 app = Flask(__name__)
 
+# ============================================================
+# TiTaN SERVER STATE
+# ============================================================
+
+state_lock = threading.Lock()
+
 last_motor_command = "STOP"
-latest_frame = None  
-mic_state = False    
+last_command_time = time.monotonic()
 
-@app.route('/favicon.ico')
-def favicon():
-    return send_from_directory(app.root_path, 'favicon.ico', mimetype='image/vnd.microsoft.icon')
+latest_frame = None
+latest_frame_time = 0.0
 
-@app.route('/')
+phone_last_seen = 0.0
+esp32_last_seen = 0.0
+
+telemetry = {
+    "battery": None,
+    "wifi_rssi": None,
+    "ip": None,
+    "uptime": None,
+    "command": "STOP",
+}
+
+COMMAND_TIMEOUT = float(os.environ.get("COMMAND_TIMEOUT", "1.5"))
+VIDEO_TIMEOUT = float(os.environ.get("VIDEO_TIMEOUT", "3.0"))
+PHONE_TIMEOUT = float(os.environ.get("PHONE_TIMEOUT", "5.0"))
+ESP32_TIMEOUT = float(os.environ.get("ESP32_TIMEOUT", "5.0"))
+
+ALLOWED_COMMANDS = {
+    "FORWARD",
+    "REVERSE",
+    "LEFT",
+    "RIGHT",
+    "STOP",
+}
+
+
+def set_motor_command(command):
+    global last_motor_command, last_command_time
+
+    command = str(command).upper().strip()
+
+    if command not in ALLOWED_COMMANDS:
+        return False
+
+    with state_lock:
+        last_motor_command = command
+        last_command_time = time.monotonic()
+        telemetry["command"] = command
+
+    return True
+
+
+def get_safe_motor_command():
+    with state_lock:
+        if time.monotonic() - last_command_time > COMMAND_TIMEOUT:
+            return "STOP"
+        return last_motor_command
+
+
+# ============================================================
+# PAGES
+# ============================================================
+
+@app.route("/")
 def index():
-    return render_template('index.html')
+    return render_template("index.html")
 
-@app.route('/robot')
+
+@app.route("/robot")
 def robot():
-    return render_template('robot_node.html')
+    return render_template("robot_node.html")
 
-# ---------------------------------------------------------
-# 1. VIDEO & MOTOR ROUTES
-# ---------------------------------------------------------
-@app.route('/api/video_feed', methods=['POST'])
+
+@app.route("/favicon.ico")
+def favicon():
+    from flask import send_from_directory
+
+    path = os.path.join(app.root_path, "favicon.ico")
+
+    if os.path.exists(path):
+        return send_from_directory(
+            app.root_path,
+            "favicon.ico",
+            mimetype="image/vnd.microsoft.icon",
+        )
+
+    return ("", 204)
+
+
+# ============================================================
+# HEALTH
+# ============================================================
+
+@app.route("/api/health")
+def health():
+    now = time.monotonic()
+
+    with state_lock:
+        return jsonify({
+            "server": "ONLINE",
+            "phone": (
+                "ONLINE"
+                if now - phone_last_seen <= PHONE_TIMEOUT
+                else "OFFLINE"
+            ),
+            "esp32": (
+                "ONLINE"
+                if now - esp32_last_seen <= ESP32_TIMEOUT
+                else "OFFLINE"
+            ),
+            "camera": (
+                "ONLINE"
+                if latest_frame is not None
+                and now - latest_frame_time <= VIDEO_TIMEOUT
+                else "OFFLINE"
+            ),
+            "motor_command": get_safe_motor_command(),
+            "telemetry": dict(telemetry),
+        })
+
+
+# ============================================================
+# PHONE NODE
+# ============================================================
+
+@app.route("/api/phone/heartbeat", methods=["POST"])
+def phone_heartbeat():
+    global phone_last_seen
+
+    with state_lock:
+        phone_last_seen = time.monotonic()
+
+    return jsonify({"status": "ok"})
+
+
+@app.route("/api/mic_status", methods=["POST"])
+def mic_status():
+    data = request_json()
+    return jsonify({
+        "status": "ok",
+        "microphone": "ON" if bool(data.get("active")) else "OFF",
+    })
+
+
+# ============================================================
+# CAMERA
+# Phone POSTs JPEG frames here.
+# Dashboard reads MJPEG stream from /video_stream.
+# ============================================================
+
+@app.route("/api/video_feed", methods=["POST"])
 def upload_frame():
-    global latest_frame
-    latest_frame = request.data
+    global latest_frame, latest_frame_time, phone_last_seen
+
+    frame = request.get_data()
+
+    if not frame:
+        return jsonify({"error": "Empty frame"}), 400
+
+    if len(frame) > 2 * 1024 * 1024:
+        return jsonify({"error": "Frame too large"}), 413
+
+    with state_lock:
+        latest_frame = frame
+        latest_frame_time = time.monotonic()
+        phone_last_seen = time.monotonic()
+
     return jsonify({"status": "received"})
 
+
 def generate_stream():
-    global latest_frame
+    last_frame = None
+
     while True:
-        if latest_frame is not None:
-            yield (b'--frame\r\n'
-                   b'Content-Type: image/jpeg\r\n\r\n' + latest_frame + b'\r\n')
-        import time
-        time.sleep(0.04)
+        with state_lock:
+            frame = latest_frame
+            frame_time = latest_frame_time
 
-@app.route('/video_stream')
+        if (
+            frame is not None
+            and time.monotonic() - frame_time <= VIDEO_TIMEOUT
+            and frame != last_frame
+        ):
+            last_frame = frame
+
+            yield (
+                b"--frame\r\n"
+                b"Content-Type: image/jpeg\r\n"
+                b"Cache-Control: no-cache\r\n\r\n"
+                + frame
+                + b"\r\n"
+            )
+
+        time.sleep(0.05)
+
+
+@app.route("/video_stream")
 def video_stream():
-    return Response(generate_stream(), mimetype='multipart/x-mixed-replace; boundary=frame')
+    return Response(
+        generate_stream(),
+        mimetype="multipart/x-mixed-replace; boundary=frame",
+    )
 
-@app.route('/api/cmd', methods=['GET', 'POST'])
+
+# ============================================================
+# MOTOR COMMAND API
+#
+# POST /api/cmd -> Dashboard/phone sends command.
+# GET  /api/cmd -> ESP32 polls command.
+# ============================================================
+
+@app.route("/api/cmd", methods=["GET", "POST"])
 def handle_cmd():
-    global last_motor_command
-    if request.method == 'POST':
-        data = request.get_json() or {}
-        last_motor_command = data.get('command', 'STOP')
-        return jsonify({"status": "ok", "command": last_motor_command})
-    else:
-        return jsonify({"command": last_motor_command})
+    if request.method == "POST":
+        data = request_json()
+        command = data.get("command", "STOP")
 
-# ---------------------------------------------------------
-# 2. ELEVENLABS TTS ROUTE
-# ---------------------------------------------------------
-@app.route('/api/tts', methods=['POST'])
+        if not set_motor_command(command):
+            return jsonify({
+                "status": "error",
+                "error": "Invalid motor command",
+            }), 400
+
+        return jsonify({
+            "status": "ok",
+            "command": str(command).upper(),
+        })
+
+    return jsonify({
+        "command": get_safe_motor_command(),
+        "server_time": time.time(),
+    })
+
+
+# ============================================================
+# ESP32 TELEMETRY
+# ============================================================
+
+@app.route("/api/telemetry", methods=["POST"])
+def update_telemetry():
+    global esp32_last_seen
+
+    data = request_json()
+
+    with state_lock:
+        esp32_last_seen = time.monotonic()
+
+        for key in ("battery", "wifi_rssi", "ip", "uptime"):
+            if key in data:
+                telemetry[key] = data[key]
+
+        if "command" in data:
+            telemetry["command"] = str(data["command"]).upper()
+
+    return jsonify({"status": "ok"})
+
+
+# ============================================================
+# ELEVENLABS TTS
+# ============================================================
+
+@app.route("/api/tts", methods=["POST"])
 def text_to_speech():
-    data = request.get_json() or {}
-    text = data.get('text', '')
+    data = request_json()
+    text = str(data.get("text", "")).strip()
 
-    elevenlabs_key = os.environ.get("ELEVENLABS_API_KEY", "").strip()
-    voice_id = os.environ.get("ELEVENLABS_VOICE_ID", "XPtpzgZIma7xJiyvHcK7").strip()
+    api_key = os.environ.get("ELEVENLABS_API_KEY", "").strip()
+    voice_id = os.environ.get(
+        "ELEVENLABS_VOICE_ID",
+        "XPtpzgZIma7xJiyvHcK7",
+    ).strip()
 
     if not text:
         return jsonify({"error": "No text provided"}), 400
-    if not elevenlabs_key:
-        return jsonify({"error": "ElevenLabs API Key missing"}), 500
+
+    if not api_key:
+        return jsonify({
+            "error": "ELEVENLABS_API_KEY missing"
+        }), 500
+
+    text = text[:1500]
 
     url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
-    
+
     headers = {
         "Accept": "audio/mpeg",
         "Content-Type": "application/json",
-        "xi-api-key": elevenlabs_key
+        "xi-api-key": api_key,
     }
-    
+
     payload = {
         "text": text,
         "model_id": "eleven_multilingual_v2",
@@ -85,77 +309,164 @@ def text_to_speech():
             "stability": 0.80,
             "similarity_boost": 0.80,
             "style": 0.0,
-            "use_speaker_boost": True
-        }
+            "use_speaker_boost": True,
+        },
     }
-    
-    try:
-        response = requests.post(url, json=payload, headers=headers, timeout=15)
-        if response.status_code == 200:
-            audio_path = "titan_voice.mp3"
-            with open(audio_path, "wb") as f:
-                f.write(response.content)
-            return send_file(audio_path, mimetype="audio/mpeg")
-        else:
-            return jsonify({"error": response.text}), 500
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-# ---------------------------------------------------------
-# 3. DUCKDUCKGO SEARCH + GROQ AI BRAIN
-# ---------------------------------------------------------
-@app.route('/api/ask_ai', methods=['POST'])
-def ask_ai():
-    data = request.get_json() or {}
-    user_query = data.get('query', '')
-
-    groq_api_key = os.environ.get("GROQ_API_KEY", "").strip()
-    if not groq_api_key:
-        return jsonify({"reply": "System Error: GROQ_API_KEY missing."})
-
-    live_context = "No live internet data available."
-    try:
-        results = DDGS().text(user_query, max_results=2)
-        extracted_texts = []
-        for result in results:
-            title = result.get('title', '')
-            body = result.get('body', '')
-            extracted_texts.append(f"- {title}: {body}")
-            
-        if extracted_texts:
-            live_context = "\n".join(extracted_texts)
-    except Exception as e:
-        print(f"[DDG ERROR]: {str(e)}")
 
     try:
-        client = Groq(api_key=groq_api_key)
-        
-        system_prompt = f"""You are TiTaN, an advanced robotic AI assistant engineered by Malhar Deshmukh.
-        Use the live internet data below to answer accurately if relevant.
-        If spoken to in Marathi, reply entirely in fluent Marathi Devanagari. If in Hindi, reply in Hindi. If in English, reply in English.
-        Keep responses crisp and direct.
-        
-        === LIVE INTERNET DATA ===
-        {live_context}
-        ==========================
-        """
-
-        chat_completion = client.chat.completions.create(
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_query}
-            ],
-            model="llama-3.3-70b-versatile",
-            max_tokens=256,
-            temperature=0.4
+        response = requests.post(
+            url,
+            json=payload,
+            headers=headers,
+            timeout=20,
         )
-        
-        ai_answer = chat_completion.choices[0].message.content
-        return jsonify({"reply": ai_answer})
 
-    except Exception as e:
-        return jsonify({"reply": f"AI Error: {str(e)}"})
+        if response.status_code == 200:
+            return Response(
+                response.content,
+                mimetype="audio/mpeg",
+                headers={"Cache-Control": "no-store"},
+            )
 
-if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port)
+        return jsonify({
+            "error": f"ElevenLabs error {response.status_code}",
+            "details": response.text[:500],
+        }), 502
+
+    except requests.RequestException as exc:
+        return jsonify({
+            "error": f"TTS request failed: {exc}"
+        }), 502
+
+
+# ============================================================
+# GEMINI AI
+# Google AI Studio API
+# ============================================================
+
+def get_gemini_client():
+    api_key = os.environ.get("GEMINI_API_KEY", "").strip()
+
+    if not api_key:
+        raise RuntimeError("GEMINI_API_KEY is not configured")
+
+    return genai.Client(api_key=api_key)
+
+
+@app.route("/api/ask_ai", methods=["POST"])
+def ask_ai():
+    data = request_json()
+    user_query = str(data.get("query", "")).strip()
+
+    if not user_query:
+        return jsonify({
+            "reply": "Please give me a question."
+        }), 400
+
+    # Optional live web context.
+    live_context = "No live internet data available."
+
+    try:
+        results = DDGS().text(
+            user_query,
+            max_results=2
+        )
+
+        snippets = []
+
+        for result in results:
+            title = result.get("title", "")
+            body = result.get("body", "")
+
+            if title or body:
+                snippets.append(
+                    f"- {title}: {body}"
+                )
+
+        if snippets:
+            live_context = "\n".join(snippets)
+
+    except Exception as exc:
+        print(f"[WEB SEARCH ERROR] {exc}")
+
+    try:
+        client = get_gemini_client()
+
+        system_instruction = """
+You are TiTaN, a custom AI robotic assistant engineered by
+Malhar Deshmukh.
+
+Your job is to act as the intelligence layer of a mobile robot.
+
+Rules:
+1. Keep normal answers concise and useful.
+2. If the user speaks Marathi, reply in fluent Marathi Devanagari.
+3. If the user speaks Hindi, reply in Hindi.
+4. If the user speaks English, reply in English.
+5. Never claim that the robot physically performed an action unless
+   the application actually sent a motor command.
+6. Do not expose API keys or secret credentials.
+7. Treat live web snippets as potentially incomplete context.
+8. For robot movement, the application handles direct commands;
+   do not invent movement commands in a normal AI answer.
+"""
+
+        prompt = f"""
+User query:
+{user_query}
+
+Optional live web context:
+{live_context}
+"""
+
+        response = client.models.generate_content(
+            model=os.environ.get(
+                "GEMINI_MODEL",
+                "gemini-3.8-flash",
+            ),
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                system_instruction=system_instruction,
+                temperature=0.4,
+                max_output_tokens=256,
+            ),
+        )
+
+        answer = (response.text or "").strip()
+
+        if not answer:
+            answer = "I could not generate a response."
+
+        return jsonify({
+            "reply": answer
+        })
+
+    except Exception as exc:
+        print(f"[GEMINI ERROR] {exc}")
+
+        return jsonify({
+            "reply": "TiTaN AI is temporarily unavailable."
+        }), 502
+
+
+# ============================================================
+# HELPERS
+# ============================================================
+
+def request_json():
+    from flask import request
+
+    return request.get_json(silent=True) or {}
+
+
+# ============================================================
+# START
+# ============================================================
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", "5000"))
+    app.run(
+        host="0.0.0.0",
+        port=port,
+        debug=False,
+    )
