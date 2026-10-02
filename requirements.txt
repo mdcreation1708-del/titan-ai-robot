@@ -1,8 +1,6 @@
-flask
-flask-sock
-google-genai
+Flask
 gunicorn
 gevent
-gevent-websocket
-duckduckgo-search
 requests
+duckduckgo-search
+google-genai
