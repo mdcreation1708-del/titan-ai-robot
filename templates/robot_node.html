@@ -1,152 +1,545 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TiTaN - Robot Operations Node</title>
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: #0b0f19; color: #00e5ff; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; min-height: 100vh; padding: 20px; }
-        header { text-align: center; margin-bottom: 20px; }
-        h1 { font-size: 1.8rem; letter-spacing: 2px; color: #00e5ff; text-shadow: 0 0 10px rgba(0, 229, 255, 0.4); }
-        .container { width: 100%; max-width: 480px; background: #131b2e; border: 1px solid #1f2d4a; border-radius: 12px; padding: 20px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5); display: flex; flex-direction: column; gap: 20px; }
-        .video-box { width: 100%; height: 240px; background: #000; border-radius: 8px; overflow: hidden; border: 1px solid #24345c; display: flex; align-items: center; justify-content: center; }
-        .video-box img { width: 100%; height: 100%; object-fit: cover; }
-        .video-placeholder { color: #4a5c80; font-size: 0.9rem; }
-        .status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .status-card { background: #1a253f; padding: 10px; border-radius: 6px; border-left: 4px solid #00e5ff; font-size: 0.8rem; }
-        .status-card span { display: block; color: #8a99ad; margin-bottom: 4px; }
-        .status-card strong { color: #fff; font-size: 0.95rem; }
-        button { width: 100%; padding: 14px; border: none; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; }
-        #boot-btn { background-color: #00e5ff; color: #0b0f19; }
-        #boot-btn.active { background-color: #ff3366; color: #fff; }
-        .log-box { background: #080c14; border: 1px solid #1a253f; border-radius: 6px; padding: 10px; height: 100px; overflow-y: auto; font-family: monospace; font-size: 0.75rem; color: #00ffcc; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TiTaN - Robot Operations Node</title>
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:"Segoe UI",Tahoma,sans-serif}
+body{
+    background:#0b0f19;color:#00e5ff;min-height:100vh;padding:20px
+}
+header{text-align:center;margin-bottom:20px}
+h1{font-size:1.8rem;letter-spacing:2px;text-shadow:0 0 10px rgba(0,229,255,.4)}
+.container{
+    width:100%;max-width:520px;margin:auto;background:#131b2e;
+    border:1px solid #1f2d4a;border-radius:12px;padding:20px;
+    box-shadow:0 8px 24px rgba(0,0,0,.5)
+}
+.video-box{
+    width:100%;height:280px;background:#000;border-radius:8px;
+    overflow:hidden;border:1px solid #24345c;position:relative
+}
+#cameraPreview{
+    width:100%;height:100%;object-fit:cover;
+    transform:scaleX(-1);display:none
+}
+.video-placeholder{
+    color:#4a5c80;font-size:.9rem;width:100%;height:100%;
+    display:flex;align-items:center;justify-content:center;
+    text-align:center
+}
+.status-grid{
+    display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:15px
+}
+.status-card{
+    background:#1a253f;padding:10px;border-radius:6px;
+    border-left:4px solid #00e5ff;font-size:.8rem
+}
+.status-card span{display:block;color:#8a99ad;margin-bottom:4px}
+.status-card strong{color:#fff;font-size:.95rem}
+button,select{
+    width:100%;padding:14px;border:none;border-radius:8px;
+    font-size:1rem;font-weight:bold;cursor:pointer
+}
+#boot-btn{
+    background:#00e5ff;color:#0b0f19;margin-top:15px
+}
+#boot-btn.active{background:#ff3366;color:#fff}
+.language-row{
+    display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px
+}
+select{
+    background:#080c14;color:#00e5ff;border:1px solid #1a253f
+}
+.log-box{
+    background:#080c14;border:1px solid #1a253f;border-radius:6px;
+    padding:10px;height:130px;overflow-y:auto;font-family:monospace;
+    font-size:.75rem;color:#00ffcc;margin-top:15px
+}
+.node-info{
+    margin-top:12px;font-family:monospace;font-size:.75rem;
+    color:#8a99ad;text-align:center
+}
+</style>
 </head>
+
 <body>
-    <header>
-        <h1>TiTaN // NODE</h1>
-    </header>
-    <div class="container">
-        <div class="video-box" id="video-container">
-            <div class="video-placeholder">Camera Feed Offline</div>
-        </div>
-        <div class="status-grid">
-            <div class="status-card"><span>Motor</span><strong id="telemetry-cmd">STOP</strong></div>
-            <div class="status-card"><span>Audio</span><strong id="telemetry-audio">Standby</strong></div>
-        </div>
-        <button id="boot-btn" onclick="toggleSystem()">Boot System & Mic</button>
-        <div class="log-box" id="console-logs">[System]: Initialized.<br></div>
+
+<header>
+<h1>TiTaN // SMARTPHONE NODE</h1>
+</header>
+
+<div class="container">
+
+<div class="video-box">
+    <video id="cameraPreview" autoplay muted playsinline></video>
+
+    <div id="videoPlaceholder" class="video-placeholder">
+        Camera Offline<br>Press BOOT SYSTEM
     </div>
+</div>
 
-    <script>
-        let active = false;
-        let isMicEnabled = false;
-        let isSpeaking = false;
-        let recognition = null;
-        let currentAudio = null;
+<div class="status-grid">
 
-        function printLog(text, color = "#00ffcc") {
-            const box = document.getElementById('console-logs');
-            box.innerHTML += `<span style="color: ${color}">[${new Date().toLocaleTimeString()}] ${text}</span><br>`;
-            box.scrollTop = box.scrollHeight;
-        }
+<div class="status-card">
+<span>Motor</span>
+<strong id="telemetry-cmd">STOP</strong>
+</div>
 
-        function toggleSystem() {
-            active = !active;
-            const btn = document.getElementById('boot-btn');
-            if (active) {
-                btn.classList.add('active');
-                btn.innerText = "Shutdown System";
-                isMicEnabled = true;
-                printLog("System active.");
-                document.getElementById('video-container').innerHTML = `<img src="/video_stream" alt="Feed">`;
-                initVoiceEngine();
-                startListening();
-            } else {
-                btn.classList.remove('active');
-                btn.innerText = "Boot System & Mic";
-                isMicEnabled = false;
-                if (recognition) recognition.stop();
-                if (currentAudio) currentAudio.pause();
-                document.getElementById('video-container').innerHTML = `<div class="video-placeholder">Offline</div>`;
-                printLog("System shutdown.", "#ff5555");
+<div class="status-card">
+<span>Microphone</span>
+<strong id="telemetry-audio">OFF</strong>
+</div>
+
+<div class="status-card">
+<span>Camera</span>
+<strong id="camera-status">OFF</strong>
+</div>
+
+<div class="status-card">
+<span>Network</span>
+<strong id="network-status">CHECKING</strong>
+</div>
+
+</div>
+
+<button id="boot-btn" onclick="toggleSystem()">
+BOOT SYSTEM & MIC
+</button>
+
+<div class="language-row">
+<select id="voice-language">
+<option value="mr-IN">Marathi</option>
+<option value="hi-IN">Hindi</option>
+<option value="en-IN">English (India)</option>
+</select>
+
+<button onclick="testSpeak()"
+style="background:#21262d;color:#00e5ff;border:1px solid #00e5ff">
+TEST SPEAKER
+</button>
+</div>
+
+<div class="log-box" id="console-logs">
+[System]: Smartphone node initialized.<br>
+</div>
+
+<div class="node-info">
+TiTaN Phone Node • Camera + Microphone + Speaker
+</div>
+
+</div>
+
+<script>
+let active=false;
+let isMicEnabled=false;
+let isSpeaking=false;
+let recognition=null;
+let currentAudio=null;
+let cameraStream=null;
+let frameTimer=null;
+let heartbeatTimer=null;
+
+const cameraPreview=document.getElementById("cameraPreview");
+const videoPlaceholder=document.getElementById("videoPlaceholder");
+
+function printLog(text,color="#00ffcc"){
+    const box=document.getElementById("console-logs");
+    const line=document.createElement("div");
+    line.style.color=color;
+    line.textContent=`[${new Date().toLocaleTimeString()}] ${text}`;
+    box.appendChild(line);
+    box.scrollTop=box.scrollHeight;
+}
+
+async function api(url,options={}){
+    const r=await fetch(url,options);
+    if(!r.ok)throw new Error(`HTTP ${r.status}`);
+    return r;
+}
+
+async function toggleSystem(){
+    if(!active)await bootSystem();
+    else shutdownSystem();
+}
+
+async function bootSystem(){
+    active=true;
+    isMicEnabled=true;
+
+    const btn=document.getElementById("boot-btn");
+    btn.classList.add("active");
+    btn.innerText="SHUTDOWN SYSTEM";
+
+    printLog("Starting TiTaN smartphone node...");
+
+    try{
+        await startCamera();
+    }catch(e){
+        printLog("Camera error: "+e.message,"#ff5555");
+    }
+
+    initVoiceEngine();
+    startListening();
+
+    heartbeatTimer=setInterval(sendHeartbeat,2000);
+    sendHeartbeat();
+
+    printLog("System active.","#39ff14");
+}
+
+function shutdownSystem(){
+    active=false;
+    isMicEnabled=false;
+
+    const btn=document.getElementById("boot-btn");
+    btn.classList.remove("active");
+    btn.innerText="BOOT SYSTEM & MIC";
+
+    if(recognition){
+        try{recognition.stop()}catch(_){}
+    }
+
+    if(currentAudio){
+        currentAudio.pause();
+        currentAudio.currentTime=0;
+    }
+
+    stopCamera();
+
+    if(heartbeatTimer){
+        clearInterval(heartbeatTimer);
+        heartbeatTimer=null;
+    }
+
+    document.getElementById("telemetry-audio").textContent="OFF";
+
+    printLog("System shutdown.","#ff5555");
+}
+
+async function startCamera(){
+    if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
+        throw new Error("Camera API unavailable");
+    }
+
+    cameraStream=await navigator.mediaDevices.getUserMedia({
+        video:{
+            facingMode:{ideal:"environment"},
+            width:{ideal:640},
+            height:{ideal:480}
+        },
+        audio:false
+    });
+
+    cameraPreview.srcObject=cameraStream;
+    cameraPreview.style.display="block";
+    videoPlaceholder.style.display="none";
+
+    document.getElementById("camera-status").textContent="ONLINE";
+
+    await cameraPreview.play();
+
+    startFrameUpload();
+}
+
+function stopCamera(){
+    if(frameTimer){
+        clearInterval(frameTimer);
+        frameTimer=null;
+    }
+
+    if(cameraStream){
+        cameraStream.getTracks().forEach(track=>track.stop());
+        cameraStream=null;
+    }
+
+    cameraPreview.srcObject=null;
+    cameraPreview.style.display="none";
+    videoPlaceholder.style.display="flex";
+
+    document.getElementById("camera-status").textContent="OFFLINE";
+}
+
+function startFrameUpload(){
+    if(frameTimer)clearInterval(frameTimer);
+
+    frameTimer=setInterval(uploadCameraFrame,200);
+}
+
+async function uploadCameraFrame(){
+    if(
+        !active||
+        !cameraStream||
+        cameraPreview.readyState<2||
+        cameraPreview.videoWidth===0
+    )return;
+
+    const canvas=document.createElement("canvas");
+
+    const maxWidth=640;
+    const scale=Math.min(
+        1,
+        maxWidth/cameraPreview.videoWidth
+    );
+
+    canvas.width=Math.round(cameraPreview.videoWidth*scale);
+    canvas.height=Math.round(cameraPreview.videoHeight*scale);
+
+    const ctx=canvas.getContext("2d");
+
+    ctx.drawImage(
+        cameraPreview,
+        0,0,
+        canvas.width,
+        canvas.height
+    );
+
+    canvas.toBlob(async blob=>{
+        if(!blob||!active)return;
+
+        try{
+            await fetch("/api/video_feed",{
+                method:"POST",
+                headers:{"Content-Type":"image/jpeg"},
+                body:blob
+            });
+        }catch(_){}
+    },"image/jpeg",.65);
+}
+
+async function sendHeartbeat(){
+    if(!active)return;
+
+    try{
+        await api("/api/phone/heartbeat",{
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({
+                microphone:isMicEnabled,
+                camera:!!cameraStream
+            })
+        });
+
+        document.getElementById("network-status").textContent="ONLINE";
+    }catch(_){
+        document.getElementById("network-status").textContent="OFFLINE";
+    }
+}
+
+async function robotSpeak(text){
+    if(!text||!active)return;
+
+    if(currentAudio){
+        currentAudio.pause();
+        currentAudio.currentTime=0;
+    }
+
+    try{
+        isSpeaking=true;
+
+        const response=await api("/api/tts",{
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({text:text})
+        });
+
+        const blob=await response.blob();
+
+        currentAudio=new Audio(URL.createObjectURL(blob));
+
+        currentAudio.onended=()=>{
+            isSpeaking=false;
+
+            if(active&&isMicEnabled){
+                setTimeout(startListening,400);
             }
+        };
+
+        await currentAudio.play();
+
+    }catch(e){
+        isSpeaking=false;
+        printLog("Voice output error.","#ff5555");
+    }
+}
+
+function testSpeak(){
+    robotSpeak(
+        "Hello Malhar. TiTaN speaker test successful."
+    );
+}
+
+function initVoiceEngine(){
+    window.SpeechRecognition=
+        window.SpeechRecognition||
+        window.webkitSpeechRecognition;
+
+    if(!window.SpeechRecognition){
+        printLog(
+            "Speech Recognition is not supported by this browser.",
+            "#ff5555"
+        );
+        return;
+    }
+
+    recognition=new window.SpeechRecognition();
+
+    recognition.continuous=false;
+    recognition.interimResults=false;
+
+    recognition.onresult=async event=>{
+        const speech=
+            event.results[0][0].transcript
+            .trim()
+            .toLowerCase();
+
+        printLog(`Heard: "${speech}"`,"#fff");
+
+        const command=detectRobotCommand(speech);
+
+        if(command){
+            await sendRobotCommand(command);
+            return;
         }
 
-        async function robotSpeak(textToSay) {
-            if (!textToSay) return;
-            if (currentAudio) { currentAudio.pause(); currentAudio.currentTime = 0; }
+        if(speech.length>2){
+            await askAI(speech);
+        }
+    };
 
-            try {
-                const response = await fetch('/api/tts', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text: textToSay })
-                });
-                if (!response.ok) throw new Error("TTS failed");
-                const blob = await response.blob();
-                currentAudio = new Audio(URL.createObjectURL(blob));
-                currentAudio.play();
-                isSpeaking = true;
-                currentAudio.onended = () => {
-                    isSpeaking = false;
-                    if (active && isMicEnabled) setTimeout(startListening, 300);
-                };
-            } catch (e) {
-                printLog("Voice error.", "#ff5555");
-                isSpeaking = false;
-            }
+    recognition.onerror=event=>{
+        if(event.error!=="no-speech"){
+            printLog(
+                `Speech error: ${event.error}`,
+                "#ff5555"
+            );
+        }
+    };
+
+    recognition.onend=()=>{
+        if(active&&isMicEnabled&&!isSpeaking){
+            setTimeout(startListening,500);
+        }
+    };
+}
+
+function startListening(){
+    if(!active||!isMicEnabled||isSpeaking||!recognition)return;
+
+    recognition.lang=
+        document.getElementById("voice-language").value;
+
+    try{
+        recognition.start();
+
+        document.getElementById("telemetry-audio").textContent=
+            "LISTENING";
+
+    }catch(_){}
+}
+
+function detectRobotCommand(speech){
+    const s=speech.toLowerCase();
+
+    if(
+        s.includes("stop")||
+        s.includes("थांब")||
+        s.includes("रुको")||
+        s.includes("रुक")
+    )return "STOP";
+
+    if(
+        s.includes("forward")||
+        s.includes("go ahead")||
+        s.includes("पुढे")||
+        s.includes("आगे")
+    )return "FORWARD";
+
+    if(
+        s.includes("backward")||
+        s.includes("reverse")||
+        s.includes("go back")||
+        s.includes("मागे")||
+        s.includes("पीछे")
+    )return "REVERSE";
+
+    if(
+        s.includes("left")||
+        s.includes("डावीकडे")||
+        s.includes("बाएं")||
+        s.includes("बायें")
+    )return "LEFT";
+
+    if(
+        s.includes("right")||
+        s.includes("उजवीकडे")||
+        s.includes("दाएं")||
+        s.includes("दायें")
+    )return "RIGHT";
+
+    return null;
+}
+
+async function sendRobotCommand(command){
+    try{
+        await api("/api/cmd",{
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({command:command})
+        });
+
+        document.getElementById("telemetry-cmd").textContent=
+            command;
+
+        printLog(`Robot command: ${command}`,"#00e5ff");
+
+        const replies={
+            FORWARD:"Moving forward.",
+            REVERSE:"Moving backward.",
+            LEFT:"Turning left.",
+            RIGHT:"Turning right.",
+            STOP:"Stopping."
+        };
+
+        await robotSpeak(replies[command]);
+
+    }catch(_){
+        printLog(
+            "Could not send robot command.",
+            "#ff5555"
+        );
+    }
+}
+
+async function askAI(query){
+    printLog(
+        "Sending question to TiTaN Gemini AI...",
+        "#ffaa00"
+    );
+
+    try{
+        const response=await api("/api/ask_ai",{
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({query:query})
+        });
+
+        const data=await response.json();
+
+        if(data.reply){
+            printLog(`TiTaN: ${data.reply}`,"#39ff14");
+            await robotSpeak(data.reply);
         }
 
-        function initVoiceEngine() {
-            window.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!window.SpeechRecognition) return;
-            recognition = new window.SpeechRecognition();
-            recognition.continuous = false;
-            recognition.interimResults = false;
-            recognition.lang = 'mr-IN';
+    }catch(_){
+        await robotSpeak(
+            "Sorry, I could not process that request."
+        );
+    }
+}
+</script>
 
-            recognition.onresult = async (event) => {
-                const speech = event.results[0][0].transcript.trim().toLowerCase();
-                printLog(`Heard: "${speech}"`, "#fff");
-
-                if (speech.includes("forward") || speech.includes("पुढे")) {
-                    await fetch('/api/cmd', { method: 'POST', body: JSON.stringify({ command: 'FORWARD' }), headers: {'Content-Type':'application/json'}});
-                    robotSpeak("Moving forward.");
-                    return;
-                }
-                if (speech.includes("stop") || speech.includes("थांब")) {
-                    await fetch('/api/cmd', { method: 'POST', body: JSON.stringify({ command: 'STOP' }), headers: {'Content-Type':'application/json'}});
-                    robotSpeak("Stopping.");
-                    return;
-                }
-
-                if (speech.length > 2) {
-                    printLog("Searching web & AI...", "#ffcc00");
-                    try {
-                        const res = await fetch('/api/ask_ai', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ query: speech })
-                        });
-                        const data = await res.json();
-                        if (data.reply) robotSpeak(data.reply);
-                    } catch (e) {
-                        robotSpeak("Error processing query.");
-                    }
-                }
-            };
-
-            recognition.onend = () => {
-                if (active && isMicEnabled && !isSpeaking) setTimeout(startListening, 400);
-            };
-        }
-
-        function startListening() {
-            if (!active || !isMicEnabled || isSpeaking) return;
-            try { recognition.start(); } catch (e) {}
-        }
-    </script>
 </body>
 </html>
