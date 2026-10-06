@@ -1,1396 +1,929 @@
 <!DOCTYPE html>
+
 <html lang="en">
 
 <head>
 
-    <meta charset="UTF-8">
+<meta charset="UTF-8">
 
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
+<meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+>
 
-    <title>TiTaN - Smart Phone Node</title>
+<title>
+    TiTaN // Mobile Vision Node
+</title>
 
-    <link
-        rel="stylesheet"
-        href="{{ url_for('static', filename='css/style.css') }}"
-    >
+
+<style>
+
+:root{
+
+    --cyan:#00eaff;
+    --green:#36f2a2;
+    --red:#ff4567;
+
+    --bg:#02060c;
+
+}
+
+
+*{
+    box-sizing:border-box;
+}
+
+
+body{
+
+    margin:0;
+
+    min-height:100vh;
+
+    color:#eafaff;
+
+    font-family:
+        Segoe UI,
+        Arial,
+        sans-serif;
+
+    background:
+
+        radial-gradient(
+            circle at 50% 0,
+            #12314d,
+            #030711 55%,
+            #010308
+        );
+
+}
+
+
+/* CONTAINER */
+
+.wrap{
+
+    max-width:900px;
+
+    margin:auto;
+
+    padding:18px;
+
+}
+
+
+/* HEADER */
+
+.head{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    margin-bottom:14px;
+
+}
+
+
+.brand{
+
+    letter-spacing:3px;
+
+    font-weight:800;
+
+}
+
+
+.brand span{
+
+    color:var(--cyan);
+
+}
+
+
+.back{
+
+    color:var(--cyan);
+
+    text-decoration:none;
+
+    border:1px solid #16465c;
+
+    padding:9px 12px;
+
+    border-radius:9px;
+
+    font-size:10px;
+
+}
+
+
+/* CARD */
+
+.card{
+
+    background:
+        rgba(6,15,27,.88);
+
+    border:
+        1px solid
+        rgba(0,234,255,.23);
+
+    border-radius:18px;
+
+    padding:14px;
+
+    box-shadow:
+        0 0 35px #0008;
+
+    margin-bottom:14px;
+
+}
+
+
+.bar{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    padding-bottom:11px;
+
+}
+
+
+.title{
+
+    font-size:11px;
+
+    letter-spacing:2px;
+
+    color:var(--cyan);
+
+}
+
+
+.status{
+
+    font-size:9px;
+
+    color:var(--red);
+
+}
+
+
+.status.on{
+
+    color:var(--green);
+
+}
+
+
+/* CAMERA */
+
+.viewer{
+
+    background:#000;
+
+    border:1px solid #08718a;
+
+    border-radius:12px;
+
+    overflow:hidden;
+
+    position:relative;
+
+}
+
+
+.viewer video{
+
+    display:block;
+
+    width:100%;
+
+    max-height:70vh;
+
+    object-fit:cover;
+
+    background:#000;
+
+}
+
+
+/* SCAN EFFECT */
+
+.scan{
+
+    position:absolute;
+
+    left:0;
+
+    right:0;
+
+    height:1px;
+
+    background:#00eaff66;
+
+    box-shadow:
+        0 0 12px var(--cyan);
+
+    animation:
+        scan 3s linear infinite;
+
+    pointer-events:none;
+
+}
+
+
+@keyframes scan{
+
+    0%{
+        top:0;
+    }
+
+    100%{
+        top:100%;
+    }
+
+}
+
+
+/* CAMERA BUTTONS */
+
+.controls{
+
+    display:grid;
+
+    grid-template-columns:1fr 1fr;
+
+    gap:10px;
+
+    margin-top:12px;
+
+}
+
+
+button{
+
+    padding:13px;
+
+    border-radius:10px;
+
+    background:#071525;
+
+    border:1px solid #18506a;
+
+    color:var(--cyan);
+
+    font-weight:700;
+
+    letter-spacing:1px;
+
+}
+
+
+button:active{
+
+    background:#00eaff18;
+
+}
+
+
+.stop{
+
+    color:#ff6b83;
+
+    border-color:#69283a;
+
+}
+
+
+/* TELEMETRY */
+
+.info{
+
+    display:grid;
+
+    grid-template-columns:
+        repeat(3,1fr);
+
+    gap:8px;
+
+}
+
+
+.info div{
+
+    background:#06101d;
+
+    border:1px solid #13283a;
+
+    border-radius:9px;
+
+    padding:11px;
+
+}
+
+
+.info small{
+
+    display:block;
+
+    color:#637c92;
+
+    font-size:8px;
+
+    margin-bottom:5px;
+
+}
+
+
+.info b{
+
+    font-size:11px;
+
+}
+
+
+/* LOG */
+
+.note{
+
+    color:#61778d;
+
+    font:10px monospace;
+
+    line-height:1.6;
+
+    white-space:pre-line;
+
+}
+
+
+/* MOBILE */
+
+@media(max-width:600px){
+
+    .wrap{
+        padding:10px;
+    }
+
+
+    .brand{
+        font-size:12px;
+    }
+
+
+    .brand span{
+        display:block;
+
+        font-size:8px;
+
+        margin-top:3px;
+    }
+
+
+    .info{
+
+        grid-template-columns:
+            repeat(3,1fr);
+
+    }
+
+
+    .viewer video{
+
+        min-height:
+            430px;
+
+        object-fit:cover;
+
+    }
+
+}
+
+</style>
 
 </head>
 
 
-<body class="node-page">
+<body>
 
 
-    <!-- =====================================================
-         HEADER
-    ====================================================== -->
+<div class="wrap">
 
-    <header class="node-header">
 
-        <h1>
-            TITAN // SMART PHONE NODE
-        </h1>
+<header class="head">
 
-        <p>
-            Camera • Microphone • AI Communication
-        </p>
 
-        <a
-            href="/"
-            class="node-back-link"
+    <div class="brand">
+
+        TiTaN
+
+        <span>
+            // MOBILE VISION NODE
+        </span>
+
+    </div>
+
+
+    <a
+        class="back"
+        href="/"
+    >
+        ← COMMAND CENTER
+    </a>
+
+
+</header>
+
+
+
+<section class="card">
+
+
+    <div class="bar">
+
+        <span class="title">
+
+            ◉ OPTICAL SENSOR ARRAY
+
+        </span>
+
+
+        <span
+            id="state"
+            class="status"
         >
-            ← BACK TO CENTRAL COMMAND
-        </a>
 
-    </header>
+            ● DISCONNECTED
 
+        </span>
 
-    <!-- =====================================================
-         MAIN NODE
-    ====================================================== -->
+    </div>
 
-    <main class="node-container">
 
 
-        <!-- CAMERA -->
+    <div class="viewer">
 
-        <section class="node-panel">
 
-            <h2>📷 PHONE CAMERA</h2>
+        <video
+            id="preview"
+            autoplay
+            playsinline
+            muted
+        ></video>
 
-            <div class="phone-camera-box">
 
-                <video
-                    id="localVideo"
-                    autoplay
-                    muted
-                    playsinline
-                ></video>
+        <div class="scan"></div>
 
-                <div
-                    id="cameraPlaceholder"
-                    class="camera-message"
-                >
-                    CAMERA OFFLINE
-                </div>
 
-            </div>
+    </div>
 
 
-            <canvas
-                id="captureCanvas"
-                width="640"
-                height="480"
-                hidden
-            ></canvas>
 
+    <div class="controls">
 
-            <div class="node-buttons">
 
-                <button
-                    id="startCamera"
-                    class="primary-btn"
-                >
-                    START CAMERA
-                </button>
+        <button
+            onclick="startCamera()"
+        >
 
-                <button
-                    id="stopCamera"
-                    class="danger-btn"
-                >
-                    STOP CAMERA
-                </button>
+            START CAMERA
 
-            </div>
+        </button>
 
-        </section>
 
+        <button
+            onclick="stopCamera()"
+            class="stop"
+        >
 
-        <!-- SYSTEM STATUS -->
+            STOP CAMERA
 
-        <section class="node-panel">
+        </button>
 
-            <h2>⚡ NODE STATUS</h2>
 
-            <div class="node-status-grid">
+    </div>
 
-                <div class="status-card">
-                    <span>SERVER</span>
-                    <strong id="node-server">
-                        OFFLINE
-                    </strong>
-                </div>
 
-                <div class="status-card">
-                    <span>PHONE</span>
-                    <strong id="node-phone">
-                        OFFLINE
-                    </strong>
-                </div>
+</section>
 
-                <div class="status-card">
-                    <span>ESP32</span>
-                    <strong id="node-esp32">
-                        OFFLINE
-                    </strong>
-                </div>
 
-                <div class="status-card">
-                    <span>CAMERA</span>
-                    <strong id="node-camera">
-                        OFFLINE
-                    </strong>
-                </div>
 
-                <div class="status-card">
-                    <span>MIC</span>
-                    <strong id="node-mic">
-                        OFF
-                    </strong>
-                </div>
+<section class="card">
 
-                <div class="status-card">
-                    <span>MOTOR</span>
-                    <strong id="node-motor">
-                        STOP
-                    </strong>
-                </div>
 
-            </div>
+    <div class="bar">
 
-        </section>
+        <span class="title">
 
+            ◈ NODE TELEMETRY
 
-        <!-- BOOT -->
+        </span>
 
-        <section class="node-panel">
 
-            <h2>🚀 TITAN NODE CONTROL</h2>
+        <span class="status on">
 
-            <button
-                id="bootButton"
-                class="boot-btn"
-            >
-                BOOT TITAN NODE
-            </button>
+            ● READY
 
-            <button
-                id="micButton"
-                class="secondary-btn"
-            >
-                🎙️ ENABLE MICROPHONE
-            </button>
+        </span>
 
-        </section>
+    </div>
 
 
-        <!-- LOG -->
 
-        <section class="node-panel">
+    <div class="info">
 
-            <h2>📡 COMMUNICATION LOG</h2>
 
-            <div
-                id="nodeLog"
-                class="node-log"
-            >
-                <div>
-                    [System] Node initialized.
-                </div>
-            </div>
+        <div>
 
-        </section>
+            <small>
+                CAMERA
+            </small>
 
+            <b id="cam">
+                OFFLINE
+            </b>
 
-    </main>
+        </div>
 
 
-    <!-- =====================================================
-         JAVASCRIPT
-    ====================================================== -->
+        <div>
 
-    <script>
+            <small>
+                SERVER LINK
+            </small>
 
-        // ====================================================
-        // VARIABLES
-        // ====================================================
+            <b id="server">
+                CHECKING
+            </b>
 
-        let cameraStream = null;
+        </div>
 
-        let cameraRunning = false;
 
-        let nodeActive = false;
+        <div>
 
-        let micEnabled = false;
+            <small>
+                FRAME RATE
+            </small>
 
-        let recognition = null;
+            <b>
+                ~2 FPS
+            </b>
 
-        let heartbeatTimer = null;
+        </div>
 
-        let frameTimer = null;
 
-        let speaking = false;
+    </div>
 
 
-        const video =
-            document.getElementById(
-                "localVideo"
-            );
+</section>
 
 
-        const canvas =
-            document.getElementById(
-                "captureCanvas"
-            );
 
+<section class="card">
 
-        const ctx =
-            canvas.getContext("2d");
 
+    <div class="title">
+        NODE LOG
+    </div>
 
-        // ====================================================
-        // LOG
-        // ====================================================
 
-        function nodeLog(
-            message,
-            type = "normal"
-        ) {
+    <p
+        id="log"
+        class="note"
+    >
+        [BOOT] Mobile vision node initialized.
+    </p>
 
-            const box =
-                document.getElementById(
-                    "nodeLog"
-                );
 
+</section>
 
-            const line =
-                document.createElement(
-                    "div"
-                );
 
+</div>
 
-            line.className =
-                "log-" + type;
 
 
-            line.textContent =
-                "[" +
-                new Date().toLocaleTimeString() +
-                "] " +
-                message;
+<canvas
+    id="canvas"
+    style="display:none"
+></canvas>
 
 
-            box.appendChild(line);
 
-            box.scrollTop =
-                box.scrollHeight;
+<script>
 
-        }
 
+let stream=null;
 
-        // ====================================================
-        // CAMERA
-        // ====================================================
+let timer=null;
 
-        async function startCamera() {
 
-            if (cameraRunning) {
-                return;
-            }
 
+const $=
+    id=>
+        document.getElementById(id);
 
-            try {
 
-                cameraStream =
-                    await navigator.mediaDevices
-                        .getUserMedia({
 
-                            video: {
-                                facingMode:
-                                    "environment",
+/* LOG */
 
-                                width: {
-                                    ideal: 640
-                                },
+function log(message){
 
-                                height: {
-                                    ideal: 480
-                                }
-                            },
+    $("log").textContent +=
+        "\n"+message;
 
-                            audio: false
+}
 
-                        });
 
 
-                video.srcObject =
-                    cameraStream;
+/* START CAMERA */
 
+async function startCamera(){
 
-                cameraRunning = true;
+    try{
 
+        if(stream)
+            return;
 
-                document
-                    .getElementById(
-                        "cameraPlaceholder"
-                    )
-                    .style.display =
-                        "none";
 
+        stream=
+            await navigator.mediaDevices
+            .getUserMedia({
 
-                nodeLog(
-                    "Phone camera started.",
-                    "success"
-                );
+                video:{
 
+                    facingMode:{
+                        ideal:"environment"
+                    },
 
-                startFrameUpload();
+                    width:{
+                        ideal:1280
+                    },
 
-
-            } catch (error) {
-
-                nodeLog(
-                    "Camera permission failed: " +
-                    error.message,
-                    "error"
-                );
-
-            }
-
-        }
-
-
-        // ====================================================
-        // STOP CAMERA
-        // ====================================================
-
-        function stopCamera() {
-
-            cameraRunning = false;
-
-
-            if (frameTimer) {
-
-                clearInterval(
-                    frameTimer
-                );
-
-                frameTimer = null;
-
-            }
-
-
-            if (cameraStream) {
-
-                cameraStream
-                    .getTracks()
-                    .forEach(
-                        track =>
-                            track.stop()
-                    );
-
-                cameraStream = null;
-
-            }
-
-
-            video.srcObject = null;
-
-
-            document
-                .getElementById(
-                    "cameraPlaceholder"
-                )
-                .style.display =
-                    "flex";
-
-
-            nodeLog(
-                "Phone camera stopped."
-            );
-
-        }
-
-
-        // ====================================================
-        // FRAME UPLOAD
-        // ====================================================
-
-        function startFrameUpload() {
-
-            if (frameTimer) {
-
-                clearInterval(
-                    frameTimer
-                );
-
-            }
-
-
-            frameTimer =
-                setInterval(
-                    uploadFrame,
-                    500
-                );
-
-        }
-
-
-        async function uploadFrame() {
-
-            if (
-                !cameraRunning ||
-                !video.videoWidth
-            ) {
-                return;
-            }
-
-
-            canvas.width =
-                video.videoWidth;
-
-            canvas.height =
-                video.videoHeight;
-
-
-            ctx.drawImage(
-                video,
-                0,
-                0,
-                canvas.width,
-                canvas.height
-            );
-
-
-            canvas.toBlob(
-                async function(blob) {
-
-                    if (!blob) {
-                        return;
-                    }
-
-
-                    try {
-
-                        const response =
-                            await fetch(
-                                "/api/video_feed",
-                                {
-
-                                    method:
-                                        "POST",
-
-                                    headers: {
-                                        "Content-Type":
-                                            "image/jpeg"
-                                    },
-
-                                    body: blob
-
-                                }
-                            );
-
-
-                        if (
-                            !response.ok
-                        ) {
-
-                            nodeLog(
-                                "Camera upload failed.",
-                                "error"
-                            );
-
-                        }
-
-                    } catch (error) {
-
-                        nodeLog(
-                            "Camera server connection lost.",
-                            "error"
-                        );
-
+                    height:{
+                        ideal:720
                     }
 
                 },
 
-                "image/jpeg",
+                audio:false
 
-                0.65
-            );
+            });
 
-        }
 
+        $("preview").srcObject=
+            stream;
 
-        // ====================================================
-        // HEARTBEAT
-        // ====================================================
 
-        async function heartbeat() {
+        $("cam").textContent=
+            "ONLINE";
 
-            try {
 
-                await fetch(
-                    "/api/phone/heartbeat",
-                    {
+        $("state").textContent=
+            "● CONNECTED";
 
-                        method: "POST",
 
-                        headers: {
-                            "Content-Type":
-                                "application/json"
-                        },
+        $("state").className=
+            "status on";
 
-                        body: JSON.stringify({
-                            node: "phone"
-                        })
 
-                    }
-                );
-
-            } catch (error) {
-
-                console.log(
-                    "Heartbeat failed."
-                );
-
-            }
-
-        }
-
-
-        function startHeartbeat() {
-
-            heartbeat();
-
-            if (heartbeatTimer) {
-
-                clearInterval(
-                    heartbeatTimer
-                );
-
-            }
-
-
-            heartbeatTimer =
-                setInterval(
-                    heartbeat,
-                    2000
-                );
-
-        }
-
-
-        // ====================================================
-        // SYSTEM BOOT
-        // ====================================================
-
-        document
-            .getElementById(
-                "bootButton"
-            )
-            .addEventListener(
-                "click",
-                async function() {
-
-                    nodeActive =
-                        !nodeActive;
-
-
-                    const button =
-                        document.getElementById(
-                            "bootButton"
-                        );
-
-
-                    if (nodeActive) {
-
-                        button.textContent =
-                            "SHUTDOWN TITAN NODE";
-
-                        button.classList.add(
-                            "active"
-                        );
-
-
-                        nodeLog(
-                            "TiTaN node activated.",
-                            "success"
-                        );
-
-
-                        startHeartbeat();
-
-                        await startCamera();
-
-                        initSpeechRecognition();
-
-
-                    } else {
-
-                        button.textContent =
-                            "BOOT TITAN NODE";
-
-                        button.classList.remove(
-                            "active"
-                        );
-
-
-                        stopCamera();
-
-                        disableMicrophone();
-
-
-                        nodeLog(
-                            "TiTaN node shutdown.",
-                            "error"
-                        );
-
-                    }
-
-                }
-            );
-
-
-        // ====================================================
-        // MICROPHONE
-        // ====================================================
-
-        document
-            .getElementById(
-                "micButton"
-            )
-            .addEventListener(
-                "click",
-                function() {
-
-                    if (!nodeActive) {
-
-                        nodeLog(
-                            "Boot the node first.",
-                            "error"
-                        );
-
-                        return;
-
-                    }
-
-
-                    if (micEnabled) {
-
-                        disableMicrophone();
-
-                    } else {
-
-                        enableMicrophone();
-
-                    }
-
-                }
-            );
-
-
-        async function enableMicrophone() {
-
-            initSpeechRecognition();
-
-
-            if (!recognition) {
-
-                nodeLog(
-                    "Speech recognition is not supported by this browser.",
-                    "error"
-                );
-
-                return;
-
-            }
-
-
-            micEnabled = true;
-
-
-            const button =
-                document.getElementById(
-                    "micButton"
-                );
-
-
-            button.textContent =
-                "🔴 MICROPHONE ON";
-
-
-            button.classList.add(
-                "active"
-            );
-
-
-            await fetch(
-                "/api/mic_status",
-                {
-
-                    method: "POST",
-
-                    headers: {
-                        "Content-Type":
-                            "application/json"
-                    },
-
-                    body: JSON.stringify({
-                        active: true
-                    })
-
-                }
-            );
-
-
-            nodeLog(
-                "Microphone enabled.",
-                "success"
-            );
-
-
-            startListening();
-
-        }
-
-
-        async function disableMicrophone() {
-
-            micEnabled = false;
-
-
-            if (recognition) {
-
-                try {
-                    recognition.stop();
-                } catch (e) {}
-
-            }
-
-
-            const button =
-                document.getElementById(
-                    "micButton"
-                );
-
-
-            button.textContent =
-                "🎙️ ENABLE MICROPHONE";
-
-
-            button.classList.remove(
-                "active"
-            );
-
-
-            try {
-
-                await fetch(
-                    "/api/mic_status",
-                    {
-
-                        method: "POST",
-
-                        headers: {
-                            "Content-Type":
-                                "application/json"
-                        },
-
-                        body: JSON.stringify({
-                            active: false
-                        })
-
-                    }
-                );
-
-            } catch (e) {}
-
-
-            nodeLog(
-                "Microphone disabled."
-            );
-
-        }
-
-
-        // ====================================================
-        // SPEECH RECOGNITION
-        // ====================================================
-
-        function initSpeechRecognition() {
-
-            const SpeechRecognition =
-                window.SpeechRecognition ||
-                window.webkitSpeechRecognition;
-
-
-            if (!SpeechRecognition) {
-
-                recognition = null;
-
-                return;
-
-            }
-
-
-            if (recognition) {
-                return;
-            }
-
-
-            recognition =
-                new SpeechRecognition();
-
-
-            recognition.continuous =
-                false;
-
-
-            recognition.interimResults =
-                false;
-
-
-            recognition.lang =
-                "en-IN";
-
-
-            recognition.onresult =
-                async function(event) {
-
-                    const text =
-                        event
-                            .results[0][0]
-                            .transcript
-                            .trim();
-
-
-                    nodeLog(
-                        "Heard: " + text,
-                        "user"
-                    );
-
-
-                    await processVoiceCommand(
-                        text
-                    );
-
-                };
-
-
-            recognition.onerror =
-                function(event) {
-
-                    console.log(
-                        "Speech error:",
-                        event.error
-                    );
-
-                };
-
-
-            recognition.onend =
-                function() {
-
-                    if (
-                        nodeActive &&
-                        micEnabled &&
-                        !speaking
-                    ) {
-
-                        setTimeout(
-                            startListening,
-                            500
-                        );
-
-                    }
-
-                };
-
-        }
-
-
-        function startListening() {
-
-            if (
-                !nodeActive ||
-                !micEnabled ||
-                speaking ||
-                !recognition
-            ) {
-                return;
-            }
-
-
-            try {
-
-                recognition.start();
-
-            } catch (error) {
-
-                // Browser may report
-                // "already started".
-
-            }
-
-        }
-
-
-        // ====================================================
-        // VOICE COMMAND
-        // ====================================================
-
-        async function processVoiceCommand(
-            text
-        ) {
-
-            const command =
-                text.toLowerCase();
-
-
-            // Forward
-            if (
-                command.includes("forward") ||
-                command.includes("move ahead") ||
-                command.includes("पुढे")
-            ) {
-
-                await sendMotor(
-                    "FORWARD"
-                );
-
-                speak(
-                    "Moving forward."
-                );
-
-                return;
-
-            }
-
-
-            // Backward
-            if (
-                command.includes("backward") ||
-                command.includes("reverse") ||
-                command.includes("मागे")
-            ) {
-
-                await sendMotor(
-                    "BACKWARD"
-                );
-
-                speak(
-                    "Moving backward."
-                );
-
-                return;
-
-            }
-
-
-            // Left
-            if (
-                command.includes("left") ||
-                command.includes("डावीकडे")
-            ) {
-
-                await sendMotor(
-                    "LEFT"
-                );
-
-                speak(
-                    "Turning left."
-                );
-
-                return;
-
-            }
-
-
-            // Right
-            if (
-                command.includes("right") ||
-                command.includes("उजवीकडे")
-            ) {
-
-                await sendMotor(
-                    "RIGHT"
-                );
-
-                speak(
-                    "Turning right."
-                );
-
-                return;
-
-            }
-
-
-            // Stop
-            if (
-                command.includes("stop") ||
-                command.includes("थांब")
-            ) {
-
-                await sendMotor(
-                    "STOP"
-                );
-
-                speak(
-                    "Stopping."
-                );
-
-                return;
-
-            }
-
-
-            // Otherwise AI
-            await askAI(text);
-
-        }
-
-
-        // ====================================================
-        // MOTOR
-        // ====================================================
-
-        async function sendMotor(
-            command
-        ) {
-
-            try {
-
-                const response =
-                    await fetch(
-                        "/api/cmd",
-                        {
-
-                            method: "POST",
-
-                            headers: {
-                                "Content-Type":
-                                    "application/json"
-                            },
-
-                            body: JSON.stringify({
-                                command:
-                                    command
-                            })
-
-                        }
-                    );
-
-
-                const data =
-                    await response.json();
-
-
-                if (data.command) {
-
-                    document
-                        .getElementById(
-                            "node-motor"
-                        )
-                        .textContent =
-                            data.command;
-
-                }
-
-
-            } catch (error) {
-
-                nodeLog(
-                    "Motor command failed.",
-                    "error"
-                );
-
-            }
-
-        }
-
-
-        // ====================================================
-        // AI
-        // ====================================================
-
-        async function askAI(
-            question
-        ) {
-
-            try {
-
-                nodeLog(
-                    "TiTaN AI processing...",
-                    "ai"
-                );
-
-
-                const response =
-                    await fetch(
-                        "/api/ask_ai",
-                        {
-
-                            method: "POST",
-
-                            headers: {
-                                "Content-Type":
-                                    "application/json"
-                            },
-
-                            body: JSON.stringify({
-                                query:
-                                    question
-                            })
-
-                        }
-                    );
-
-
-                const data =
-                    await response.json();
-
-
-                if (
-                    data.reply
-                ) {
-
-                    nodeLog(
-                        "TiTaN: " +
-                        data.reply,
-                        "success"
-                    );
-
-
-                    speak(
-                        data.reply
-                    );
-
-                }
-
-            } catch (error) {
-
-                nodeLog(
-                    "AI connection failed.",
-                    "error"
-                );
-
-            }
-
-        }
-
-
-        // ====================================================
-        // SPEAK
-        // ====================================================
-
-        function speak(text) {
-
-            if (
-                !("speechSynthesis" in window)
-            ) {
-                return;
-            }
-
-
-            speaking = true;
-
-
-            if (recognition) {
-
-                try {
-                    recognition.stop();
-                } catch (e) {}
-
-            }
-
-
-            window.speechSynthesis.cancel();
-
-
-            const utterance =
-                new SpeechSynthesisUtterance(
-                    text
-                );
-
-
-            if (
-                /[\u0900-\u097F]/.test(text)
-            ) {
-
-                utterance.lang =
-                    "mr-IN";
-
-            } else {
-
-                utterance.lang =
-                    "en-IN";
-
-            }
-
-
-            utterance.rate =
-                0.95;
-
-            utterance.pitch =
-                0.9;
-
-
-            utterance.onend =
-                function() {
-
-                    speaking = false;
-
-                    if (
-                        nodeActive &&
-                        micEnabled
-                    ) {
-
-                        setTimeout(
-                            startListening,
-                            500
-                        );
-
-                    }
-
-                };
-
-
-            window.speechSynthesis.speak(
-                utterance
-            );
-
-        }
-
-
-        // ====================================================
-        // HEALTH
-        // ====================================================
-
-        async function updateNodeHealth() {
-
-            try {
-
-                const response =
-                    await fetch(
-                        "/api/health",
-                        {
-                            cache:
-                                "no-store"
-                        }
-                    );
-
-
-                const data =
-                    await response.json();
-
-
-                document
-                    .getElementById(
-                        "node-server"
-                    )
-                    .textContent =
-                        data.server ||
-                        "OFFLINE";
-
-
-                document
-                    .getElementById(
-                        "node-phone"
-                    )
-                    .textContent =
-                        data.phone ||
-                        "OFFLINE";
-
-
-                document
-                    .getElementById(
-                        "node-esp32"
-                    )
-                    .textContent =
-                        data.esp32 ||
-                        "OFFLINE";
-
-
-                document
-                    .getElementById(
-                        "node-camera"
-                    )
-                    .textContent =
-                        data.camera ||
-                        "OFFLINE";
-
-
-                document
-                    .getElementById(
-                        "node-mic"
-                    )
-                    .textContent =
-                        data.microphone ||
-                        "OFF";
-
-
-                document
-                    .getElementById(
-                        "node-motor"
-                    )
-                    .textContent =
-                        data.motor_command ||
-                        "STOP";
-
-
-            } catch (error) {
-
-                document
-                    .getElementById(
-                        "node-server"
-                    )
-                    .textContent =
-                        "OFFLINE";
-
-            }
-
-        }
-
-
-        // ====================================================
-        // START HEALTH CHECK
-        // ====================================================
-
-        updateNodeHealth();
-
-
-        setInterval(
-            updateNodeHealth,
-            3000
+        log(
+            "[CAM] Camera access granted."
         );
 
 
-        // ====================================================
-        // START CAMERA BUTTON
-        // ====================================================
-
-        document
-            .getElementById(
-                "startCamera"
-            )
-            .addEventListener(
-                "click",
-                startCamera
+        timer=
+            setInterval(
+                sendFrame,
+                500
             );
 
 
-        document
-            .getElementById(
-                "stopCamera"
-            )
-            .addEventListener(
-                "click",
-                stopCamera
-            );
+    }catch(error){
 
-    </script>
+        log(
+            "[ERROR] Camera access denied: "
+            +
+            error.message
+        );
+
+
+        alert(
+            "Please allow camera permission for TiTaN."
+        );
+
+    }
+
+}
+
+
+
+/* STOP CAMERA */
+
+function stopCamera(){
+
+    if(timer){
+
+        clearInterval(timer);
+
+        timer=null;
+
+    }
+
+
+    if(stream){
+
+        stream
+        .getTracks()
+        .forEach(
+            track=>
+                track.stop()
+        );
+
+    }
+
+
+    stream=null;
+
+
+    $("preview").srcObject=null;
+
+
+    $("cam").textContent=
+        "OFFLINE";
+
+
+    $("state").textContent=
+        "● DISCONNECTED";
+
+
+    $("state").className=
+        "status";
+
+
+    log(
+        "[CAM] Camera stopped."
+    );
+
+}
+
+
+
+/* SEND FRAME TO TiTaN */
+
+async function sendFrame(){
+
+    if(
+        !stream ||
+        $("preview").readyState<2
+    ){
+
+        return;
+
+    }
+
+
+    const video=
+        $("preview");
+
+
+    const canvas=
+        $("canvas");
+
+
+    canvas.width=640;
+
+
+    canvas.height=
+        Math.round(
+            640 *
+            video.videoHeight /
+            video.videoWidth
+        ) || 480;
+
+
+    canvas
+    .getContext("2d")
+    .drawImage(
+        video,
+        0,
+        0,
+        canvas.width,
+        canvas.height
+    );
+
+
+    canvas.toBlob(
+
+        async blob=>{
+
+            if(!blob)
+                return;
+
+
+            try{
+
+                await fetch(
+                    "/api/video_feed",
+                    {
+
+                        method:"POST",
+
+                        headers:{
+                            "Content-Type":
+                            "image/jpeg"
+                        },
+
+                        body:blob
+
+                    }
+                );
+
+            }catch(error){}
+
+        },
+
+        "image/jpeg",
+
+        .72
+
+    );
+
+}
+
+
+
+/* HEARTBEAT */
+
+async function heartbeat(){
+
+    try{
+
+        await fetch(
+
+            "/api/phone/heartbeat",
+
+            {
+
+                method:"POST",
+
+                headers:{
+                    "Content-Type":
+                    "application/json"
+                },
+
+                body:JSON.stringify({
+
+                    camera:
+                        !!stream
+
+                })
+
+            }
+
+        );
+
+
+        $("server").textContent=
+            "ONLINE";
+
+
+    }catch(error){
+
+        $("server").textContent=
+            "OFFLINE";
+
+    }
+
+}
+
+
+setInterval(
+    heartbeat,
+    2000
+);
+
+
+heartbeat();
+
+
+/* CLEANUP */
+
+window.addEventListener(
+    "beforeunload",
+    stopCamera
+);
+
+</script>
+
 
 </body>
+
 </html>
