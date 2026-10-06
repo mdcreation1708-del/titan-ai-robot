@@ -1,0 +1,1080 @@
+/* =========================================================
+   TiTaN GLOBAL CSS
+========================================================= */
+
+* {
+    box-sizing: border-box;
+}
+
+
+body {
+    margin: 0;
+    padding: 20px;
+
+    background:
+        radial-gradient(
+            circle at top,
+            #111c2e 0%,
+            #080b12 55%,
+            #05070b 100%
+        );
+
+    color: #d7e0ea;
+
+    font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
+
+    min-height: 100vh;
+}
+
+
+/* =========================================================
+   HEADINGS
+========================================================= */
+
+h1,
+h2 {
+    margin-top: 0;
+}
+
+
+h1 {
+    color: #00e5ff;
+
+    font-size: 1.8rem;
+
+    letter-spacing: 2px;
+
+    text-shadow:
+        0 0 10px
+        rgba(0, 229, 255, 0.35);
+}
+
+
+h2 {
+    color: #00e5ff;
+
+    font-size: 1.15rem;
+
+    letter-spacing: 1px;
+
+    margin-bottom: 15px;
+}
+
+
+/* =========================================================
+   CENTRAL COMMAND HEADER
+========================================================= */
+
+.top-panel {
+
+    width: 95%;
+
+    max-width: 1100px;
+
+    margin:
+        0 auto
+        20px;
+
+    padding: 25px;
+
+    text-align: center;
+
+    background: #101722;
+
+    border:
+        1px solid
+        #00e5ff;
+
+    border-radius: 14px;
+
+    box-shadow:
+        0 0 25px
+        rgba(0, 229, 255, 0.08);
+}
+
+
+.brand-row {
+
+    display: flex;
+
+    justify-content: center;
+
+    align-items: center;
+
+    gap: 15px;
+}
+
+
+.brand-row h1 {
+    margin: 0;
+}
+
+
+.md-badge {
+
+    border:
+        2px solid
+        #00e5ff;
+
+    color: #00e5ff;
+
+    padding:
+        3px 10px;
+
+    border-radius: 6px;
+
+    font-family: monospace;
+
+    font-weight: bold;
+}
+
+
+.subtitle {
+
+    color: #8b949e;
+
+    font-family: monospace;
+
+    letter-spacing: 1px;
+
+    margin:
+        8px 0
+        15px;
+}
+
+
+/* =========================================================
+   STATUS
+========================================================= */
+
+.status {
+
+    font-family: monospace;
+
+    font-weight: bold;
+
+    margin-bottom: 15px;
+}
+
+
+.status.online {
+    color: #39ff14;
+}
+
+
+.status.offline {
+    color: #ff5555;
+}
+
+
+.node-link {
+
+    display: inline-block;
+
+    color: #00e5ff;
+
+    text-decoration: none;
+
+    font-family: monospace;
+
+    font-weight: bold;
+
+    padding:
+        10px 15px;
+
+    border:
+        1px solid
+        #00e5ff;
+
+    border-radius: 7px;
+
+    transition:
+        0.2s;
+}
+
+
+.node-link:hover {
+
+    background: #00e5ff;
+
+    color: #000;
+
+}
+
+
+/* =========================================================
+   DASHBOARD GRID
+========================================================= */
+
+.dashboard-grid {
+
+    width: 95%;
+
+    max-width: 1100px;
+
+    margin:
+        0 auto;
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(
+            2,
+            minmax(
+                0,
+                1fr
+            )
+        );
+
+    gap: 20px;
+}
+
+
+/* =========================================================
+   PANELS
+========================================================= */
+
+.panel {
+
+    background: #101722;
+
+    border:
+        1px solid
+        #26354a;
+
+    border-radius: 12px;
+
+    padding: 20px;
+
+    box-shadow:
+        0 8px 25px
+        rgba(0, 0, 0, 0.25);
+}
+
+
+/* =========================================================
+   CAMERA
+========================================================= */
+
+.camera-box {
+
+    position: relative;
+
+    width: 100%;
+
+    height: 300px;
+
+    background: #000;
+
+    border:
+        1px dashed
+        #00e5ff;
+
+    border-radius: 8px;
+
+    overflow: hidden;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+}
+
+
+.camera-box img {
+
+    width: 100%;
+
+    height: 100%;
+
+    object-fit: cover;
+}
+
+
+.camera-message {
+
+    position: absolute;
+
+    inset: 0;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    color: #697789;
+
+    font-family: monospace;
+
+    background:
+        rgba(
+            0,
+            0,
+            0,
+            0.65
+        );
+}
+
+
+.camera-status-row {
+
+    display: flex;
+
+    justify-content: space-between;
+
+    margin-top: 10px;
+
+    font-family: monospace;
+
+    font-size: 0.8rem;
+}
+
+
+/* =========================================================
+   STATUS CARDS
+========================================================= */
+
+.status-grid,
+.node-status-grid {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(
+            2,
+            1fr
+        );
+
+    gap: 10px;
+}
+
+
+.status-card {
+
+    background: #172132;
+
+    padding: 12px;
+
+    border-radius: 7px;
+
+    border-left:
+        4px solid
+        #00e5ff;
+}
+
+
+.status-card span {
+
+    display: block;
+
+    color: #8795a8;
+
+    font-size: 0.72rem;
+
+    margin-bottom: 5px;
+}
+
+
+.status-card strong {
+
+    color: #fff;
+
+    font-size: 0.95rem;
+}
+
+
+/* =========================================================
+   DRIVE CONTROL
+========================================================= */
+
+.hint {
+
+    color: #7f8da0;
+
+    text-align: center;
+
+    font-family: monospace;
+
+    font-size: 0.8rem;
+}
+
+
+.control-pad {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(
+            3,
+            75px
+        );
+
+    gap: 10px;
+
+    justify-content: center;
+
+    margin:
+        20px
+        auto;
+}
+
+
+.drive-btn,
+.stop-btn {
+
+    width: 75px;
+
+    height: 65px;
+
+    border-radius: 10px;
+
+    background: #172132;
+
+    color: #00e5ff;
+
+    border:
+        1px solid
+        #00e5ff;
+
+    font-size: 1.3rem;
+
+    font-weight: bold;
+
+    cursor: pointer;
+
+    transition:
+        0.1s;
+}
+
+
+.drive-btn:hover,
+.drive-btn.active {
+
+    background: #00e5ff;
+
+    color: #000;
+
+    box-shadow:
+        0 0 15px
+        rgba(
+            0,
+            229,
+            255,
+            0.5
+        );
+}
+
+
+.stop-btn {
+
+    color: #ff5555;
+
+    border-color:
+        #ff5555;
+}
+
+
+.stop-btn:hover {
+
+    background: #ff5555;
+
+    color: #000;
+}
+
+
+.current-command {
+
+    text-align: center;
+
+    font-family: monospace;
+}
+
+
+.current-command strong {
+
+    color: #39ff14;
+}
+
+
+/* =========================================================
+   AI TERMINAL
+========================================================= */
+
+.ai-panel {
+
+    display: flex;
+
+    flex-direction: column;
+}
+
+
+.terminal {
+
+    height: 220px;
+
+    background: #05080d;
+
+    border:
+        1px solid
+        #26354a;
+
+    border-radius: 7px;
+
+    padding: 12px;
+
+    overflow-y: auto;
+
+    font-family: monospace;
+
+    font-size: 0.82rem;
+
+    margin-bottom: 12px;
+}
+
+
+.terminal-line {
+
+    margin-bottom: 8px;
+
+    line-height: 1.4;
+}
+
+
+.terminal-line.user {
+
+    color: #ffffff;
+}
+
+
+.terminal-line.titan {
+
+    color: #39ff14;
+}
+
+
+.terminal-line.error {
+
+    color: #ff5555;
+}
+
+
+.system-message {
+
+    color: #718096;
+}
+
+
+.ai-input-row {
+
+    display: flex;
+
+    gap: 8px;
+}
+
+
+#ai-input {
+
+    flex: 1;
+
+    min-width: 0;
+
+    background: #080c12;
+
+    color: #fff;
+
+    border:
+        1px solid
+        #344256;
+
+    border-radius: 6px;
+
+    padding: 12px;
+
+    outline: none;
+}
+
+
+#ai-input:focus {
+
+    border-color:
+        #00e5ff;
+}
+
+
+.send-btn {
+
+    border:
+        1px solid
+        #00e5ff;
+
+    background: #00e5ff;
+
+    color: #000;
+
+    border-radius: 6px;
+
+    padding:
+        0 18px;
+
+    font-weight: bold;
+
+    cursor: pointer;
+}
+
+
+/* =========================================================
+   QUICK COMMANDS
+========================================================= */
+
+.quick-grid {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(
+            2,
+            1fr
+        );
+
+    gap: 10px;
+}
+
+
+.quick-btn {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    min-height: 48px;
+
+    border:
+        1px solid
+        #00e5ff;
+
+    background: #172132;
+
+    color: #00e5ff;
+
+    border-radius: 7px;
+
+    cursor: pointer;
+
+    font-weight: bold;
+
+    text-decoration: none;
+
+    font-size: 0.8rem;
+}
+
+
+.quick-btn:hover {
+
+    background: #00e5ff;
+
+    color: #000;
+}
+
+
+/* =========================================================
+   ROBOT NODE
+========================================================= */
+
+.node-page {
+
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: center;
+}
+
+
+.node-header {
+
+    width: 95%;
+
+    max-width: 600px;
+
+    text-align: center;
+
+    margin-bottom: 20px;
+}
+
+
+.node-header h1 {
+
+    margin-bottom: 5px;
+}
+
+
+.node-header p {
+
+    color: #8b949e;
+
+    font-family: monospace;
+
+    font-size: 0.85rem;
+}
+
+
+.node-back-link {
+
+    display: inline-block;
+
+    margin-top: 10px;
+
+    color: #00e5ff;
+
+    text-decoration: none;
+
+    font-family: monospace;
+
+    font-weight: bold;
+}
+
+
+.node-back-link:hover {
+
+    text-decoration: underline;
+}
+
+
+.node-container {
+
+    width: 95%;
+
+    max-width: 600px;
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 20px;
+}
+
+
+.node-panel {
+
+    background: #101722;
+
+    border:
+        1px solid
+        #26354a;
+
+    border-radius: 12px;
+
+    padding: 20px;
+}
+
+
+/* =========================================================
+   PHONE CAMERA
+========================================================= */
+
+.phone-camera-box {
+
+    position: relative;
+
+    width: 100%;
+
+    height: 360px;
+
+    background: #000;
+
+    border:
+        1px solid
+        #00e5ff;
+
+    border-radius: 8px;
+
+    overflow: hidden;
+}
+
+
+.phone-camera-box video {
+
+    width: 100%;
+
+    height: 100%;
+
+    object-fit: cover;
+}
+
+
+.node-buttons {
+
+    display: grid;
+
+    grid-template-columns:
+        1fr
+        1fr;
+
+    gap: 10px;
+
+    margin-top: 12px;
+}
+
+
+/* =========================================================
+   BUTTONS
+========================================================= */
+
+.primary-btn,
+.secondary-btn,
+.danger-btn,
+.boot-btn {
+
+    width: 100%;
+
+    padding: 13px;
+
+    border-radius: 7px;
+
+    font-weight: bold;
+
+    cursor: pointer;
+
+    margin-top: 10px;
+}
+
+
+.primary-btn {
+
+    background: #00e5ff;
+
+    color: #000;
+
+    border:
+        1px solid
+        #00e5ff;
+}
+
+
+.secondary-btn {
+
+    background: #172132;
+
+    color: #00e5ff;
+
+    border:
+        1px solid
+        #00e5ff;
+}
+
+
+.secondary-btn.active {
+
+    background: #39ff14;
+
+    color: #000;
+
+    border-color:
+        #39ff14;
+}
+
+
+.danger-btn {
+
+    background: #171016;
+
+    color: #ff5555;
+
+    border:
+        1px solid
+        #ff5555;
+}
+
+
+.boot-btn {
+
+    background: #00e5ff;
+
+    color: #000;
+
+    border:
+        1px solid
+        #00e5ff;
+
+    font-size: 1rem;
+}
+
+
+.boot-btn.active {
+
+    background: #ff3366;
+
+    color: #fff;
+
+    border-color:
+        #ff3366;
+}
+
+
+/* =========================================================
+   NODE LOG
+========================================================= */
+
+.node-log {
+
+    height: 180px;
+
+    overflow-y: auto;
+
+    background: #05080d;
+
+    border:
+        1px solid
+        #26354a;
+
+    border-radius: 7px;
+
+    padding: 12px;
+
+    font-family: monospace;
+
+    font-size: 0.78rem;
+}
+
+
+.log-success {
+
+    color: #39ff14;
+
+    margin-bottom: 5px;
+}
+
+
+.log-error {
+
+    color: #ff5555;
+
+    margin-bottom: 5px;
+}
+
+
+.log-ai {
+
+    color: #00e5ff;
+
+    margin-bottom: 5px;
+}
+
+
+.log-user {
+
+    color: #fff;
+
+    margin-bottom: 5px;
+}
+
+
+.log-normal {
+
+    color: #9aa8b8;
+
+    margin-bottom: 5px;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (
+    max-width: 800px
+) {
+
+    body {
+        padding: 10px;
+    }
+
+
+    .dashboard-grid {
+
+        grid-template-columns:
+            1fr;
+
+        width: 100%;
+    }
+
+
+    .top-panel {
+
+        width: 100%;
+
+        padding: 18px;
+    }
+
+
+    .panel {
+
+        padding: 15px;
+    }
+
+
+    .camera-box {
+
+        height: 240px;
+    }
+
+}
+
+
+@media (
+    max-width: 480px
+) {
+
+    .brand-row {
+
+        flex-direction: column;
+
+        gap: 8px;
+    }
+
+
+    h1 {
+
+        font-size: 1.35rem;
+    }
+
+
+    .control-pad {
+
+        grid-template-columns:
+            repeat(
+                3,
+                65px
+            );
+    }
+
+
+    .drive-btn,
+    .stop-btn {
+
+        width: 65px;
+
+        height: 60px;
+    }
+
+
+    .node-buttons {
+
+        grid-template-columns:
+            1fr;
+    }
+
+
+    .phone-camera-box {
+
+        height: 280px;
+    }
+
+}
