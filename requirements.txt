@@ -1,6 +1,5 @@
 Flask
 gunicorn
-gevent
 requests
-duckduckgo-search
+ddgs
 google-genai
