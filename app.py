@@ -1,20 +1,23 @@
 import os
-import threading
 import time
-
+import threading
 import requests
-from flask import Flask, Response, jsonify, render_template, request
 
+from flask import Flask, Response, jsonify, render_template, request
 from ddgs import DDGS
 from google import genai
 from google.genai import types
 
 
+# ============================================================
+# TiTaN APPLICATION
+# ============================================================
+
 app = Flask(__name__)
 
 
 # ============================================================
-# TiTaN SERVER STATE
+# GLOBAL STATE
 # ============================================================
 
 state_lock = threading.Lock()
@@ -23,16 +26,18 @@ last_motor_command = "STOP"
 last_command_time = time.monotonic()
 
 latest_frame = None
-latest_frame_time = 0.0
+latest_frame_time = 0
 
-phone_last_seen = 0.0
-esp32_last_seen = 0.0
+phone_last_seen = 0
+esp32_last_seen = 0
+
+microphone_active = False
 
 telemetry = {
-    "battery": None,
-    "wifi_rssi": None,
-    "ip": None,
-    "uptime": None,
+    "battery": 0,
+    "wifi_rssi": 0,
+    "ip": "",
+    "uptime": 0,
     "command": "STOP",
 }
 
@@ -58,9 +63,13 @@ ESP32_TIMEOUT = float(
 )
 
 
+# ============================================================
+# ALLOWED MOTOR COMMANDS
+# ============================================================
+
 ALLOWED_COMMANDS = {
     "FORWARD",
-    "REVERSE",
+    "BACKWARD",
     "LEFT",
     "RIGHT",
     "STOP",
@@ -97,6 +106,7 @@ def set_motor_command(command):
 
 
 def get_safe_motor_command():
+
     with state_lock:
 
         if (
@@ -127,31 +137,6 @@ def robot():
 
 
 # ============================================================
-# FAVICON
-# ============================================================
-
-@app.route("/favicon.ico")
-def favicon():
-
-    from flask import send_from_directory
-
-    path = os.path.join(
-        app.root_path,
-        "favicon.ico"
-    )
-
-    if os.path.exists(path):
-
-        return send_from_directory(
-            app.root_path,
-            "favicon.ico",
-            mimetype="image/vnd.microsoft.icon",
-        )
-
-    return ("", 204)
-
-
-# ============================================================
 # HEALTH
 # ============================================================
 
@@ -162,39 +147,44 @@ def health():
 
     with state_lock:
 
+        phone_status = (
+            "ONLINE"
+            if phone_last_seen > 0
+            and now - phone_last_seen <= PHONE_TIMEOUT
+            else "OFFLINE"
+        )
+
+        esp32_status = (
+            "ONLINE"
+            if esp32_last_seen > 0
+            and now - esp32_last_seen <= ESP32_TIMEOUT
+            else "OFFLINE"
+        )
+
+        camera_status = (
+            "ONLINE"
+            if latest_frame is not None
+            and now - latest_frame_time <= VIDEO_TIMEOUT
+            else "OFFLINE"
+        )
+
         return jsonify({
-
             "server": "ONLINE",
-
-            "phone": (
-                "ONLINE"
-                if now - phone_last_seen <= PHONE_TIMEOUT
-                else "OFFLINE"
+            "phone": phone_status,
+            "esp32": esp32_status,
+            "camera": camera_status,
+            "microphone": (
+                "ON"
+                if microphone_active
+                else "OFF"
             ),
-
-            "esp32": (
-                "ONLINE"
-                if now - esp32_last_seen <= ESP32_TIMEOUT
-                else "OFFLINE"
-            ),
-
-            "camera": (
-                "ONLINE"
-                if (
-                    latest_frame is not None
-                    and now - latest_frame_time <= VIDEO_TIMEOUT
-                )
-                else "OFFLINE"
-            ),
-
             "motor_command": get_safe_motor_command(),
-
             "telemetry": dict(telemetry),
         })
 
 
 # ============================================================
-# PHONE NODE
+# PHONE HEARTBEAT
 # ============================================================
 
 @app.route(
@@ -223,23 +213,28 @@ def phone_heartbeat():
 )
 def mic_status():
 
+    global microphone_active
+
     data = request_json()
 
+    microphone_active = bool(
+        data.get("active", False)
+    )
+
     return jsonify({
-
         "status": "ok",
-
         "microphone": (
             "ON"
-            if bool(data.get("active"))
+            if microphone_active
             else "OFF"
-        ),
-
+        )
     })
 
 
 # ============================================================
 # CAMERA FRAME UPLOAD
+#
+# Phone sends JPEG frames here.
 # ============================================================
 
 @app.route(
@@ -255,14 +250,12 @@ def upload_frame():
     frame = request.get_data()
 
     if not frame:
-
         return jsonify({
             "error": "Empty frame"
         }), 400
 
-    # Maximum JPEG frame size = 2 MB
+    # Maximum frame size: 2 MB
     if len(frame) > 2 * 1024 * 1024:
-
         return jsonify({
             "error": "Frame too large"
         }), 413
@@ -270,9 +263,7 @@ def upload_frame():
     with state_lock:
 
         latest_frame = frame
-
         latest_frame_time = time.monotonic()
-
         phone_last_seen = time.monotonic()
 
     return jsonify({
@@ -293,12 +284,12 @@ def generate_stream():
         with state_lock:
 
             frame = latest_frame
-
             frame_time = latest_frame_time
 
         if (
             frame is not None
-            and time.monotonic() - frame_time <= VIDEO_TIMEOUT
+            and time.monotonic() - frame_time
+            <= VIDEO_TIMEOUT
             and frame != last_frame
         ):
 
@@ -307,26 +298,30 @@ def generate_stream():
             yield (
                 b"--frame\r\n"
                 b"Content-Type: image/jpeg\r\n"
-                b"Cache-Control: no-cache\r\n\r\n"
+                b"Cache-Control: no-cache\r\n"
+                b"\r\n"
                 + frame
                 + b"\r\n"
             )
 
-        time.sleep(0.05)
+        else:
+
+            time.sleep(0.05)
 
 
 @app.route("/video_stream")
 def video_stream():
 
     return Response(
-
         generate_stream(),
-
         mimetype=(
-            "multipart/x-mixed-replace;"
-            " boundary=frame"
+            "multipart/x-mixed-replace; "
+            "boundary=frame"
         ),
-
+        headers={
+            "Cache-Control": "no-cache",
+            "Pragma": "no-cache",
+        },
     )
 
 
@@ -334,10 +329,10 @@ def video_stream():
 # MOTOR COMMAND API
 #
 # POST /api/cmd
-# Dashboard/phone sends command.
+# Dashboard/phone sends motor command.
 #
 # GET /api/cmd
-# ESP32 reads command.
+# ESP32 reads motor command.
 # ============================================================
 
 @app.route(
@@ -358,31 +353,19 @@ def handle_cmd():
         if not set_motor_command(command):
 
             return jsonify({
-
                 "status": "error",
-
-                "error": (
-                    "Invalid motor command"
-                ),
-
+                "error": "Invalid motor command",
             }), 400
 
         return jsonify({
-
             "status": "ok",
-
-            "command": str(
-                command
-            ).upper(),
-
+            "command": str(command).upper(),
         })
 
     return jsonify({
-
+        "status": "ok",
         "command": get_safe_motor_command(),
-
         "server_time": time.time(),
-
     })
 
 
@@ -412,16 +395,13 @@ def update_telemetry():
         ):
 
             if key in data:
-
                 telemetry[key] = data[key]
 
         if "command" in data:
 
-            telemetry["command"] = (
-                str(
-                    data["command"]
-                ).upper()
-            )
+            telemetry["command"] = str(
+                data["command"]
+            ).upper()
 
     return jsonify({
         "status": "ok"
@@ -429,7 +409,7 @@ def update_telemetry():
 
 
 # ============================================================
-# ELEVENLABS TEXT TO SPEECH
+# ELEVENLABS TEXT-TO-SPEECH
 # ============================================================
 
 @app.route(
@@ -444,31 +424,29 @@ def text_to_speech():
         data.get("text", "")
     ).strip()
 
-    api_key = os.environ.get(
-        "ELEVENLABS_API_KEY",
-        ""
-    ).strip()
-
-    voice_id = os.environ.get(
-        "ELEVENLABS_VOICE_ID",
-        "XPtpzgZIma7xJiyvHcK7"
-    ).strip()
-
     if not text:
 
         return jsonify({
             "error": "No text provided"
         }), 400
 
+    api_key = os.environ.get(
+        "ELEVENLABS_API_KEY",
+        ""
+    ).strip()
+
     if not api_key:
 
         return jsonify({
-            "error": (
-                "ELEVENLABS_API_KEY missing"
-            )
+            "error": "ELEVENLABS_API_KEY missing"
         }), 500
 
-    # Prevent extremely large TTS requests
+    voice_id = os.environ.get(
+        "ELEVENLABS_VOICE_ID",
+        "XPtpzgZIma7xJiyvHcK7"
+    ).strip()
+
+    # Limit TTS request size
     text = text[:1500]
 
     url = (
@@ -477,86 +455,53 @@ def text_to_speech():
     )
 
     headers = {
-
         "Accept": "audio/mpeg",
-
-        "Content-Type": (
-            "application/json"
-        ),
-
+        "Content-Type": "application/json",
         "xi-api-key": api_key,
-
     }
 
     payload = {
-
         "text": text,
-
-        "model_id": (
-            "eleven_multilingual_v2"
-        ),
-
+        "model_id": "eleven_multilingual_v2",
         "voice_settings": {
-
             "stability": 0.80,
-
             "similarity_boost": 0.80,
-
             "style": 0.0,
-
             "use_speaker_boost": True,
-
         },
-
     }
 
     try:
 
         response = requests.post(
-
             url,
-
             json=payload,
-
             headers=headers,
-
             timeout=20,
-
         )
 
         if response.status_code == 200:
 
             return Response(
-
                 response.content,
-
                 mimetype="audio/mpeg",
-
                 headers={
                     "Cache-Control": "no-store"
                 },
-
             )
 
         return jsonify({
-
             "error": (
                 f"ElevenLabs error "
                 f"{response.status_code}"
             ),
-
             "details": response.text[:500],
-
         }), 502
 
     except requests.RequestException as exc:
 
         return jsonify({
-
-            "error": (
-                f"TTS request failed: {exc}"
-            )
-
+            "error": f"TTS request failed: {exc}"
         }), 502
 
 
@@ -601,16 +546,12 @@ def ask_ai():
     if not user_query:
 
         return jsonify({
-
-            "reply": (
-                "Please give me a question."
-            )
-
+            "reply": "Please give me a question."
         }), 400
 
-    # ========================================================
+    # --------------------------------------------------------
     # LIVE WEB SEARCH
-    # ========================================================
+    # --------------------------------------------------------
 
     live_context = (
         "No live internet data available."
@@ -619,11 +560,8 @@ def ask_ai():
     try:
 
         results = DDGS().text(
-
             user_query,
-
-            max_results=2
-
+            max_results=3
         )
 
         snippets = []
@@ -658,21 +596,25 @@ def ask_ai():
             f"[WEB SEARCH ERROR] {exc}"
         )
 
-    # ========================================================
-    # GEMINI AI
-    # ========================================================
+
+    # --------------------------------------------------------
+    # GEMINI
+    # --------------------------------------------------------
 
     try:
 
         client = get_gemini_client()
 
         system_instruction = """
-You are TiTaN, a custom AI robotic assistant
-engineered by Malhar Deshmukh.
+You are TiTaN, a custom AI robotic assistant.
 
-You are the intelligence layer of the TiTaN robot.
+You are the intelligence layer of the
+TiTaN mobile robot.
 
-RULES:
+Your job is to provide useful, concise
+and natural answers.
+
+Rules:
 
 1. Keep normal answers concise and useful.
 
@@ -685,32 +627,36 @@ RULES:
 4. If the user speaks English,
    reply in English.
 
-5. Never claim that the robot physically
+5. Never claim that TiTaN physically
    performed an action unless the application
-   actually sent a motor command.
+   actually sent the required command.
 
 6. Never reveal API keys or secret credentials.
 
 7. Treat live web information as reference
-   information and verify it when possible.
+   information and do not blindly trust it.
 
-8. Robot movement commands are handled by
-   the robot control system.
+8. Do not invent robot sensor values.
 
-9. Do not invent robot sensor values.
+9. Robot movement is controlled by the
+   robot control system.
 
-10. Keep responses suitable for voice output.
+10. Keep answers suitable for voice output.
 """
 
         prompt = f"""
 USER QUERY:
+
 {user_query}
 
-LIVE INTERNET DATA:
+
+LIVE INTERNET INFORMATION:
+
 {live_context}
 
-Answer the user's query using the live
-information when it is relevant.
+
+Answer the user's question naturally.
+Use the live information when relevant.
 """
 
         model_name = os.environ.get(
@@ -733,9 +679,7 @@ information when it is relevant.
                 temperature=0.4,
 
                 max_output_tokens=256,
-
             ),
-
         )
 
         answer = (
@@ -750,9 +694,7 @@ information when it is relevant.
             )
 
         return jsonify({
-
             "reply": answer
-
         })
 
     except Exception as exc:
@@ -762,13 +704,35 @@ information when it is relevant.
         )
 
         return jsonify({
-
             "reply": (
                 "TiTaN AI is temporarily "
                 "unavailable."
             )
-
         }), 502
+
+
+# ============================================================
+# FAVICON
+# ============================================================
+
+@app.route("/favicon.ico")
+def favicon():
+
+    from flask import send_from_directory
+
+    path = os.path.join(
+        app.root_path,
+        "favicon.ico"
+    )
+
+    if os.path.exists(path):
+
+        return send_from_directory(
+            app.root_path,
+            "favicon.ico"
+        )
+
+    return "", 204
 
 
 # ============================================================
@@ -785,11 +749,7 @@ if __name__ == "__main__":
     )
 
     app.run(
-
         host="0.0.0.0",
-
         port=port,
-
         debug=False,
-
     )
