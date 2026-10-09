@@ -522,7 +522,7 @@ h1{
 
     </div>
 
-    <a class="node-link" href="/robot">
+    <a class="node-link" href="https://titan-vision-node-20.vercel.app/" target="_blank" rel="noopener noreferrer">
         ▣ OPEN PHONE NODE →
     </a>
 
@@ -878,62 +878,59 @@ document
 });
 
 
-/* KEYBOARD */
+/* KEYBOARD CONTROLS - DO NOT INTERFERE WITH CHAT INPUT */
 
-document.addEventListener(
-"keydown",
-e=>{
+const movementKeys = {
+    ArrowUp: "FORWARD",
+    w: "FORWARD",
+    W: "FORWARD",
 
-    if(e.repeat)return;
+    ArrowDown: "BACKWARD",
+    s: "BACKWARD",
+    S: "BACKWARD",
 
-    const map={
+    ArrowLeft: "LEFT",
+    a: "LEFT",
+    A: "LEFT",
 
-        ArrowUp:"FORWARD",
-        w:"FORWARD",
+    ArrowRight: "RIGHT",
+    d: "RIGHT",
+    D: "RIGHT"
+};
 
-        ArrowDown:"BACKWARD",
-        s:"BACKWARD",
+function isTypingInField(element) {
+    if (!element) return false;
 
-        ArrowLeft:"LEFT",
-        a:"LEFT",
+    return (
+        element.isContentEditable ||
+        ["INPUT", "TEXTAREA", "SELECT"].includes(element.tagName)
+    );
+}
 
-        ArrowRight:"RIGHT",
-        d:"RIGHT"
+document.addEventListener("keydown", function(event) {
+    // Let the user type normally in the AI chat and other form fields.
+    if (isTypingInField(document.activeElement)) return;
 
-    };
+    const command = movementKeys[event.key];
+    if (!command || event.repeat) return;
 
-    if(map[e.key]){
-
-        e.preventDefault();
-
-        cmd(map[e.key]);
-
-    }
-
+    event.preventDefault();
+    cmd(command);
 });
 
+document.addEventListener("keyup", function(event) {
+    // Do not send robot commands while the user is entering text.
+    if (isTypingInField(document.activeElement)) return;
 
-document.addEventListener(
-"keyup",
-e=>{
-
-    if(
-        [
-            "ArrowUp",
-            "ArrowDown",
-            "ArrowLeft",
-            "ArrowRight",
-            "w",
-            "a",
-            "s",
-            "d"
-        ].includes(e.key)
-    ){
-
+    if (movementKeys[event.key]) {
+        event.preventDefault();
         cmd("STOP");
-
     }
+});
 
+// Stop movement if the browser tab/window loses focus.
+window.addEventListener("blur", function() {
+    cmd("STOP");
 });
 
 
