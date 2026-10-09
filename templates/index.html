@@ -794,7 +794,7 @@ h1{
 
 
         <div class="hint">
-            HOLD TO MOVE • RELEASE = STOP • WASD / ARROWS
+            HOLD W A S D / ARROWS TO MOVE • RELEASE TO STOP
         </div>
 
     </div>
@@ -842,43 +842,36 @@ async function cmd(command){
 }
 
 
-/* TOUCH CONTROLS */
+/* TOUCH / MOUSE CONTROLS — HOLD TO MOVE */
 
-document
-.querySelectorAll("[data-cmd]")
-.forEach(button=>{
+const driveButtons = document.querySelectorAll("[data-cmd]");
 
-    button.addEventListener(
-        "pointerdown",
-        e=>{
+driveButtons.forEach(button => {
+    const command = button.dataset.cmd;
 
-            e.preventDefault();
-
-            cmd(button.dataset.cmd);
-
-        }
-    );
-
-
-    button.addEventListener(
-        "pointerup",
-        ()=>{
+    if (command === "STOP") {
+        button.addEventListener("pointerdown", event => {
+            event.preventDefault();
+            pressedMovementKeys.clear();
             cmd("STOP");
-        }
-    );
+        });
+        return;
+    }
 
+    button.addEventListener("pointerdown", event => {
+        event.preventDefault();
+        button.setPointerCapture?.(event.pointerId);
+        cmd(command);
+    });
 
-    button.addEventListener(
-        "pointerleave",
-        ()=>{
-            cmd("STOP");
-        }
-    );
-
+    const releaseButton = () => cmd("STOP");
+    button.addEventListener("pointerup", releaseButton);
+    button.addEventListener("pointercancel", releaseButton);
+    button.addEventListener("lostpointercapture", releaseButton);
 });
 
 
-/* KEYBOARD CONTROLS - DO NOT INTERFERE WITH CHAT INPUT */
+/* KEYBOARD CONTROLS — HOLD TO MOVE, RELEASE TO STOP */
 
 const movementKeys = {
     ArrowUp: "FORWARD",
@@ -898,6 +891,10 @@ const movementKeys = {
     D: "RIGHT"
 };
 
+// Keep track of every movement key currently held down.
+const pressedMovementKeys = new Set();
+let activeMovementKey = null;
+
 function isTypingInField(element) {
     if (!element) return false;
 
@@ -907,30 +904,62 @@ function isTypingInField(element) {
     );
 }
 
+function currentMovementCommand() {
+    // The most recently pressed key takes priority while it remains held.
+    const keys = Array.from(pressedMovementKeys);
+    const key = keys.length ? keys[keys.length - 1] : null;
+    return key ? movementKeys[key] : null;
+}
+
+function stopMovement() {
+    pressedMovementKeys.clear();
+    activeMovementKey = null;
+    cmd("STOP");
+}
+
 document.addEventListener("keydown", function(event) {
-    // Let the user type normally in the AI chat and other form fields.
+    // Never hijack normal typing in the AI chat or other editable fields.
     if (isTypingInField(document.activeElement)) return;
 
     const command = movementKeys[event.key];
-    if (!command || event.repeat) return;
+    if (!command) return;
 
     event.preventDefault();
+
+    // Ignore browser key-repeat events; the motor command remains active
+    // for as long as the physical key is held down.
+    if (pressedMovementKeys.has(event.key)) return;
+
+    pressedMovementKeys.add(event.key);
+    activeMovementKey = event.key;
     cmd(command);
 });
 
 document.addEventListener("keyup", function(event) {
-    // Do not send robot commands while the user is entering text.
-    if (isTypingInField(document.activeElement)) return;
+    if (!movementKeys[event.key]) return;
 
-    if (movementKeys[event.key]) {
-        event.preventDefault();
+    if (!pressedMovementKeys.has(event.key)) return;
+
+    pressedMovementKeys.delete(event.key);
+    event.preventDefault();
+
+    const nextCommand = currentMovementCommand();
+
+    if (nextCommand) {
+        // Another movement key is still held; continue that direction.
+        cmd(nextCommand);
+        const keys = Array.from(pressedMovementKeys);
+        activeMovementKey = keys[keys.length - 1] || null;
+    } else {
+        activeMovementKey = null;
         cmd("STOP");
     }
 });
 
-// Stop movement if the browser tab/window loses focus.
-window.addEventListener("blur", function() {
-    cmd("STOP");
+// Always release movement if the user changes tabs or the window loses focus.
+window.addEventListener("blur", stopMovement);
+document.addEventListener("visibilitychange", function() {
+    if (document.hidden) stopMovement();
 });
 
 
