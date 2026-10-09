@@ -3,21 +3,29 @@ import time
 import threading
 import requests
 
-from flask import Flask, Response, jsonify, render_template, request
+from flask import (
+    Flask,
+    Response,
+    jsonify,
+    render_template,
+    request,
+    send_from_directory,
+)
+
 from ddgs import DDGS
 from google import genai
 from google.genai import types
 
 
 # ============================================================
-# TiTaN APPLICATION
+# TiTaN AI ROBOT - FLASK BACKEND
 # ============================================================
 
 app = Flask(__name__)
 
 
 # ============================================================
-# GLOBAL STATE
+# SHARED ROBOT STATE
 # ============================================================
 
 state_lock = threading.Lock()
@@ -77,7 +85,7 @@ ALLOWED_COMMANDS = {
 
 
 # ============================================================
-# REQUEST HELPER
+# JSON HELPER
 # ============================================================
 
 def request_json():
@@ -100,15 +108,14 @@ def set_motor_command(command):
     with state_lock:
         last_motor_command = command
         last_command_time = time.monotonic()
+
         telemetry["command"] = command
 
     return True
 
 
 def get_safe_motor_command():
-
     with state_lock:
-
         if (
             time.monotonic() - last_command_time
             > COMMAND_TIMEOUT
@@ -120,6 +127,8 @@ def get_safe_motor_command():
 
 # ============================================================
 # MAIN DASHBOARD
+# URL: /
+# FILE: templates/index.html
 # ============================================================
 
 @app.route("/")
@@ -129,6 +138,8 @@ def index():
 
 # ============================================================
 # ROBOT NODE
+# URL: /robot
+# FILE: templates/robot_node.html
 # ============================================================
 
 @app.route("/robot")
@@ -137,54 +148,78 @@ def robot():
 
 
 # ============================================================
-# HEALTH
+# HEALTH STATUS
+# URL: /api/health
 # ============================================================
 
 @app.route("/api/health")
 def health():
-
     now = time.monotonic()
 
     with state_lock:
-
-        phone_status = (
-            "ONLINE"
-            if phone_last_seen > 0
+        phone_online = (
+            phone_last_seen > 0
             and now - phone_last_seen <= PHONE_TIMEOUT
-            else "OFFLINE"
         )
 
-        esp32_status = (
-            "ONLINE"
-            if esp32_last_seen > 0
+        esp32_online = (
+            esp32_last_seen > 0
             and now - esp32_last_seen <= ESP32_TIMEOUT
-            else "OFFLINE"
         )
 
-        camera_status = (
-            "ONLINE"
-            if latest_frame is not None
+        camera_online = (
+            latest_frame is not None
             and now - latest_frame_time <= VIDEO_TIMEOUT
-            else "OFFLINE"
         )
 
-        return jsonify({
-            "server": "ONLINE",
-            "phone": phone_status,
-            "esp32": esp32_status,
-            "camera": camera_status,
-            "microphone": (
-                "ON"
-                if microphone_active
-                else "OFF"
-            ),
-            "motor_command": get_safe_motor_command(),
-            "telemetry": dict(telemetry),
-        })
+        mic_on = bool(microphone_active)
+
+        current_telemetry = dict(telemetry)
+
+    # Obtain the command outside the existing lock.
+    motor_command = get_safe_motor_command()
+
+    return jsonify({
+        "server": "ONLINE",
+
+        "phone": (
+            "ONLINE" if phone_online else "OFFLINE"
+        ),
+
+        "esp32": (
+            "ONLINE" if esp32_online else "OFFLINE"
+        ),
+
+        "camera": (
+            "ONLINE" if camera_online else "OFFLINE"
+        ),
+
+        "microphone": (
+            "ON" if mic_on else "OFF"
+        ),
+
+        "phone_online": phone_online,
+        "esp32_online": esp32_online,
+        "camera_online": camera_online,
+        "mic_on": mic_on,
+
+        "motor_command": motor_command,
+
+        "battery": current_telemetry.get(
+            "battery", 0
+        ),
+
+        "rssi": current_telemetry.get(
+            "wifi_rssi", 0
+        ),
+
+        "telemetry": current_telemetry,
+    })
 
 
 # ============================================================
 # PHONE HEARTBEAT
+# URL: /api/phone/heartbeat
 # ============================================================
 
 @app.route(
@@ -192,7 +227,6 @@ def health():
     methods=["POST"]
 )
 def phone_heartbeat():
-
     global phone_last_seen
 
     with state_lock:
@@ -205,6 +239,7 @@ def phone_heartbeat():
 
 # ============================================================
 # MICROPHONE STATUS
+# URL: /api/mic_status
 # ============================================================
 
 @app.route(
@@ -212,7 +247,6 @@ def phone_heartbeat():
     methods=["POST"]
 )
 def mic_status():
-
     global microphone_active
 
     data = request_json()
@@ -224,17 +258,14 @@ def mic_status():
     return jsonify({
         "status": "ok",
         "microphone": (
-            "ON"
-            if microphone_active
-            else "OFF"
-        )
+            "ON" if microphone_active else "OFF"
+        ),
     })
 
 
 # ============================================================
 # CAMERA FRAME UPLOAD
-#
-# Phone sends JPEG frames here.
+# URL: /api/video_feed
 # ============================================================
 
 @app.route(
@@ -242,7 +273,6 @@ def mic_status():
     methods=["POST"]
 )
 def upload_frame():
-
     global latest_frame
     global latest_frame_time
     global phone_last_seen
@@ -254,17 +284,18 @@ def upload_frame():
             "error": "Empty frame"
         }), 400
 
-    # Maximum frame size: 2 MB
+    # Reject frames larger than 2 MB.
     if len(frame) > 2 * 1024 * 1024:
         return jsonify({
             "error": "Frame too large"
         }), 413
 
-    with state_lock:
+    now = time.monotonic()
 
+    with state_lock:
         latest_frame = frame
-        latest_frame_time = time.monotonic()
-        phone_last_seen = time.monotonic()
+        latest_frame_time = now
+        phone_last_seen = now
 
     return jsonify({
         "status": "received"
@@ -272,27 +303,23 @@ def upload_frame():
 
 
 # ============================================================
-# MJPEG VIDEO STREAM
+# LIVE CAMERA STREAM
+# URL: /video_stream
 # ============================================================
 
 def generate_stream():
-
     last_frame = None
 
     while True:
-
         with state_lock:
-
             frame = latest_frame
             frame_time = latest_frame_time
 
         if (
             frame is not None
-            and time.monotonic() - frame_time
-            <= VIDEO_TIMEOUT
+            and time.monotonic() - frame_time <= VIDEO_TIMEOUT
             and frame != last_frame
         ):
-
             last_frame = frame
 
             yield (
@@ -305,18 +332,15 @@ def generate_stream():
             )
 
         else:
-
             time.sleep(0.05)
 
 
 @app.route("/video_stream")
 def video_stream():
-
     return Response(
         generate_stream(),
         mimetype=(
-            "multipart/x-mixed-replace; "
-            "boundary=frame"
+            "multipart/x-mixed-replace; boundary=frame"
         ),
         headers={
             "Cache-Control": "no-cache",
@@ -326,13 +350,9 @@ def video_stream():
 
 
 # ============================================================
-# MOTOR COMMAND API
-#
-# POST /api/cmd
-# Dashboard/phone sends motor command.
-#
-# GET /api/cmd
-# ESP32 reads motor command.
+# ROBOT MOVEMENT API
+# GET  /api/cmd -> ESP32 reads command
+# POST /api/cmd -> Dashboard sends command
 # ============================================================
 
 @app.route(
@@ -340,18 +360,12 @@ def video_stream():
     methods=["GET", "POST"]
 )
 def handle_cmd():
-
     if request.method == "POST":
-
         data = request_json()
 
-        command = data.get(
-            "command",
-            "STOP"
-        )
+        command = data.get("command", "STOP")
 
         if not set_motor_command(command):
-
             return jsonify({
                 "status": "error",
                 "error": "Invalid motor command",
@@ -371,6 +385,7 @@ def handle_cmd():
 
 # ============================================================
 # ESP32 TELEMETRY
+# URL: /api/telemetry
 # ============================================================
 
 @app.route(
@@ -378,13 +393,11 @@ def handle_cmd():
     methods=["POST"]
 )
 def update_telemetry():
-
     global esp32_last_seen
 
     data = request_json()
 
     with state_lock:
-
         esp32_last_seen = time.monotonic()
 
         for key in (
@@ -393,12 +406,10 @@ def update_telemetry():
             "ip",
             "uptime",
         ):
-
             if key in data:
                 telemetry[key] = data[key]
 
         if "command" in data:
-
             telemetry["command"] = str(
                 data["command"]
             ).upper()
@@ -409,7 +420,8 @@ def update_telemetry():
 
 
 # ============================================================
-# ELEVENLABS TEXT-TO-SPEECH
+# TEXT TO SPEECH
+# URL: /api/tts
 # ============================================================
 
 @app.route(
@@ -417,7 +429,6 @@ def update_telemetry():
     methods=["POST"]
 )
 def text_to_speech():
-
     data = request_json()
 
     text = str(
@@ -425,7 +436,6 @@ def text_to_speech():
     ).strip()
 
     if not text:
-
         return jsonify({
             "error": "No text provided"
         }), 400
@@ -436,7 +446,6 @@ def text_to_speech():
     ).strip()
 
     if not api_key:
-
         return jsonify({
             "error": "ELEVENLABS_API_KEY missing"
         }), 500
@@ -446,7 +455,6 @@ def text_to_speech():
         "XPtpzgZIma7xJiyvHcK7"
     ).strip()
 
-    # Limit TTS request size
     text = text[:1500]
 
     url = (
@@ -472,7 +480,6 @@ def text_to_speech():
     }
 
     try:
-
         response = requests.post(
             url,
             json=payload,
@@ -481,7 +488,6 @@ def text_to_speech():
         )
 
         if response.status_code == 200:
-
             return Response(
                 response.content,
                 mimetype="audio/mpeg",
@@ -499,7 +505,6 @@ def text_to_speech():
         }), 502
 
     except requests.RequestException as exc:
-
         return jsonify({
             "error": f"TTS request failed: {exc}"
         }), 502
@@ -510,14 +515,12 @@ def text_to_speech():
 # ============================================================
 
 def get_gemini_client():
-
     api_key = os.environ.get(
         "GEMINI_API_KEY",
         ""
     ).strip()
 
     if not api_key:
-
         raise RuntimeError(
             "GEMINI_API_KEY is not configured"
         )
@@ -528,7 +531,8 @@ def get_gemini_client():
 
 
 # ============================================================
-# TiTaN AI
+# TiTaN AI CHAT
+# URL: /api/ask_ai
 # ============================================================
 
 @app.route(
@@ -536,29 +540,30 @@ def get_gemini_client():
     methods=["POST"]
 )
 def ask_ai():
-
     data = request_json()
 
+    # Accept either frontend field name.
     user_query = str(
-        data.get("query", "")
+        data.get(
+            "message",
+            data.get("query", "")
+        )
     ).strip()
 
     if not user_query:
-
         return jsonify({
             "reply": "Please give me a question."
         }), 400
-
-    # --------------------------------------------------------
-    # LIVE WEB SEARCH
-    # --------------------------------------------------------
 
     live_context = (
         "No live internet data available."
     )
 
-    try:
+    # --------------------------------------------------------
+    # LIVE WEB SEARCH
+    # --------------------------------------------------------
 
+    try:
         results = DDGS().text(
             user_query,
             max_results=3
@@ -567,80 +572,45 @@ def ask_ai():
         snippets = []
 
         for result in results:
-
-            title = result.get(
-                "title",
-                ""
-            )
-
-            body = result.get(
-                "body",
-                ""
-            )
+            title = result.get("title", "")
+            body = result.get("body", "")
 
             if title or body:
-
                 snippets.append(
                     f"- {title}: {body}"
                 )
 
         if snippets:
-
-            live_context = "\n".join(
-                snippets
-            )
+            live_context = "\n".join(snippets)
 
     except Exception as exc:
-
         print(
             f"[WEB SEARCH ERROR] {exc}"
         )
 
-
     # --------------------------------------------------------
-    # GEMINI
+    # GEMINI RESPONSE
     # --------------------------------------------------------
 
     try:
-
         client = get_gemini_client()
 
         system_instruction = """
 You are TiTaN, a custom AI robotic assistant.
 
-You are the intelligence layer of the
-TiTaN mobile robot.
-
-Your job is to provide useful, concise
-and natural answers.
+You are the intelligence layer of the TiTaN mobile robot.
 
 Rules:
-
-1. Keep normal answers concise and useful.
-
-2. If the user speaks Marathi,
-   reply in fluent Marathi Devanagari.
-
-3. If the user speaks Hindi,
-   reply in Hindi.
-
-4. If the user speaks English,
-   reply in English.
-
-5. Never claim that TiTaN physically
-   performed an action unless the application
-   actually sent the required command.
-
+1. Give useful, concise, natural answers.
+2. Reply in Marathi Devanagari when the user speaks Marathi.
+3. Reply in Hindi when the user speaks Hindi.
+4. Reply in English when the user speaks English.
+5. Never claim to have physically performed an action unless
+   the application actually sent the required command.
 6. Never reveal API keys or secret credentials.
-
-7. Treat live web information as reference
-   information and do not blindly trust it.
-
-8. Do not invent robot sensor values.
-
-9. Robot movement is controlled by the
-   robot control system.
-
+7. Treat live web information as reference material.
+8. Never invent robot sensor values.
+9. Robot movement is controlled by the robot control system.
 10. Keep answers suitable for voice output.
 """
 
@@ -649,11 +619,9 @@ USER QUERY:
 
 {user_query}
 
-
 LIVE INTERNET INFORMATION:
 
 {live_context}
-
 
 Answer the user's question naturally.
 Use the live information when relevant.
@@ -665,19 +633,11 @@ Use the live information when relevant.
         ).strip()
 
         response = client.models.generate_content(
-
             model=model_name,
-
             contents=prompt,
-
             config=types.GenerateContentConfig(
-
-                system_instruction=(
-                    system_instruction
-                ),
-
+                system_instruction=system_instruction,
                 temperature=0.4,
-
                 max_output_tokens=256,
             ),
         )
@@ -687,10 +647,8 @@ Use the live information when relevant.
         ).strip()
 
         if not answer:
-
             answer = (
-                "I could not generate "
-                "a response."
+                "I could not generate a response."
             )
 
         return jsonify({
@@ -698,15 +656,13 @@ Use the live information when relevant.
         })
 
     except Exception as exc:
-
         print(
             f"[GEMINI ERROR] {exc}"
         )
 
         return jsonify({
             "reply": (
-                "TiTaN AI is temporarily "
-                "unavailable."
+                "TiTaN AI is temporarily unavailable."
             )
         }), 502
 
@@ -717,16 +673,12 @@ Use the live information when relevant.
 
 @app.route("/favicon.ico")
 def favicon():
-
-    from flask import send_from_directory
-
     path = os.path.join(
         app.root_path,
         "favicon.ico"
     )
 
     if os.path.exists(path):
-
         return send_from_directory(
             app.root_path,
             "favicon.ico"
@@ -740,12 +692,8 @@ def favicon():
 # ============================================================
 
 if __name__ == "__main__":
-
     port = int(
-        os.environ.get(
-            "PORT",
-            "5000"
-        )
+        os.environ.get("PORT", "5000")
     )
 
     app.run(
